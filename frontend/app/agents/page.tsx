@@ -15,7 +15,7 @@ export default function AgentsPage() {
     <AppShell>
       <div className="space-y-5">
         <header className="border-b border-border pb-5">
-          <h1 className="text-2xl font-semibold text-[#1F2723]">Agents</h1>
+          <h1 className="text-2xl font-semibold text-[#1F2723]">에이전트</h1>
           <p className="mt-2 text-sm leading-6 text-[#5F6B64]">
             현재 활성 에이전트와 다음 확장 예정 에이전트를 확인합니다.
           </p>

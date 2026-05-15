@@ -10,7 +10,7 @@ export default async function ApprovalsPage() {
       <AppShell>
         <div className="space-y-5">
           <header className="border-b border-border pb-5">
-            <h1 className="text-2xl font-semibold text-[#1F2723]">Approval Inbox</h1>
+            <h1 className="text-2xl font-semibold text-[#1F2723]">승인함</h1>
             <p className="mt-2 text-sm leading-6 text-[#5F6B64]">
               공식 반영 전 검토가 필요한 작업 결과를 확인합니다.
             </p>
@@ -37,7 +37,7 @@ export default async function ApprovalsPage() {
       <AppShell>
         <div className="space-y-5">
           <header className="border-b border-border pb-5">
-            <h1 className="text-2xl font-semibold text-[#1F2723]">Approval Inbox</h1>
+            <h1 className="text-2xl font-semibold text-[#1F2723]">승인함</h1>
             <p className="mt-2 text-sm leading-6 text-[#5F6B64]">
               공식 반영 전 검토가 필요한 작업 결과를 확인합니다.
             </p>

@@ -3,10 +3,10 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/request-intake", label: "Request Console", icon: Inbox },
-  { href: "/approvals", label: "Approval Inbox", icon: ClipboardList },
-  { href: "/agents", label: "Agents", icon: Users },
+  { href: "/", label: "운영 대시보드", icon: LayoutDashboard },
+  { href: "/request-intake", label: "요청 콘솔", icon: Inbox },
+  { href: "/approvals", label: "승인함", icon: ClipboardList },
+  { href: "/agents", label: "에이전트", icon: Users },
 ];
 
 interface AppShellProps {
