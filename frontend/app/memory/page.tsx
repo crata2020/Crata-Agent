@@ -11,6 +11,7 @@ export default async function MemoryPage() {
   const entries = await loadKnowledgeEntries();
   const entriesByKind = {
     official: entries.filter((entry) => entry.kind === "official"),
+    ops: entries.filter((entry) => entry.kind === "ops"),
     source: entries.filter((entry) => entry.kind === "source"),
     guide: entries.filter((entry) => entry.kind === "guide"),
   };
@@ -26,8 +27,9 @@ export default async function MemoryPage() {
           </p>
         </header>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <div className="mt-5 grid gap-3 md:grid-cols-4">
           <MemoryStat label="공식 지식" value={entriesByKind.official.length} />
+          <MemoryStat label="운영 문서" value={entriesByKind.ops.length} />
           <MemoryStat label="원본 자료" value={entriesByKind.source.length} />
           <MemoryStat label="에이전트 가이드" value={entriesByKind.guide.length} />
         </div>
@@ -80,6 +82,9 @@ async function listMarkdownFiles(root: string): Promise<string[]> {
 }
 
 function classifyPath(relativePath: string): MemoryEntry["kind"] {
+  if (relativePath === "knowledge/README.md") {
+    return "ops";
+  }
   if (relativePath.includes("/_sources/")) {
     return "source";
   }

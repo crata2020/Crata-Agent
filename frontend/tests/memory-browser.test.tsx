@@ -24,6 +24,12 @@ describe("MemoryBrowser", () => {
       description: "각 에이전트의 전문 작업 절차입니다.",
       kind: "guide",
     },
+    {
+      title: "CRATA 지식 파일 구조",
+      path: "knowledge/README.md",
+      description: "지식 파일의 운영 구조입니다.",
+      kind: "ops",
+    },
   ];
 
   it("filters knowledge entries by search text and kind", () => {
@@ -42,5 +48,10 @@ describe("MemoryBrowser", () => {
 
     expect(screen.queryByText("집단행동검사 MASTER")).not.toBeInTheDocument();
     expect(screen.getByText("CRATA 에이전트 작업 가이드")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "운영 문서" }));
+
+    expect(screen.queryByText("CRATA 에이전트 작업 가이드")).not.toBeInTheDocument();
+    expect(screen.getByText("CRATA 지식 파일 구조")).toBeInTheDocument();
   });
 });

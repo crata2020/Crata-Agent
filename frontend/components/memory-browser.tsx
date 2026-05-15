@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-export type MemoryEntryKind = "official" | "source" | "guide";
+export type MemoryEntryKind = "official" | "source" | "guide" | "ops";
 
 export type MemoryEntry = {
   title: string;
@@ -15,11 +15,13 @@ const sectionLabels: Record<MemoryEntryKind, string> = {
   official: "공식 지식",
   source: "원본 자료",
   guide: "에이전트 가이드",
+  ops: "운영 문서",
 };
 
 const filters: Array<{ label: string; value: "all" | MemoryEntryKind }> = [
   { label: "전체", value: "all" },
   { label: "공식 지식", value: "official" },
+  { label: "운영 문서", value: "ops" },
   { label: "에이전트 가이드", value: "guide" },
   { label: "원본 자료", value: "source" },
 ];
@@ -41,6 +43,7 @@ export function MemoryBrowser({ entries }: { entries: MemoryEntry[] }) {
 
   const entriesByKind = {
     official: visibleEntries.filter((entry) => entry.kind === "official"),
+    ops: visibleEntries.filter((entry) => entry.kind === "ops"),
     guide: visibleEntries.filter((entry) => entry.kind === "guide"),
     source: visibleEntries.filter((entry) => entry.kind === "source"),
   };
@@ -48,7 +51,7 @@ export function MemoryBrowser({ entries }: { entries: MemoryEntry[] }) {
   return (
     <section className="space-y-4">
       <div className="rounded-[14px] border border-white/10 bg-[#111820]/95 p-4">
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+        <div className="space-y-3">
           <label className="block">
             <span className="text-xs font-semibold text-[#AEB9C4]">지식 검색</span>
             <input
@@ -87,7 +90,7 @@ export function MemoryBrowser({ entries }: { entries: MemoryEntry[] }) {
       </div>
 
       {visibleEntries.length > 0 ? (
-        (["official", "guide", "source"] as const).map((kind) => (
+        (["official", "ops", "guide", "source"] as const).map((kind) => (
           <KnowledgeSection key={kind} kind={kind} entries={entriesByKind[kind]} />
         ))
       ) : (
