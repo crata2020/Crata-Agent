@@ -3,12 +3,15 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models import Agent, Approval, Artifact, CandidateTask, Task
+from app.models import Agent, Approval, Artifact, CandidateTask, Task, WorkflowRun, WorkflowStep
 from app.schemas.dashboard import (
     AgentActivityRead,
     AgentActivityResponse,
     AgentWorkItemRead,
     DashboardSummary,
+    WorkflowActivityResponse,
+    WorkflowRunRead,
+    WorkflowStepRead,
 )
 from app.services.agent_seed import AGENT_SEEDS, seed_agents
 
@@ -62,6 +65,43 @@ def get_agent_activity(db: Session = Depends(get_db)) -> AgentActivityResponse:
                 candidate_tasks=candidate_tasks,
             )
             for agent in sorted(agents, key=lambda agent: seed_order.get(agent.id, 999))
+        ]
+    )
+
+
+@router.get("/workflow-activity", response_model=WorkflowActivityResponse)
+def get_workflow_activity(db: Session = Depends(get_db)) -> WorkflowActivityResponse:
+    runs = db.scalars(
+        select(WorkflowRun)
+        .order_by(WorkflowRun.started_at.desc())
+        .limit(12)
+    ).all()
+    run_ids = [run.id for run in runs]
+    steps_by_run_id: dict[str, list[WorkflowStep]] = {run_id: [] for run_id in run_ids}
+
+    if run_ids:
+        steps = db.scalars(
+            select(WorkflowStep)
+            .where(WorkflowStep.workflow_run_id.in_(run_ids))
+            .order_by(WorkflowStep.started_at.asc())
+        ).all()
+        for step in steps:
+            steps_by_run_id.setdefault(step.workflow_run_id, []).append(step)
+
+    task_ids = [run.task_id for run in runs if run.task_id is not None]
+    tasks_by_id = {
+        task.id: task
+        for task in db.scalars(select(Task).where(Task.id.in_(task_ids))).all()
+    } if task_ids else {}
+
+    return WorkflowActivityResponse(
+        runs=[
+            _workflow_run_read(
+                run=run,
+                task=tasks_by_id.get(run.task_id or ""),
+                steps=steps_by_run_id.get(run.id, []),
+            )
+            for run in runs
         ]
     )
 
@@ -138,6 +178,38 @@ def _agent_activity(
 
 def _contains(agent_id: str, values: list | None) -> bool:
     return agent_id in (values or [])
+
+
+def _workflow_run_read(
+    *,
+    run: WorkflowRun,
+    task: Task | None,
+    steps: list[WorkflowStep],
+) -> WorkflowRunRead:
+    return WorkflowRunRead(
+        id=run.id,
+        workflow_type=run.workflow_type,
+        task_id=run.task_id,
+        task_title=task.title if task is not None else None,
+        task_type=task.task_type if task is not None else None,
+        status=run.status,
+        current_step=run.current_step,
+        started_at=run.started_at,
+        completed_at=run.completed_at,
+        steps=[
+            WorkflowStepRead(
+                id=step.id,
+                step_name=step.step_name,
+                agent_id=step.agent_id,
+                input_summary=step.input_summary,
+                output_summary=step.output_summary,
+                status=step.status,
+                started_at=step.started_at,
+                completed_at=step.completed_at,
+            )
+            for step in steps
+        ],
+    )
 
 
 def _work_items(

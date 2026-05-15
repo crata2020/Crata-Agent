@@ -5,12 +5,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DashboardContent } from "@/app/page";
 import { runCandidate } from "@/lib/api";
 import { agentSeeds } from "@/lib/agent-seeds";
-import type { AgentActivity, DashboardSummary } from "@/lib/types";
+import type { AgentActivity, DashboardSummary, WorkflowRunActivity } from "@/lib/types";
 import sharedAgentSeeds from "../../shared/agent-seeds.json";
 
 vi.mock("@/lib/api", () => ({
   getAgentActivity: vi.fn(),
   getDashboardSummary: vi.fn(),
+  getWorkflowActivity: vi.fn(),
   runCandidate: vi.fn(),
 }));
 
@@ -108,6 +109,61 @@ describe("dashboard agent flow map", () => {
             ]
           : [],
   }));
+  const workflowActivity: WorkflowRunActivity[] = [
+    {
+      id: "workflow-1",
+      workflow_type: "agent_operation",
+      task_id: "task-1",
+      task_title: "결과지 문구 수정 후보",
+      task_type: "report_phrase_revision",
+      status: "pending_approval",
+      current_step: "approval_pending",
+      started_at: "2026-05-16T00:00:00",
+      completed_at: "2026-05-16T00:03:00",
+      steps: [
+        {
+          id: "step-1",
+          step_name: "ceo_routing",
+          agent_id: "crata_ceo",
+          input_summary: "결과지 문구 수정 후보",
+          output_summary: "completed",
+          status: "completed",
+          started_at: "2026-05-16T00:00:00",
+          completed_at: "2026-05-16T00:00:30",
+        },
+        {
+          id: "step-2",
+          step_name: "context_retrieval",
+          agent_id: "concept_guardian",
+          input_summary: "결과지 문구 수정 후보",
+          output_summary: "completed",
+          status: "completed",
+          started_at: "2026-05-16T00:00:30",
+          completed_at: "2026-05-16T00:01:00",
+        },
+        {
+          id: "step-3",
+          step_name: "specialist_draft",
+          agent_id: "report_editor",
+          input_summary: "결과지 문구 수정 후보",
+          output_summary: "completed",
+          status: "completed",
+          started_at: "2026-05-16T00:01:00",
+          completed_at: "2026-05-16T00:02:00",
+        },
+        {
+          id: "step-4",
+          step_name: "quality_review",
+          agent_id: "quality_inspector",
+          input_summary: "결과지 문구 수정 후보",
+          output_summary: "completed",
+          status: "completed",
+          started_at: "2026-05-16T00:02:00",
+          completed_at: "2026-05-16T00:03:00",
+        },
+      ],
+    },
+  ];
 
   beforeEach(() => {
     runCandidateMock.mockReset();
@@ -142,7 +198,7 @@ describe("dashboard agent flow map", () => {
   });
 
   it("selects an agent node and marks it as active", () => {
-    render(<DashboardContent summary={summary} agentActivity={activity} />);
+    render(<DashboardContent summary={summary} agentActivity={activity} workflowActivity={workflowActivity} />);
 
     const counselingCoach = screen.getByRole("button", { name: "상담 코치 상세 보기" });
 
@@ -159,6 +215,7 @@ describe("dashboard agent flow map", () => {
       "/request-intake?candidateId=candidate-1",
     );
     expect(screen.getByRole("button", { name: "바로 실행" })).toBeInTheDocument();
+    expect(screen.getByText("Agent Timeline")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "후보 보기" })).toHaveAttribute("href", "/request-intake");
     expect(screen.getAllByRole("link", { name: "승인함" }).length).toBeGreaterThan(0);
   });
@@ -171,7 +228,7 @@ describe("dashboard agent flow map", () => {
       approval_id: "approval-new",
       status: "pending_approval",
     });
-    render(<DashboardContent summary={summary} agentActivity={activity} />);
+    render(<DashboardContent summary={summary} agentActivity={activity} workflowActivity={workflowActivity} />);
 
     fireEvent.click(screen.getByRole("button", { name: "상담 코치 상세 보기" }));
     fireEvent.click(screen.getByRole("button", { name: "바로 실행" }));
@@ -186,7 +243,7 @@ describe("dashboard agent flow map", () => {
   });
 
   it("shows approval and revision quick actions in the inspector", () => {
-    render(<DashboardContent summary={summary} agentActivity={activity} />);
+    render(<DashboardContent summary={summary} agentActivity={activity} workflowActivity={workflowActivity} />);
 
     fireEvent.click(screen.getByRole("button", { name: "결과지 에디터 상세 보기" }));
     expect(screen.getByRole("link", { name: "승인함 이동" })).toHaveAttribute(
@@ -199,6 +256,18 @@ describe("dashboard agent flow map", () => {
       "href",
       "/request-intake?candidateId=candidate-revision",
     );
+  });
+
+  it("shows recent workflow runs in the live logs panel", () => {
+    render(<DashboardContent summary={summary} agentActivity={activity} workflowActivity={workflowActivity} />);
+
+    expect(screen.getByText("Live Logs")).toBeInTheDocument();
+    expect(screen.getAllByText("결과지 문구 수정 후보").length).toBeGreaterThan(0);
+    expect(screen.getByText("4단계")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "결과지 에디터 상세 보기" }));
+
+    expect(screen.getByText("초안 작성")).toBeInTheDocument();
   });
 
   it("shows map controls for zoom, reset, and movement", () => {

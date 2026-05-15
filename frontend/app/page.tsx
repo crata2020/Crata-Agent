@@ -1,8 +1,8 @@
 import { AgentFlowCanvas } from "@/components/agent-flow-canvas";
 import { AppShell } from "@/components/app-shell";
-import { getAgentActivity, getDashboardSummary } from "@/lib/api";
+import { getAgentActivity, getDashboardSummary, getWorkflowActivity } from "@/lib/api";
 import { agentSeeds } from "@/lib/agent-seeds";
-import type { Agent, AgentActivity, DashboardSummary } from "@/lib/types";
+import type { Agent, AgentActivity, DashboardSummary, WorkflowRunActivity } from "@/lib/types";
 
 const agents: Agent[] = agentSeeds.map((agent) => ({
   ...agent,
@@ -40,34 +40,50 @@ function fallbackActivityFor(agent: Agent): AgentActivity {
 }
 
 const fallbackAgentActivity = agents.map(fallbackActivityFor);
+const fallbackWorkflowActivity: WorkflowRunActivity[] = [];
 
 async function loadDashboardData() {
-  const [summaryResult, activityResult] = await Promise.allSettled([
+  const [summaryResult, activityResult, workflowResult] = await Promise.allSettled([
     getDashboardSummary(),
     getAgentActivity(),
+    getWorkflowActivity(),
   ]);
 
   return {
     summary: summaryResult.status === "fulfilled" ? summaryResult.value : fallbackSummary,
     agentActivity:
       activityResult.status === "fulfilled" ? activityResult.value.agents : fallbackAgentActivity,
-    dataUnavailable: summaryResult.status === "rejected" || activityResult.status === "rejected",
+    workflowActivity:
+      workflowResult.status === "fulfilled" ? workflowResult.value.runs : fallbackWorkflowActivity,
+    dataUnavailable:
+      summaryResult.status === "rejected" ||
+      activityResult.status === "rejected" ||
+      workflowResult.status === "rejected",
   };
 }
 
 export default async function HomePage() {
-  const { summary, agentActivity, dataUnavailable } = await loadDashboardData();
+  const { summary, agentActivity, workflowActivity, dataUnavailable } = await loadDashboardData();
 
-  return <DashboardContent summary={summary} agentActivity={agentActivity} dataUnavailable={dataUnavailable} />;
+  return (
+    <DashboardContent
+      summary={summary}
+      agentActivity={agentActivity}
+      workflowActivity={workflowActivity}
+      dataUnavailable={dataUnavailable}
+    />
+  );
 }
 
 export function DashboardContent({
   summary,
   agentActivity = fallbackAgentActivity,
+  workflowActivity = fallbackWorkflowActivity,
   dataUnavailable = false,
 }: {
   summary: DashboardSummary;
   agentActivity?: AgentActivity[];
+  workflowActivity?: WorkflowRunActivity[];
   dataUnavailable?: boolean;
 }) {
   const orderedActivity = agents.map((agent) => {
@@ -83,7 +99,7 @@ export function DashboardContent({
             백엔드 연결이 불안정해서 일부 값은 로컬 기준으로 표시합니다.
           </div>
         ) : null}
-        <AgentFlowCanvas agents={orderedActivity} summary={summary} />
+        <AgentFlowCanvas agents={orderedActivity} summary={summary} workflowRuns={workflowActivity} />
       </div>
     </AppShell>
   );

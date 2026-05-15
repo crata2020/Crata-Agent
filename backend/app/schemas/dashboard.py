@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from datetime import datetime
 from typing import Literal
 
 
@@ -44,3 +45,31 @@ class AgentActivityRead(BaseModel):
 
 class AgentActivityResponse(BaseModel):
     agents: list[AgentActivityRead]
+
+
+class WorkflowStepRead(BaseModel):
+    id: str
+    step_name: str
+    agent_id: str | None
+    input_summary: str
+    output_summary: str
+    status: str
+    started_at: datetime
+    completed_at: datetime | None = None
+
+
+class WorkflowRunRead(BaseModel):
+    id: str
+    workflow_type: str
+    task_id: str | None
+    task_title: str | None = None
+    task_type: str | None = None
+    status: str
+    current_step: str
+    started_at: datetime
+    completed_at: datetime | None = None
+    steps: list[WorkflowStepRead] = Field(default_factory=list)
+
+
+class WorkflowActivityResponse(BaseModel):
+    runs: list[WorkflowRunRead]

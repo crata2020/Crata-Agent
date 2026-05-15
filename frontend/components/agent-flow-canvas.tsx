@@ -5,7 +5,14 @@ import { useMemo, useRef, useState } from "react";
 import type { PointerEvent, ReactNode, WheelEvent } from "react";
 
 import { runCandidate } from "@/lib/api";
-import type { AgentActivity, AgentActivityStatus, AgentWorkItem, DashboardSummary } from "@/lib/types";
+import type {
+  AgentActivity,
+  AgentActivityStatus,
+  AgentWorkItem,
+  DashboardSummary,
+  WorkflowRunActivity,
+  WorkflowStepActivity,
+} from "@/lib/types";
 
 const WORLD_WIDTH = 1780;
 const WORLD_HEIGHT = 840;
@@ -94,12 +101,30 @@ const workItemStatusLabels: Record<string, string> = {
   failed: "실패",
 };
 
+const workflowStepLabels: Record<string, string> = {
+  ceo_routing: "CEO 라우팅",
+  context_retrieval: "근거 확인",
+  specialist_draft: "초안 작성",
+  quality_review: "품질 검수",
+  approval_pending: "승인 대기",
+};
+
+const workflowStatusLabels: Record<string, string> = {
+  running: "실행 중",
+  pending_approval: "승인 대기",
+  approved: "승인 완료",
+  rejected: "거절됨",
+  revise_requested: "수정요청",
+  failed: "실패",
+};
+
 interface AgentFlowCanvasProps {
   agents: AgentActivity[];
   summary: DashboardSummary;
+  workflowRuns?: WorkflowRunActivity[];
 }
 
-export function AgentFlowCanvas({ agents, summary }: AgentFlowCanvasProps) {
+export function AgentFlowCanvas({ agents, summary, workflowRuns = [] }: AgentFlowCanvasProps) {
   const [view, setView] = useState({ x: 24, y: 48, scale: 0.61 });
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [runningWorkItemKey, setRunningWorkItemKey] = useState<string | null>(null);
@@ -109,6 +134,10 @@ export function AgentFlowCanvas({ agents, summary }: AgentFlowCanvasProps) {
   const activityById = useMemo(() => new Map(agents.map((agent) => [agent.id, agent])), [agents]);
   const leadAgent = agents.find((agent) => agent.activity_status !== "idle" && agent.activity_status !== "planned") ?? agents[0];
   const selectedAgent = agents.find((agent) => agent.id === selectedAgentId) ?? leadAgent;
+  const agentNameById = useMemo(
+    () => new Map(agents.map((agent) => [agent.id, agent.display_name])),
+    [agents],
+  );
   const selectedWorkItems = (selectedAgent?.work_items ?? []).map((item) => {
     const itemKey = workItemKey(item);
     return {
@@ -119,6 +148,12 @@ export function AgentFlowCanvas({ agents, summary }: AgentFlowCanvasProps) {
       },
     };
   });
+  const selectedAgentSteps = selectedAgent
+    ? workflowRuns
+        .flatMap((run) => run.steps.map((step) => ({ run, step })))
+        .filter(({ step }) => step.agent_id === selectedAgent.id)
+        .slice(0, 4)
+    : [];
 
   function updateScale(nextScale: number) {
     setView((current) => ({
@@ -223,7 +258,7 @@ export function AgentFlowCanvas({ agents, summary }: AgentFlowCanvasProps) {
         </div>
       </header>
 
-      <aside className="absolute right-5 top-24 z-30 hidden w-[320px] rounded-card border border-white/10 bg-[#11161C]/94 p-4 text-white shadow-[0_18px_60px_rgba(0,0,0,0.42)] backdrop-blur xl:block">
+      <aside className="absolute right-5 top-24 z-30 hidden max-h-[calc(100vh-8rem)] w-[320px] overflow-y-auto rounded-card border border-white/10 bg-[#11161C]/94 p-4 text-white shadow-[0_18px_60px_rgba(0,0,0,0.42)] backdrop-blur xl:block">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8EA0AE]">Agent Inspector</p>
         <div className="mt-3 flex items-start gap-3">
           <div
@@ -290,6 +325,26 @@ export function AgentFlowCanvas({ agents, summary }: AgentFlowCanvasProps) {
               </div>
             )}
           </div>
+        </div>
+
+        <div className="mt-4">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8EA0AE]">Agent Timeline</p>
+            <span className="rounded-full bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-[#AEB9C4]">
+              {selectedAgentSteps.length}단계
+            </span>
+          </div>
+          {selectedAgentSteps.length > 0 ? (
+            <div className="space-y-2">
+              {selectedAgentSteps.map(({ run, step }) => (
+                <AgentStepCard key={step.id} run={run} step={step} />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-card border border-dashed border-white/10 bg-black/15 p-3 text-xs leading-5 text-[#8F9AA4]">
+              아직 이 에이전트가 수행한 실행 단계가 없습니다.
+            </div>
+          )}
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-2">
@@ -386,11 +441,7 @@ export function AgentFlowCanvas({ agents, summary }: AgentFlowCanvasProps) {
         <span className="rounded-full px-5 py-2">Teams</span>
         <span className="rounded-full bg-[#362029] px-5 py-2 text-[#FF5F6D]">Hierarchy</span>
       </div>
-      <div className="absolute bottom-6 right-6 z-20 rounded-card border border-white/10 bg-[#12171D]/90 px-4 py-3 text-sm font-semibold text-[#C2CAD2] shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur">
-        <span className="mr-2 inline-flex size-2 rounded-full bg-[#FF5F6D]" />
-        Live Logs
-        <Maximize2 className="ml-3 inline" size={14} aria-hidden="true" />
-      </div>
+      <LiveLogsPanel workflowRuns={workflowRuns} agentNameById={agentNameById} />
     </section>
   );
 }
@@ -485,6 +536,86 @@ function InspectorStat({ label, value }: { label: string; value: number }) {
   );
 }
 
+function AgentStepCard({ run, step }: { run: WorkflowRunActivity; step: WorkflowStepActivity }) {
+  return (
+    <div className="rounded-card border border-white/10 bg-[#0B1117]/80 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold text-white">{workflowStepLabels[step.step_name] ?? step.step_name}</p>
+        <span className="rounded-full bg-[#102A1C] px-2 py-1 text-[10px] font-semibold text-[#6FF0A0]">
+          {workflowStatusLabels[step.status] ?? step.status}
+        </span>
+      </div>
+      <p className="mt-1 line-clamp-1 text-xs text-[#9EABB6]">{run.task_title ?? step.input_summary}</p>
+      <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6F7D89]">
+        {formatActivityTime(step.completed_at ?? step.started_at)}
+      </p>
+    </div>
+  );
+}
+
+function LiveLogsPanel({
+  workflowRuns,
+  agentNameById,
+}: {
+  workflowRuns: WorkflowRunActivity[];
+  agentNameById: Map<string, string>;
+}) {
+  const recentRuns = workflowRuns.slice(0, 3);
+
+  return (
+    <section className="absolute bottom-6 right-6 z-20 hidden w-[390px] rounded-card border border-white/10 bg-[#12171D]/92 p-4 text-[#C2CAD2] shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur lg:block">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex size-2 rounded-full bg-[#FF5F6D]" />
+          <p className="text-sm font-semibold text-white">Live Logs</p>
+        </div>
+        <Maximize2 size={14} aria-hidden="true" />
+      </div>
+
+      {recentRuns.length > 0 ? (
+        <div className="mt-3 space-y-3">
+          {recentRuns.map((run) => (
+            <article key={run.id} className="rounded-card border border-white/10 bg-black/20 p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="line-clamp-1 text-xs font-semibold text-white">
+                    {run.task_title ?? "에이전트 실행"}
+                  </p>
+                  <p className="mt-1 text-[11px] text-[#8D99A4]">
+                    {workflowStatusLabels[run.status] ?? run.status} · {formatActivityTime(run.completed_at ?? run.started_at)}
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-full bg-[#302410] px-2 py-1 text-[10px] font-semibold text-[#FFD37A]">
+                  {run.steps.length}단계
+                </span>
+              </div>
+              <div className="mt-3 flex items-center gap-1.5 overflow-hidden">
+                {run.steps.slice(0, 5).map((step, index) => (
+                  <div key={step.id} className="flex min-w-0 items-center gap-1.5">
+                    {index > 0 ? <span className="h-px w-3 shrink-0 bg-white/15" /> : null}
+                    <span
+                      title={`${agentNameById.get(step.agent_id ?? "") ?? step.agent_id ?? "시스템"}: ${
+                        workflowStepLabels[step.step_name] ?? step.step_name
+                      }`}
+                      className="flex size-7 shrink-0 items-center justify-center rounded-[8px] border border-[#38BDF8]/35 bg-[#0B2535] text-[10px] font-black text-[#7DD7FF]"
+                    >
+                      {agentBadge(agentNameById.get(step.agent_id ?? "") ?? step.agent_id ?? "AI")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-3 rounded-card border border-dashed border-white/10 bg-black/20 p-3 text-xs leading-5 text-[#8F9AA4]">
+          아직 실행 기록이 없습니다. 후보를 실행하면 이곳에 단계가 쌓입니다.
+        </div>
+      )}
+    </section>
+  );
+}
+
 function WorkItemCard({
   item,
   isRunning,
@@ -576,6 +707,28 @@ function WorkItemCard({
 
 function workItemKey(item: AgentWorkItem) {
   return `${item.source_type}-${item.id}`;
+}
+
+function agentBadge(name: string) {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function formatActivityTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "시간 미상";
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
 }
 
 function CanvasButton({

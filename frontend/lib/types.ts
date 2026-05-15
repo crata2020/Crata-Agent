@@ -109,3 +109,31 @@ export interface AgentActivity {
 export interface AgentActivityResponse {
   agents: AgentActivity[];
 }
+
+export interface WorkflowStepActivity {
+  id: string;
+  step_name: string;
+  agent_id: string | null;
+  input_summary: string;
+  output_summary: string;
+  status: string;
+  started_at: string;
+  completed_at: string | null;
+}
+
+export interface WorkflowRunActivity {
+  id: string;
+  workflow_type: string;
+  task_id: string | null;
+  task_title: string | null;
+  task_type: string | null;
+  status: string;
+  current_step: string;
+  started_at: string;
+  completed_at: string | null;
+  steps: WorkflowStepActivity[];
+}
+
+export interface WorkflowActivityResponse {
+  runs: WorkflowRunActivity[];
+}

@@ -106,6 +106,22 @@ describe("api client", () => {
     });
   });
 
+  it("requests workflow activity without server-side caching", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ runs: [] }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const { getWorkflowActivity } = await import("@/lib/api");
+
+    await getWorkflowActivity();
+
+    expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:8000/dashboard/workflow-activity", {
+      cache: "no-store",
+    });
+  });
+
   it("runs a candidate task by candidate id", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

@@ -91,3 +91,42 @@ def test_agent_activity_shows_pending_approval_work(
     assert agents["report_editor"]["work_items"][0]["status"] == "pending_approval"
     assert agents["report_editor"]["work_items"][0]["href"].startswith("/approvals?approvalId=")
     assert agents["quality_inspector"]["activity_status"] == "waiting_approval"
+
+
+def test_workflow_activity_returns_recent_runs_with_steps(app: FastAPI) -> None:
+    client = TestClient(app)
+    intake_response = client.post(
+        "/intake",
+        json={
+            "title": "결과지 문구 수정 회의록",
+            "input_type": "meeting_notes",
+            "raw_content": "결과지 문구를 부드럽게 수정하고 공식 반영 전 승인 대기로 올린다.",
+            "source": "manual",
+        },
+    )
+    candidate_id = intake_response.json()["candidate_tasks"][0]["id"]
+    run_response = client.post(f"/tasks/from-candidate/{candidate_id}/run")
+
+    response = client.get("/dashboard/workflow-activity")
+
+    assert run_response.status_code == 201
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body["runs"]) == 1
+    run = body["runs"][0]
+    assert run["id"] == run_response.json()["workflow_run_id"]
+    assert run["workflow_type"] == "agent_operation"
+    assert run["task_title"]
+    assert run["status"] == "pending_approval"
+    assert [step["step_name"] for step in run["steps"]] == [
+        "ceo_routing",
+        "context_retrieval",
+        "specialist_draft",
+        "quality_review",
+    ]
+    assert [step["agent_id"] for step in run["steps"]] == [
+        "crata_ceo",
+        "concept_guardian",
+        "report_editor",
+        "quality_inspector",
+    ]
