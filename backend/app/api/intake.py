@@ -34,6 +34,15 @@ def _candidate_to_read(candidate_task: CandidateTask) -> CandidateTaskRead:
     )
 
 
+def _intake_graph_metadata(intake_item: IntakeItem) -> dict:
+    metadata = intake_item.item_metadata or {}
+    return {
+        "decomposition_graph_name": metadata.get("graph_name"),
+        "human_review_required": metadata.get("human_review_required", False),
+        "decomposition_trace": metadata.get("node_trace", []),
+    }
+
+
 @router.post("", response_model=IntakeRead, status_code=status.HTTP_201_CREATED)
 def create_intake(payload: IntakeCreate, db: Session = Depends(get_db)) -> IntakeRead:
     input_type = payload.input_type
@@ -87,6 +96,7 @@ def create_intake(payload: IntakeCreate, db: Session = Depends(get_db)) -> Intak
         title=intake_item.title,
         input_type=intake_item.input_type,
         raw_content=intake_item.raw_content,
+        **_intake_graph_metadata(intake_item),
         candidate_tasks=[_candidate_to_read(candidate_task) for candidate_task in candidate_tasks],
     )
 

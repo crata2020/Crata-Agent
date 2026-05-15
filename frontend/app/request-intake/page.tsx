@@ -27,7 +27,7 @@ import {
   resolveInputType,
   type InputTypeMode,
 } from "@/lib/intake-input-type";
-import type { CandidateTask } from "@/lib/types";
+import type { CandidateTask, GraphNodeTrace } from "@/lib/types";
 
 const exampleContent =
   "조직행동검사 5페이지 문구를 수정하자. A유형 B유형 상담 전사록은 학습 후보로 저장하자. 공공기관 연수 프로그램 제안서도 기획해보자.";
@@ -63,6 +63,19 @@ const classificationStatusLabels: Record<string, string> = {
   ai_overrode_rule: "AI 재분류",
   ai_without_rule_hint: "AI 단독 판단",
   needs_review: "검토 필요",
+};
+
+const graphNodeLabels: Record<string, string> = {
+  preserve_input: "원문 보존",
+  split_semantic_units: "의미 단위 분리",
+  collect_rule_hints: "규칙 힌트 수집",
+  judge_with_ai_context: "AI 문맥 판단",
+  build_candidates: "작업 후보 생성",
+  prepare_human_review: "사람 검토 준비",
+};
+
+const graphStatusLabels: Record<string, string> = {
+  completed: "완료",
 };
 
 const agentSeedIds = new Set(agentSeeds.map((agent) => agent.id));
@@ -109,6 +122,9 @@ function RequestIntakeWorkspace() {
   const [savingCandidateId, setSavingCandidateId] = useState<string | null>(null);
   const [candidateEdits, setCandidateEdits] = useState<Record<string, CandidateEdit>>({});
   const [isLoadingLinkedCandidate, setIsLoadingLinkedCandidate] = useState(false);
+  const [decompositionGraphName, setDecompositionGraphName] = useState<string | null>(null);
+  const [decompositionTrace, setDecompositionTrace] = useState<GraphNodeTrace[]>([]);
+  const [humanReviewRequired, setHumanReviewRequired] = useState(false);
   const agentById = useMemo(() => new Map(agentSeeds.map((agent) => [agent.id, agent])), []);
   const detectedInputType = detectInputType(title, rawContent);
   const resolvedInputType = resolveInputType(inputType, title, rawContent);
@@ -148,6 +164,9 @@ function RequestIntakeWorkspace() {
         );
         setEditingCandidateId(null);
         setRunApprovals({});
+        setDecompositionGraphName(null);
+        setDecompositionTrace([]);
+        setHumanReviewRequired(false);
         setMessage(
           candidateTasks.some((candidate) => candidate.id === linkedCandidateId)
             ? "대시보드에서 선택한 후보를 불러왔습니다."
@@ -199,6 +218,9 @@ function RequestIntakeWorkspace() {
         source: "manual",
       });
       setCandidates(response.candidate_tasks);
+      setDecompositionGraphName(response.decomposition_graph_name ?? null);
+      setDecompositionTrace(response.decomposition_trace ?? []);
+      setHumanReviewRequired(Boolean(response.human_review_required));
       setCandidateSelections(
         Object.fromEntries(response.candidate_tasks.map((candidate) => [candidate.id, true])),
       );
@@ -209,6 +231,9 @@ function RequestIntakeWorkspace() {
       setMessage(`작업 후보 ${response.candidate_tasks.length}개를 추출했습니다.`);
     } catch (err) {
       setCandidates([]);
+      setDecompositionGraphName(null);
+      setDecompositionTrace([]);
+      setHumanReviewRequired(false);
       setCandidateSelections({});
       setCandidateEdits({});
       setEditingCandidateId(null);
@@ -487,12 +512,51 @@ function RequestIntakeWorkspace() {
                   자동 모드에서는 제목과 원문 안의 회의, 상담, 전사록 신호를 보고 분류합니다.
                 </p>
               </div>
-              <div className="mt-4 space-y-3">
-                <FlowStep icon={<Inbox size={15} />} title="입력 접수" text="회의록·상담 전사록·메모를 원문으로 보관" active />
-                <FlowStep icon={<Layers size={15} />} title="후보 분리" text="문구 수정, 사례 학습, 기획, 홍보 요청을 분리" active={candidates.length > 0} />
-                <FlowStep icon={<Route size={15} />} title="에이전트 배정" text="현재 등록된 CRATA 에이전트 중에서 추천" active={candidates.length > 0} />
-                <FlowStep icon={<Cpu size={15} />} title="실행·승인" text="실행 결과는 승인함에서 검토" active={hasApprovalResults} />
-              </div>
+              {decompositionTrace.length > 0 ? (
+                <div className="mt-4 rounded-[10px] border border-[#38BDF8]/25 bg-[#07141C]/80 p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h2 className="text-sm font-semibold text-white">LangGraph 실행 단계</h2>
+                      <p className="mt-1 text-[11px] font-semibold text-[#7DD7FF]">
+                        {decompositionGraphName ?? "intake_decomposition_graph"}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-[#302410] px-2 py-1 text-[11px] font-semibold text-[#FFD37A]">
+                      {humanReviewRequired ? "사람 검토 필요" : "자동 검토 가능"}
+                    </span>
+                  </div>
+                  <ol className="mt-4 space-y-2">
+                    {decompositionTrace.map((node, index) => {
+                      const label = graphNodeLabels[node.name] ?? node.name;
+                      const statusLabel = graphStatusLabels[node.status] ?? node.status;
+
+                      return (
+                        <li key={`${node.name}-${index}`} className="grid grid-cols-[24px_minmax(0,1fr)] gap-3">
+                          <span className="mt-1 flex size-6 items-center justify-center rounded-full border border-[#38BDF8]/35 bg-[#0B2535] text-[11px] font-bold text-[#7DD7FF]">
+                            {index + 1}
+                          </span>
+                          <div className="rounded-[9px] border border-white/10 bg-black/20 p-2.5">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-sm font-semibold text-white">{label}</p>
+                              <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-semibold text-[#AEB9C4]">
+                                {statusLabel}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-xs leading-5 text-[#AEB9C4]">{node.summary}</p>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </div>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  <FlowStep icon={<Inbox size={15} />} title="입력 접수" text="회의록·상담 전사록·메모를 원문으로 보관" active />
+                  <FlowStep icon={<Layers size={15} />} title="후보 분리" text="문구 수정, 사례 학습, 기획, 홍보 요청을 분리" active={candidates.length > 0} />
+                  <FlowStep icon={<Route size={15} />} title="에이전트 배정" text="현재 등록된 CRATA 에이전트 중에서 추천" active={candidates.length > 0} />
+                  <FlowStep icon={<Cpu size={15} />} title="실행·승인" text="실행 결과는 승인함에서 검토" active={hasApprovalResults} />
+                </div>
+              )}
             </aside>
           </div>
 

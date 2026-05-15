@@ -53,11 +53,20 @@ export interface CandidateTask {
   review_flags?: string[];
 }
 
+export interface GraphNodeTrace {
+  name: string;
+  status: string;
+  summary: string;
+}
+
 export interface IntakeResponse {
   id: string;
   title: string;
   input_type: string;
   raw_content: string;
+  decomposition_graph_name?: string | null;
+  human_review_required?: boolean;
+  decomposition_trace?: GraphNodeTrace[];
   candidate_tasks: CandidateTask[];
 }
 

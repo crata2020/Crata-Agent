@@ -70,6 +70,29 @@ def test_create_intake_persists_intake_decomposition_graph_trace(
     assert candidate.item_metadata["origin_node"] == "build_candidates"
 
 
+def test_create_intake_returns_graph_trace_for_request_console(app: FastAPI) -> None:
+    client = TestClient(app)
+
+    response = client.post(
+        "/intake",
+        json={
+            "title": "복합 회의록",
+            "raw_content": "결과지 문구는 상담형으로 수정하고 상담 사례는 학습 후보로 저장하자.",
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["decomposition_graph_name"] == "intake_decomposition_graph"
+    assert body["human_review_required"] is True
+    assert body["decomposition_trace"][0] == {
+        "name": "preserve_input",
+        "status": "completed",
+        "summary": "원문을 보존하고 앞뒤 공백만 정리했습니다.",
+    }
+    assert body["decomposition_trace"][-1]["name"] == "prepare_human_review"
+
+
 def test_create_intake_extracts_all_mixed_candidate_task_types_in_order(app: FastAPI) -> None:
     client = TestClient(app)
 

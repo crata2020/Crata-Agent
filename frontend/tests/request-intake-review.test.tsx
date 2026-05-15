@@ -147,6 +147,49 @@ describe("RequestIntakePage candidate review", () => {
     expect(screen.getByText(/문구 자체를 수정하는 요청이 아니라/)).toBeInTheDocument();
   });
 
+  it("shows the intake decomposition graph trace after candidate extraction", async () => {
+    createIntakeMock.mockResolvedValue({
+      id: "intake-1",
+      title: "복합 회의록",
+      input_type: "meeting_notes",
+      raw_content: "원문",
+      decomposition_graph_name: "intake_decomposition_graph",
+      human_review_required: true,
+      decomposition_trace: [
+        {
+          name: "preserve_input",
+          status: "completed",
+          summary: "원문을 보존하고 앞뒤 공백만 정리했습니다.",
+        },
+        {
+          name: "split_semantic_units",
+          status: "completed",
+          summary: "2개 의미 단위로 분리했습니다.",
+        },
+        {
+          name: "prepare_human_review",
+          status: "completed",
+          summary: "사람 검토 화면에서 확인할 수 있도록 후보와 근거를 준비했습니다.",
+        },
+      ],
+      candidate_tasks: candidateTasks,
+    });
+
+    render(<RequestIntakePage />);
+
+    fireEvent.change(screen.getByLabelText("원문"), {
+      target: { value: "결과지 문구는 상담형으로 수정하고 상담 사례는 학습 후보로 저장하자." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "작업 후보 추출" }));
+
+    expect(await screen.findByText("LangGraph 실행 단계")).toBeInTheDocument();
+    expect(screen.getByText("intake_decomposition_graph")).toBeInTheDocument();
+    expect(screen.getByText("원문 보존")).toBeInTheDocument();
+    expect(screen.getByText("의미 단위 분리")).toBeInTheDocument();
+    expect(screen.getByText("사람 검토 준비")).toBeInTheDocument();
+    expect(screen.getByText("2개 의미 단위로 분리했습니다.")).toBeInTheDocument();
+  });
+
   it("runs only candidates kept as execution targets", async () => {
     createIntakeMock.mockResolvedValue({
       id: "intake-1",

@@ -34,6 +34,12 @@ class CandidateTaskRead(BaseModel):
     review_flags: list[str]
 
 
+class GraphNodeTraceRead(BaseModel):
+    name: str
+    status: str
+    summary: str
+
+
 class CandidateTaskUpdate(BaseModel):
     title: str = Field(min_length=1, max_length=255)
     summary: str = Field(min_length=1)
@@ -66,4 +72,7 @@ class IntakeRead(BaseModel):
     title: str
     input_type: str
     raw_content: str
+    decomposition_graph_name: str | None = None
+    human_review_required: bool = False
+    decomposition_trace: list[GraphNodeTraceRead] = Field(default_factory=list)
     candidate_tasks: list[CandidateTaskRead]
