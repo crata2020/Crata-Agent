@@ -35,7 +35,20 @@ describe("dashboard static agents", () => {
 
     expect(screen.getByText("작업 후보")).toBeInTheDocument();
     expect(screen.getAllByText("승인대기").length).toBeGreaterThan(0);
-    expect(screen.getByText("4")).toBeInTheDocument();
-    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getAllByText("4").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("2").length).toBeGreaterThan(0);
+  });
+
+  it("renders an at-a-glance office operations board", () => {
+    render(<DashboardContent summary={summary} />);
+
+    expect(screen.getByText("실시간 운영실")).toBeInTheDocument();
+    expect(screen.getByText("작업 흐름 레일")).toBeInTheDocument();
+    expect(screen.getByText("에이전트 워크룸")).toBeInTheDocument();
+    expect(screen.getByText("최근 신호")).toBeInTheDocument();
+    expect(screen.getAllByText("후보 정리").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("승인 검토").length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "요청 콘솔 열기" })[0]).toHaveAttribute("href", "/request-intake");
+    expect(screen.getAllByRole("link", { name: "승인함 확인" })[0]).toHaveAttribute("href", "/approvals");
   });
 });
