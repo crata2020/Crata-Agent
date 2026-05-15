@@ -67,6 +67,7 @@ def _create_revision_candidate(
     task: Task,
     reason: str,
 ) -> CandidateTask:
+    original_metadata = original_candidate.item_metadata or {}
     return CandidateTask(
         intake_item_id=original_candidate.intake_item_id,
         task_type=original_candidate.task_type,
@@ -79,16 +80,22 @@ def _create_revision_candidate(
         recommended_agents=original_candidate.recommended_agents or task.assigned_agents,
         status="draft",
         item_metadata={
+            **original_metadata,
             "source": "approval_revision",
             "source_approval_id": approval.id,
             "source_candidate_task_id": original_candidate.id,
             "source_task_id": task.id,
             "revision_reason": reason,
+            "review_flags": [
+                *original_metadata.get("review_flags", []),
+                "수정요청 재작업",
+            ],
         },
     )
 
 
 def _candidate_to_read(candidate: CandidateTask) -> CandidateTaskRead:
+    metadata = candidate.item_metadata or {}
     return CandidateTaskRead(
         id=candidate.id,
         task_type=candidate.task_type,
@@ -97,6 +104,15 @@ def _candidate_to_read(candidate: CandidateTask) -> CandidateTaskRead:
         evidence_excerpt=candidate.evidence_excerpt,
         recommended_agents=candidate.recommended_agents,
         status=candidate.status,
+        rule_hint_task_type=metadata.get("rule_hint_task_type"),
+        ai_task_type=metadata.get("ai_task_type", candidate.task_type),
+        classification_source=metadata.get("classification_source", "approval_revision"),
+        classification_status=metadata.get("classification_status", "needs_review"),
+        confidence=metadata.get("confidence", 0.5),
+        classification_reason=metadata.get("classification_reason", "수정요청으로 생성된 재작업 후보입니다."),
+        approval_required=metadata.get("approval_required", True),
+        rule_hints=metadata.get("rule_hints", []),
+        review_flags=metadata.get("review_flags", []),
     )
 
 

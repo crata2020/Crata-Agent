@@ -23,6 +23,15 @@ class CandidateTaskRead(BaseModel):
     evidence_excerpt: str
     recommended_agents: list[str]
     status: str
+    rule_hint_task_type: str | None = None
+    ai_task_type: str
+    classification_source: str
+    classification_status: str
+    confidence: float
+    classification_reason: str
+    approval_required: bool
+    rule_hints: list[str]
+    review_flags: list[str]
 
 
 class CandidateTaskUpdate(BaseModel):

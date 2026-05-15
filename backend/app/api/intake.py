@@ -12,6 +12,7 @@ router = APIRouter(prefix="/intake", tags=["intake"])
 
 
 def _candidate_to_read(candidate_task: CandidateTask) -> CandidateTaskRead:
+    metadata = candidate_task.item_metadata or {}
     return CandidateTaskRead(
         id=candidate_task.id,
         task_type=candidate_task.task_type,
@@ -20,6 +21,15 @@ def _candidate_to_read(candidate_task: CandidateTask) -> CandidateTaskRead:
         evidence_excerpt=candidate_task.evidence_excerpt,
         recommended_agents=candidate_task.recommended_agents,
         status=candidate_task.status,
+        rule_hint_task_type=metadata.get("rule_hint_task_type"),
+        ai_task_type=metadata.get("ai_task_type", candidate_task.task_type),
+        classification_source=metadata.get("classification_source", "legacy"),
+        classification_status=metadata.get("classification_status", "needs_review"),
+        confidence=metadata.get("confidence", 0.5),
+        classification_reason=metadata.get("classification_reason", "기존 후보라 분류 근거가 기록되어 있지 않습니다."),
+        approval_required=metadata.get("approval_required", False),
+        rule_hints=metadata.get("rule_hints", []),
+        review_flags=metadata.get("review_flags", []),
     )
 
 
@@ -48,7 +58,17 @@ def create_intake(payload: IntakeCreate, db: Session = Depends(get_db)) -> Intak
             evidence_excerpt=draft.evidence_excerpt,
             recommended_agents=draft.recommended_agents,
             status="draft",
-            item_metadata={},
+            item_metadata={
+                "rule_hint_task_type": draft.rule_hint_task_type,
+                "ai_task_type": draft.ai_task_type,
+                "classification_source": draft.classification_source,
+                "classification_status": draft.classification_status,
+                "confidence": draft.confidence,
+                "classification_reason": draft.classification_reason,
+                "approval_required": draft.approval_required,
+                "rule_hints": draft.rule_hints,
+                "review_flags": draft.review_flags,
+            },
         )
         for draft in decompose_input(payload.raw_content)
     ]

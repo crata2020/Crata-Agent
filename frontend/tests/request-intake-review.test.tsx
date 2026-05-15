@@ -35,6 +35,15 @@ const candidateTasks = [
     evidence_excerpt: "조직행동검사 5페이지 문구를 수정하자.",
     recommended_agents: ["crata_ceo", "report_editor"],
     status: "draft",
+    rule_hint_task_type: "report_phrase_revision",
+    ai_task_type: "report_phrase_revision",
+    classification_source: "rule_assisted_ai",
+    classification_status: "aligned",
+    confidence: 0.91,
+    classification_reason: "결과지 문구나 검사 표현을 실제로 바꾸자는 요청이므로 결과지 문구 수정으로 판단했습니다.",
+    approval_required: true,
+    rule_hints: ["결과지", "문구", "수정"],
+    review_flags: [],
   },
   {
     id: "candidate-case",
@@ -44,6 +53,15 @@ const candidateTasks = [
     evidence_excerpt: "A유형 B유형 상담 전사록은 학습 후보로 저장하자.",
     recommended_agents: ["case_learner", "relationship_analyst"],
     status: "draft",
+    rule_hint_task_type: "counseling_case_learning",
+    ai_task_type: "counseling_case_learning",
+    classification_source: "rule_assisted_ai",
+    classification_status: "aligned",
+    confidence: 0.88,
+    classification_reason: "상담 전사록, 사례 저장, 유형 관계 패턴 학습을 다루는 요청으로 판단했습니다.",
+    approval_required: true,
+    rule_hints: ["상담", "전사록", "사례", "학습"],
+    review_flags: [],
   },
 ];
 
@@ -75,13 +93,58 @@ describe("RequestIntakePage candidate review", () => {
 
     expect(await screen.findByText("작업 후보 검토")).toBeInTheDocument();
     expect(screen.getByText("실행 대상 2개 / 전체 2개")).toBeInTheDocument();
-    expect(screen.getByText("결과지 문구 수정")).toBeInTheDocument();
-    expect(screen.getByText("상담 사례 학습")).toBeInTheDocument();
+    expect(screen.getAllByText("결과지 문구 수정").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("상담 사례 학습").length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole("checkbox", { name: "상담 사례 학습 후보 실행 대상" }));
 
     expect(screen.getByText("실행 대상 1개 / 전체 2개")).toBeInTheDocument();
     expect(screen.getAllByText("보류됨").length).toBeGreaterThan(0);
+  });
+
+  it("shows rule hints and AI judgment when classification overrides keywords", async () => {
+    createIntakeMock.mockResolvedValue({
+      id: "intake-1",
+      title: "홍보 회의록",
+      input_type: "meeting_notes",
+      raw_content: "원문",
+      candidate_tasks: [
+        {
+          id: "candidate-content",
+          task_type: "content_marketing",
+          title: "콘텐츠·홍보 작업 후보",
+          summary: "홍보 콘텐츠 기획 요청입니다.",
+          evidence_excerpt: "결과지 문구 수정 기능을 홍보 콘텐츠로 만들어서 유튜브와 블로그에 올리자.",
+          recommended_agents: ["crata_ceo", "content_strategist"],
+          status: "draft",
+          rule_hint_task_type: "report_phrase_revision",
+          ai_task_type: "content_marketing",
+          classification_source: "rule_assisted_ai",
+          classification_status: "ai_overrode_rule",
+          confidence: 0.82,
+          classification_reason: "문구 자체를 수정하는 요청이 아니라 결과지 문구 수정 기능을 홍보 콘텐츠로 풀자는 요청으로 판단했습니다.",
+          approval_required: false,
+          rule_hints: ["결과지", "문구", "수정"],
+          review_flags: ["AI가 규칙 힌트를 재분류함"],
+        },
+      ],
+    });
+
+    render(<RequestIntakePage />);
+
+    fireEvent.change(screen.getByLabelText("원문"), {
+      target: { value: "결과지 문구 수정 기능을 홍보 콘텐츠로 만들어서 유튜브와 블로그에 올리자." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "작업 후보 추출" }));
+
+    expect(await screen.findByText("AI 판단")).toBeInTheDocument();
+    expect(screen.getAllByText("콘텐츠·홍보").length).toBeGreaterThan(0);
+    expect(screen.getByText("규칙 힌트")).toBeInTheDocument();
+    expect(screen.getAllByText("결과지 문구 수정").length).toBeGreaterThan(0);
+    expect(screen.getByText("신뢰도 82%")).toBeInTheDocument();
+    expect(screen.getByText("승인 불필요")).toBeInTheDocument();
+    expect(screen.getByText("AI가 규칙 힌트를 재분류함")).toBeInTheDocument();
+    expect(screen.getByText(/문구 자체를 수정하는 요청이 아니라/)).toBeInTheDocument();
   });
 
   it("runs only candidates kept as execution targets", async () => {

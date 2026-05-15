@@ -58,6 +58,13 @@ const candidateStatusLabels: Record<string, string> = {
   failed: "실패",
 };
 
+const classificationStatusLabels: Record<string, string> = {
+  aligned: "AI·규칙 일치",
+  ai_overrode_rule: "AI 재분류",
+  ai_without_rule_hint: "AI 단독 판단",
+  needs_review: "검토 필요",
+};
+
 const agentSeedIds = new Set(agentSeeds.map((agent) => agent.id));
 
 function candidateToEdit(candidate: CandidateTask): CandidateEdit {
@@ -66,6 +73,14 @@ function candidateToEdit(candidate: CandidateTask): CandidateEdit {
     summary: candidate.summary,
     recommendedAgentIds: candidate.recommended_agents.filter((agentId) => agentSeedIds.has(agentId)),
   };
+}
+
+function formatConfidence(value?: number) {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return "미기록";
+  }
+
+  return `${Math.round(value * 100)}%`;
 }
 
 export default function RequestIntakePage() {
@@ -543,6 +558,14 @@ function RequestIntakeWorkspace() {
                 const edit = candidateEdits[candidate.id] ?? candidateToEdit(candidate);
                 const isSaving = savingCandidateId === candidate.id;
                 const isHighlighted = linkedCandidateId === candidate.id;
+                const aiTaskType = candidate.ai_task_type ?? candidate.task_type;
+                const aiTaskTypeLabel = taskTypeLabels[aiTaskType] ?? aiTaskType;
+                const ruleHintLabel = candidate.rule_hint_task_type
+                  ? taskTypeLabels[candidate.rule_hint_task_type] ?? candidate.rule_hint_task_type
+                  : "규칙 힌트 없음";
+                const classificationStatusLabel =
+                  classificationStatusLabels[candidate.classification_status ?? "needs_review"] ?? "검토 필요";
+                const confidenceLabel = formatConfidence(candidate.confidence);
 
                 return (
                   <article
@@ -694,6 +717,50 @@ function RequestIntakeWorkspace() {
                     </div>
 
                     <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_300px]">
+                      <div className="lg:col-span-2 grid gap-3 xl:grid-cols-3">
+                        <div className="rounded-[10px] border border-[#38BDF8]/25 bg-[#0B2535]/38 p-3">
+                          <h3 className="text-xs font-semibold text-[#7DD7FF]">AI 판단</h3>
+                          <p className="mt-2 text-sm font-semibold text-white">{aiTaskTypeLabel}</p>
+                          <p className="mt-1 text-xs text-[#AEB9C4]">신뢰도 {confidenceLabel}</p>
+                        </div>
+                        <div className="rounded-[10px] border border-white/10 bg-black/20 p-3">
+                          <h3 className="text-xs font-semibold text-[#9BA8B4]">규칙 힌트</h3>
+                          <p className="mt-2 text-sm font-semibold text-white">{ruleHintLabel}</p>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {(candidate.rule_hints ?? []).length > 0 ? (
+                              candidate.rule_hints?.map((hint) => (
+                                <span key={hint} className="rounded-full bg-white/[0.07] px-2 py-1 text-[11px] font-semibold text-[#C7D2DC]">
+                                  {hint}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-[#87929D]">감지된 키워드 없음</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="rounded-[10px] border border-white/10 bg-black/20 p-3">
+                          <h3 className="text-xs font-semibold text-[#9BA8B4]">검토 상태</h3>
+                          <p className="mt-2 text-sm font-semibold text-white">{classificationStatusLabel}</p>
+                          <p className={`mt-1 text-xs font-semibold ${candidate.approval_required ? "text-[#FFD37A]" : "text-[#6FF0A0]"}`}>
+                            {candidate.approval_required ? "승인 필요" : "승인 불필요"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="rounded-[10px] border border-white/10 bg-black/20 p-3 lg:col-span-2">
+                        <h3 className="text-xs font-semibold text-[#9BA8B4]">AI 판단 이유</h3>
+                        <p className="mt-2 text-sm leading-6 text-[#E3EAF0]">
+                          {candidate.classification_reason ?? "분류 이유가 아직 기록되지 않았습니다."}
+                        </p>
+                        {(candidate.review_flags ?? []).length > 0 ? (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {candidate.review_flags?.map((flag) => (
+                              <span key={flag} className="rounded-full bg-[#302410] px-2 py-1 text-xs font-semibold text-[#FFD37A]">
+                                {flag}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
                       <div className="rounded-[10px] border border-white/10 bg-black/20 p-3">
                         <h3 className="text-xs font-semibold text-[#9BA8B4]">근거 발췌</h3>
                         <p className="mt-2 text-sm leading-6 text-[#E3EAF0]">{candidate.evidence_excerpt}</p>

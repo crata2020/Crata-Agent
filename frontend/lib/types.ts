@@ -42,6 +42,15 @@ export interface CandidateTask {
   evidence_excerpt: string;
   recommended_agents: string[];
   status: CandidateTaskStatus | string;
+  rule_hint_task_type?: string | null;
+  ai_task_type?: string;
+  classification_source?: string;
+  classification_status?: string;
+  confidence?: number;
+  classification_reason?: string;
+  approval_required?: boolean;
+  rule_hints?: string[];
+  review_flags?: string[];
 }
 
 export interface IntakeResponse {

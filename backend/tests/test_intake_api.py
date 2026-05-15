@@ -69,6 +69,51 @@ def test_create_intake_extracts_all_mixed_candidate_task_types_in_order(app: Fas
     ]
 
 
+def test_create_intake_returns_ai_classification_metadata_for_review(app: FastAPI) -> None:
+    client = TestClient(app)
+
+    response = client.post(
+        "/intake",
+        json={
+            "title": "복합 회의록",
+            "raw_content": "조직검사 결과지 5페이지 문구는 너무 딱딱하니까 상담형으로 바꾸자.",
+        },
+    )
+
+    assert response.status_code == 201
+    candidate = response.json()["candidate_tasks"][0]
+    assert candidate["task_type"] == "report_phrase_revision"
+    assert candidate["ai_task_type"] == "report_phrase_revision"
+    assert candidate["rule_hint_task_type"] == "report_phrase_revision"
+    assert candidate["classification_source"] == "rule_assisted_ai"
+    assert candidate["classification_status"] == "aligned"
+    assert candidate["confidence"] >= 0.8
+    assert candidate["approval_required"] is True
+    assert "결과지" in candidate["rule_hints"]
+    assert "결과지 문구" in candidate["classification_reason"]
+
+
+def test_create_intake_uses_ai_context_to_override_keyword_hints(app: FastAPI) -> None:
+    client = TestClient(app)
+
+    response = client.post(
+        "/intake",
+        json={
+            "title": "홍보 회의록",
+            "raw_content": "결과지 문구 수정 기능을 홍보 콘텐츠로 만들어서 유튜브와 블로그에 올리자.",
+        },
+    )
+
+    assert response.status_code == 201
+    candidate = response.json()["candidate_tasks"][0]
+    assert candidate["task_type"] == "content_marketing"
+    assert candidate["rule_hint_task_type"] == "report_phrase_revision"
+    assert candidate["ai_task_type"] == "content_marketing"
+    assert candidate["classification_status"] == "ai_overrode_rule"
+    assert candidate["approval_required"] is False
+    assert "문구 자체를 수정하는 요청이 아니라" in candidate["classification_reason"]
+
+
 def test_create_intake_resolves_auto_input_type_from_content(app: FastAPI, db_session: Session) -> None:
     client = TestClient(app)
 
