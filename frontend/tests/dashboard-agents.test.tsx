@@ -23,18 +23,57 @@ describe("dashboard agent flow map", () => {
     color: agent.color,
     enabled: agent.enabled,
     status: agent.status,
-    activity_status: agent.id === "report_editor" ? "waiting_approval" : agent.enabled ? "idle" : "planned",
+    activity_status:
+      agent.id === "report_editor" ? "waiting_approval" : agent.id === "counseling_coach" ? "queued" : agent.enabled ? "idle" : "planned",
     current_focus:
       agent.id === "report_editor"
         ? "결과지 문구 수정 후보 승인 요청"
+        : agent.id === "counseling_coach"
+          ? "상담 전사록 사례 분리 후보"
         : agent.enabled
           ? "새 요청 대기"
           : "2차 확장 준비",
-    current_task_title: agent.id === "report_editor" ? "결과지 문구 수정 후보 승인 요청" : null,
-    current_task_type: agent.id === "report_editor" ? "report_phrase_revision" : null,
-    workload_count: agent.id === "report_editor" ? 2 : 0,
+    current_task_title:
+      agent.id === "report_editor"
+        ? "결과지 문구 수정 후보 승인 요청"
+        : agent.id === "counseling_coach"
+          ? "상담 전사록 사례 분리 후보"
+          : null,
+    current_task_type:
+      agent.id === "report_editor"
+        ? "report_phrase_revision"
+        : agent.id === "counseling_coach"
+          ? "counseling_case_learning"
+          : null,
+    workload_count: agent.id === "report_editor" ? 2 : agent.id === "counseling_coach" ? 1 : 0,
     pending_approval_count: agent.id === "report_editor" ? 1 : 0,
-    candidate_count: 0,
+    candidate_count: agent.id === "counseling_coach" ? 1 : 0,
+    work_items:
+      agent.id === "report_editor"
+        ? [
+            {
+              id: "approval-1",
+              source_type: "approval",
+              title: "결과지 문구 수정 후보 승인 요청",
+              summary: "공식 반영 전 결과지 문구 수정 초안을 검토합니다.",
+              task_type: "report_phrase_revision",
+              status: "pending_approval",
+              href: "/approvals",
+            },
+          ]
+        : agent.id === "counseling_coach"
+          ? [
+              {
+                id: "candidate-1",
+                source_type: "candidate",
+                title: "상담 전사록 사례 분리 후보",
+                summary: "상담 전사록에서 사례 학습 후보와 관계 패턴을 분리합니다.",
+                task_type: "counseling_case_learning",
+                status: "draft",
+                href: "/request-intake",
+              },
+            ]
+          : [],
   }));
 
   it("uses the shared agent seed source", () => {
@@ -76,6 +115,8 @@ describe("dashboard agent flow map", () => {
     expect(counselingCoach).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("Agent Inspector")).toBeInTheDocument();
     expect(screen.getAllByText("상담 코치").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("상담 전사록 사례 분리 후보").length).toBeGreaterThan(0);
+    expect(screen.getByText("상담 전사록에서 사례 학습 후보와 관계 패턴을 분리합니다.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "후보 보기" })).toHaveAttribute("href", "/request-intake");
     expect(screen.getAllByRole("link", { name: "승인함" }).length).toBeGreaterThan(0);
   });

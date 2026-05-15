@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Literal
 
 
@@ -12,6 +12,17 @@ class DashboardSummary(BaseModel):
 
 
 AgentActivityStatus = Literal["working", "waiting_approval", "queued", "idle", "planned"]
+AgentWorkItemSource = Literal["candidate", "task", "approval"]
+
+
+class AgentWorkItemRead(BaseModel):
+    id: str
+    source_type: AgentWorkItemSource
+    title: str
+    summary: str
+    task_type: str
+    status: str
+    href: str
 
 
 class AgentActivityRead(BaseModel):
@@ -28,6 +39,7 @@ class AgentActivityRead(BaseModel):
     workload_count: int
     pending_approval_count: int
     candidate_count: int
+    work_items: list[AgentWorkItemRead] = Field(default_factory=list)
 
 
 class AgentActivityResponse(BaseModel):

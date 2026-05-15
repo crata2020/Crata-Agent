@@ -77,6 +77,17 @@ export interface DashboardSummary {
 }
 
 export type AgentActivityStatus = "working" | "waiting_approval" | "queued" | "idle" | "planned";
+export type AgentWorkItemSource = "candidate" | "task" | "approval";
+
+export interface AgentWorkItem {
+  id: string;
+  source_type: AgentWorkItemSource;
+  title: string;
+  summary: string;
+  task_type: string;
+  status: string;
+  href: string;
+}
 
 export interface AgentActivity {
   id: string;
@@ -92,6 +103,7 @@ export interface AgentActivity {
   workload_count: number;
   pending_approval_count: number;
   candidate_count: number;
+  work_items: AgentWorkItem[];
 }
 
 export interface AgentActivityResponse {

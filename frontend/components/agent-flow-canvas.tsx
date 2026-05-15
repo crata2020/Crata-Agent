@@ -4,7 +4,7 @@ import { Maximize2, Minus, Move, Plus, RotateCcw } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import type { PointerEvent, ReactNode, WheelEvent } from "react";
 
-import type { AgentActivity, AgentActivityStatus, DashboardSummary } from "@/lib/types";
+import type { AgentActivity, AgentActivityStatus, AgentWorkItem, DashboardSummary } from "@/lib/types";
 
 const WORLD_WIDTH = 1780;
 const WORLD_HEIGHT = 840;
@@ -77,6 +77,22 @@ const statusMeta: Record<
   },
 };
 
+const workItemSourceLabels: Record<AgentWorkItem["source_type"], string> = {
+  candidate: "후보",
+  task: "작업",
+  approval: "승인",
+};
+
+const workItemStatusLabels: Record<string, string> = {
+  draft: "후보 대기",
+  running: "실행 중",
+  pending_approval: "승인 대기",
+  approved: "승인 완료",
+  rejected: "반려",
+  revise_requested: "수정요청",
+  failed: "실패",
+};
+
 interface AgentFlowCanvasProps {
   agents: AgentActivity[];
   summary: DashboardSummary;
@@ -89,6 +105,7 @@ export function AgentFlowCanvas({ agents, summary }: AgentFlowCanvasProps) {
   const activityById = useMemo(() => new Map(agents.map((agent) => [agent.id, agent])), [agents]);
   const leadAgent = agents.find((agent) => agent.activity_status !== "idle" && agent.activity_status !== "planned") ?? agents[0];
   const selectedAgent = agents.find((agent) => agent.id === selectedAgentId) ?? leadAgent;
+  const selectedWorkItems = selectedAgent?.work_items ?? [];
 
   function updateScale(nextScale: number) {
     setView((current) => ({
@@ -195,6 +212,24 @@ export function AgentFlowCanvas({ agents, summary }: AgentFlowCanvasProps) {
           <InspectorStat label="승인" value={selectedAgent?.pending_approval_count ?? 0} />
         </div>
 
+        <div className="mt-4">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8EA0AE]">Work Queue</p>
+            <span className="rounded-full bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-[#AEB9C4]">
+              {selectedWorkItems.length}개
+            </span>
+          </div>
+          <div className="max-h-[230px] space-y-2 overflow-y-auto pr-1">
+            {selectedWorkItems.length > 0 ? (
+              selectedWorkItems.map((item) => <WorkItemCard key={`${item.source_type}-${item.id}`} item={item} />)
+            ) : (
+              <div className="rounded-card border border-dashed border-white/10 bg-black/15 p-3 text-xs leading-5 text-[#8F9AA4]">
+                이 에이전트에게 배정된 후보나 승인 대기 작업이 아직 없습니다.
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="mt-4 grid grid-cols-2 gap-2">
           <a
             href="/request-intake"
@@ -210,9 +245,7 @@ export function AgentFlowCanvas({ agents, summary }: AgentFlowCanvasProps) {
           </a>
         </div>
 
-        <p className="mt-3 text-[11px] leading-5 text-[#7F8A93]">
-          노드를 클릭하면 이 패널에서 담당 작업과 대기 항목을 확인합니다.
-        </p>
+        <p className="mt-3 text-[11px] leading-5 text-[#7F8A93]">후보는 요청 콘솔, 승인 항목은 승인함으로 연결됩니다.</p>
       </aside>
 
       <div className="absolute bottom-6 left-6 z-20 flex flex-col overflow-hidden rounded-full border border-white/10 bg-[#12171D]/90 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur">
@@ -362,7 +395,7 @@ function AgentNode({
         {agent.current_focus}
       </p>
       <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-semibold">
-        <span className="rounded-full bg-[#2A1820] px-2 py-1 text-[#FF6B7A]">{agent.workload_count} tasks</span>
+        <span className="rounded-full bg-[#2A1820] px-2 py-1 text-[#FF6B7A]">{agent.workload_count} 작업</span>
         <span className="rounded-full bg-white/[0.07] px-2 py-1 text-[#B1BDC8]">{agent.candidate_count} 후보</span>
         {agent.pending_approval_count > 0 ? (
           <span className="rounded-full bg-[#312511] px-2 py-1 text-[#F2B84B]">{agent.pending_approval_count} 승인</span>
@@ -387,6 +420,32 @@ function InspectorStat({ label, value }: { label: string; value: number }) {
       <p className="text-sm font-semibold text-white">{value}</p>
       <p className="mt-0.5 text-[11px] text-[#A5B0BA]">{label}</p>
     </div>
+  );
+}
+
+function WorkItemCard({ item }: { item: AgentWorkItem }) {
+  const statusLabel = workItemStatusLabels[item.status] ?? item.status;
+  const sourceLabel = workItemSourceLabels[item.source_type];
+
+  return (
+    <a
+      href={item.href}
+      className="block rounded-card border border-white/10 bg-[#0B1117]/88 p-3 transition hover:border-[#38BDF8]/40 hover:bg-[#101923]"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="rounded-full bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-[#C2CDD8]">
+          {sourceLabel}
+        </span>
+        <span className="rounded-full bg-[#17212B] px-2 py-1 text-[10px] font-semibold text-[#8FD3FF]">
+          {statusLabel}
+        </span>
+      </div>
+      <p className="mt-2 line-clamp-2 text-sm font-semibold leading-5 text-white">{item.title}</p>
+      <p className="mt-1 line-clamp-2 text-xs leading-5 text-[#9EABB6]">{item.summary}</p>
+      <p className="mt-2 truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6F7D89]">
+        {item.task_type}
+      </p>
+    </a>
   );
 }
 

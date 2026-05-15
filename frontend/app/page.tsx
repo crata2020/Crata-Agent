@@ -35,6 +35,7 @@ function fallbackActivityFor(agent: Agent): AgentActivity {
     workload_count: 0,
     pending_approval_count: 0,
     candidate_count: 0,
+    work_items: [],
   };
 }
 

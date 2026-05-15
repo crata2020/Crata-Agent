@@ -4,7 +4,12 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models import Agent, Approval, Artifact, CandidateTask, Task
-from app.schemas.dashboard import AgentActivityRead, AgentActivityResponse, DashboardSummary
+from app.schemas.dashboard import (
+    AgentActivityRead,
+    AgentActivityResponse,
+    AgentWorkItemRead,
+    DashboardSummary,
+)
 from app.services.agent_seed import AGENT_SEEDS, seed_agents
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
@@ -44,6 +49,7 @@ def get_agent_activity(db: Session = Depends(get_db)) -> AgentActivityResponse:
         select(CandidateTask).order_by(CandidateTask.updated_at.desc())
     ).all()
     pending_approval_task_ids = {approval.task_id for approval in approvals}
+    approvals_by_task_id = {approval.task_id: approval for approval in approvals}
     seed_order = {seed["id"]: index for index, seed in enumerate(AGENT_SEEDS)}
 
     return AgentActivityResponse(
@@ -52,6 +58,7 @@ def get_agent_activity(db: Session = Depends(get_db)) -> AgentActivityResponse:
                 agent=agent,
                 tasks=tasks,
                 pending_approval_task_ids=pending_approval_task_ids,
+                approvals_by_task_id=approvals_by_task_id,
                 candidate_tasks=candidate_tasks,
             )
             for agent in sorted(agents, key=lambda agent: seed_order.get(agent.id, 999))
@@ -68,6 +75,7 @@ def _agent_activity(
     agent: Agent,
     tasks: list[Task],
     pending_approval_task_ids: set[str],
+    approvals_by_task_id: dict[str, Approval],
     candidate_tasks: list[CandidateTask],
 ) -> AgentActivityRead:
     assigned_tasks = [task for task in tasks if _contains(agent.id, task.assigned_agents)]
@@ -82,6 +90,12 @@ def _agent_activity(
         for candidate in candidate_tasks
         if candidate.status == "draft" and _contains(agent.id, candidate.recommended_agents)
     ]
+    work_items = _work_items(
+        running_tasks=running_tasks,
+        waiting_tasks=waiting_tasks,
+        queued_candidates=queued_candidates,
+        approvals_by_task_id=approvals_by_task_id,
+    )
 
     if not agent.enabled:
         activity_status = "planned"
@@ -118,8 +132,74 @@ def _agent_activity(
         workload_count=len(running_tasks) + len(waiting_tasks) + len(queued_candidates),
         pending_approval_count=len(waiting_tasks),
         candidate_count=len(queued_candidates),
+        work_items=work_items,
     )
 
 
 def _contains(agent_id: str, values: list | None) -> bool:
     return agent_id in (values or [])
+
+
+def _work_items(
+    *,
+    running_tasks: list[Task],
+    waiting_tasks: list[Task],
+    queued_candidates: list[CandidateTask],
+    approvals_by_task_id: dict[str, Approval],
+) -> list[AgentWorkItemRead]:
+    items: list[AgentWorkItemRead] = []
+
+    for task in waiting_tasks:
+        approval = approvals_by_task_id.get(task.id)
+        if approval is not None:
+            items.append(
+                AgentWorkItemRead(
+                    id=approval.id,
+                    source_type="approval",
+                    title=approval.title,
+                    summary=approval.summary,
+                    task_type=task.task_type,
+                    status=approval.status,
+                    href="/approvals",
+                )
+            )
+        else:
+            items.append(
+                AgentWorkItemRead(
+                    id=task.id,
+                    source_type="task",
+                    title=task.title,
+                    summary=task.description,
+                    task_type=task.task_type,
+                    status=task.status,
+                    href="/request-intake",
+                )
+            )
+
+    for task in running_tasks:
+        items.append(
+            AgentWorkItemRead(
+                id=task.id,
+                source_type="task",
+                title=task.title,
+                summary=task.description,
+                task_type=task.task_type,
+                status=task.status,
+                href="/request-intake",
+            )
+        )
+
+    for candidate in queued_candidates:
+        items.append(
+            AgentWorkItemRead(
+                id=candidate.id,
+                source_type="candidate",
+                title=candidate.title,
+                summary=candidate.summary,
+                task_type=candidate.task_type,
+                status=candidate.status,
+                href="/request-intake",
+            )
+        )
+
+    return items[:6]
