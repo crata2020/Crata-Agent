@@ -70,6 +70,15 @@ describe("ApprovalCard", () => {
     expect(screen.getByText("에이전트 작업 가이드")).toBeInTheDocument();
   });
 
+  it("links back to the workflow activity for the approval task", () => {
+    render(<ApprovalCard approval={pendingApproval} />);
+
+    expect(screen.getByRole("link", { name: "실행 흐름 보기" })).toHaveAttribute(
+      "href",
+      "/activity?taskId=task-1",
+    );
+  });
+
   it("marks the card highlighted when opened from the dashboard", () => {
     render(<ApprovalCard approval={pendingApproval} highlighted />);
 

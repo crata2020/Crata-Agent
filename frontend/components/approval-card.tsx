@@ -132,6 +132,12 @@ export function ApprovalCard({ approval, highlighted = false }: ApprovalCardProp
           </div>
           <h2 className="mt-3 text-base font-semibold text-white">{approval.title}</h2>
           <p className="mt-2 text-sm leading-6 text-[#C7D2DC]">{approval.summary}</p>
+          <Link
+            href={`/activity?taskId=${encodeURIComponent(approval.task_id)}`}
+            className="mt-3 inline-flex h-8 items-center rounded-button border border-white/10 bg-white/[0.06] px-3 text-xs font-semibold text-[#DDE6EE] transition hover:bg-white/10"
+          >
+            실행 흐름 보기
+          </Link>
         </div>
 
         {canDecide ? (

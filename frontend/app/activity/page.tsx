@@ -25,6 +25,10 @@ const statusLabels: Record<string, string> = {
 const agentNameById = new Map(agentSeeds.map((agent) => [agent.id, agent.display_name]));
 const fallbackWorkflowRuns: WorkflowRunActivity[] = [];
 
+type ActivityPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
 async function loadActivityData() {
   const result = await Promise.allSettled([getWorkflowActivity()]);
   const workflowResult = result[0];
@@ -36,24 +40,39 @@ async function loadActivityData() {
   };
 }
 
-export default async function ActivityPage() {
+export default async function ActivityPage({ searchParams }: ActivityPageProps = {}) {
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const highlightedTaskId = firstParam(resolvedSearchParams.taskId);
   const { workflowRuns, dataUnavailable } = await loadActivityData();
 
-  return <ActivityContent workflowRuns={workflowRuns} dataUnavailable={dataUnavailable} />;
+  return (
+    <ActivityContent
+      workflowRuns={workflowRuns}
+      dataUnavailable={dataUnavailable}
+      highlightedTaskId={highlightedTaskId}
+    />
+  );
 }
 
 export function ActivityContent({
   workflowRuns,
   dataUnavailable,
+  highlightedTaskId,
 }: {
   workflowRuns: WorkflowRunActivity[];
   dataUnavailable: boolean;
+  highlightedTaskId?: string;
 }) {
-  const completedStepCount = workflowRuns.reduce(
+  const visibleWorkflowRuns = highlightedTaskId
+    ? workflowRuns.filter((run) => run.task_id === highlightedTaskId)
+    : workflowRuns;
+  const completedStepCount = visibleWorkflowRuns.reduce(
     (count, run) => count + run.steps.filter((step) => step.status === "completed").length,
     0,
   );
-  const approvalCount = workflowRuns.filter((run) => run.status === "pending_approval").length;
+  const approvalCount = visibleWorkflowRuns.filter((run) => run.status === "pending_approval").length;
+  const hasHighlightedResult = Boolean(highlightedTaskId && visibleWorkflowRuns.length > 0);
+  const missingHighlightedResult = Boolean(highlightedTaskId && visibleWorkflowRuns.length === 0);
 
   return (
     <AppShell>
@@ -76,14 +95,27 @@ export function ActivityContent({
         </header>
 
         <div className="mt-5 grid gap-3 md:grid-cols-3">
-          <ActivityStat label="실행 기록" value={workflowRuns.length} />
+          <ActivityStat label="실행 기록" value={visibleWorkflowRuns.length} />
           <ActivityStat label="완료 단계" value={completedStepCount} />
           <ActivityStat label="승인 대기" value={approvalCount} tone="approval" />
         </div>
 
+        {hasHighlightedResult ? (
+          <section className="mt-5 rounded-[14px] border border-[#38BDF8]/30 bg-[#0B2535]/55 p-4 text-sm text-[#DDE6EE]">
+            <p className="font-semibold text-[#7DD7FF]">선택한 작업 실행 흐름을 표시합니다.</p>
+            <p className="mt-1 text-xs text-[#AEB9C4]">
+              승인함에서 열린 작업만 좁혀서 보여줍니다.
+            </p>
+          </section>
+        ) : null}
+
         <div className="mt-5 space-y-4">
-          {workflowRuns.length > 0 ? (
-            workflowRuns.map((run) => <WorkflowRunCard key={run.id} run={run} />)
+          {visibleWorkflowRuns.length > 0 ? (
+            visibleWorkflowRuns.map((run) => <WorkflowRunCard key={run.id} run={run} />)
+          ) : missingHighlightedResult ? (
+            <div className="rounded-[14px] border border-[#F2B84B]/30 bg-[#241C0F]/80 p-6 text-sm leading-6 text-[#FFD37A]">
+              선택한 작업의 실행 흐름을 찾지 못했습니다.
+            </div>
           ) : (
             <div className="rounded-[14px] border border-white/10 bg-[#111820] p-6 text-sm leading-6 text-[#C7D2DC]">
               아직 실행된 워크플로우가 없습니다. 요청 콘솔에서 후보를 실행하면 이곳에 단계별 로그가 쌓입니다.
@@ -93,6 +125,10 @@ export function ActivityContent({
       </section>
     </AppShell>
   );
+}
+
+function firstParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
 }
 
 function WorkflowRunCard({ run }: { run: WorkflowRunActivity }) {

@@ -54,4 +54,41 @@ describe("ActivityContent", () => {
     expect(screen.getByText("작업 흐름을 배정합니다.")).toBeInTheDocument();
     expect(screen.queryByText("completed")).not.toBeInTheDocument();
   });
+
+  it("filters workflow activity to the task opened from approval inbox", () => {
+    const runs: WorkflowRunActivity[] = [
+      {
+        id: "run-1",
+        workflow_type: "agent_operation",
+        task_id: "task-1",
+        task_title: "결과지 문구 실행",
+        task_type: "report_phrase_revision",
+        status: "pending_approval",
+        current_step: "approval_pending",
+        started_at: "2026-05-16T03:10:00Z",
+        completed_at: null,
+        steps: [],
+      },
+      {
+        id: "run-2",
+        workflow_type: "agent_operation",
+        task_id: "task-2",
+        task_title: "상담 사례 학습 실행",
+        task_type: "counseling_case_learning",
+        status: "pending_approval",
+        current_step: "approval_pending",
+        started_at: "2026-05-16T03:12:00Z",
+        completed_at: null,
+        steps: [],
+      },
+    ];
+
+    render(<ActivityContent workflowRuns={runs} dataUnavailable={false} highlightedTaskId="task-2" />);
+
+    expect(screen.getByText("선택한 작업 실행 흐름을 표시합니다.")).toBeInTheDocument();
+    expect(screen.getByText("상담 사례 학습 실행")).toBeInTheDocument();
+    expect(screen.queryByText("결과지 문구 실행")).not.toBeInTheDocument();
+    expect(screen.getByText("실행 기록")).toBeInTheDocument();
+    expect(screen.getAllByText("1").length).toBeGreaterThan(0);
+  });
 });
