@@ -15,6 +15,10 @@ branch_labels = None
 depends_on = None
 
 
+JSON_OBJECT_DEFAULT = sa.text("'{}'::json")
+JSON_ARRAY_DEFAULT = sa.text("'[]'::json")
+
+
 def upgrade() -> None:
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
 
@@ -25,12 +29,12 @@ def upgrade() -> None:
         sa.Column("display_name", sa.String(length=128), nullable=False),
         sa.Column("role", sa.String(length=128), nullable=False),
         sa.Column("description", sa.Text(), nullable=False),
-        sa.Column("status", sa.String(length=64), nullable=False),
-        sa.Column("default_model_provider", sa.String(length=64), nullable=False),
-        sa.Column("default_model_name", sa.String(length=128), nullable=False),
+        sa.Column("status", sa.String(length=64), nullable=False, server_default="idle"),
+        sa.Column("default_model_provider", sa.String(length=64), nullable=False, server_default="openai"),
+        sa.Column("default_model_name", sa.String(length=128), nullable=False, server_default="gpt-4.1-mini"),
         sa.Column("prompt", sa.Text(), nullable=False),
-        sa.Column("enabled", sa.Boolean(), nullable=False),
-        sa.Column("color", sa.String(length=32), nullable=False),
+        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.true()),
+        sa.Column("color", sa.String(length=32), nullable=False, server_default="#1F6B57"),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
@@ -43,32 +47,34 @@ def upgrade() -> None:
         sa.Column("title", sa.String(length=255), nullable=False),
         sa.Column("input_type", sa.String(length=64), nullable=False),
         sa.Column("raw_content", sa.Text(), nullable=False),
-        sa.Column("source", sa.String(length=128), nullable=False),
-        sa.Column("metadata", sa.JSON(), nullable=False),
+        sa.Column("source", sa.String(length=128), nullable=False, server_default="manual"),
+        sa.Column("metadata", sa.JSON(), nullable=False, server_default=JSON_OBJECT_DEFAULT),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
 
     op.create_table(
-        "office_settings",
-        sa.Column("key", sa.String(length=128), nullable=False),
-        sa.Column("value", sa.JSON(), nullable=False),
+        "settings",
+        sa.Column("id", sa.String(length=64), nullable=False),
+        sa.Column("key", sa.String(length=160), nullable=False),
+        sa.Column("value", sa.Text(), nullable=False, server_default=""),
+        sa.Column("is_secret", sa.Boolean(), nullable=False, server_default=sa.false()),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
-        sa.PrimaryKeyConstraint("key"),
+        sa.PrimaryKeyConstraint("id"),
     )
+    op.create_index("ix_settings_key", "settings", ["key"], unique=True)
 
     op.create_table(
         "documents",
         sa.Column("id", sa.String(length=64), nullable=False),
-        sa.Column("title", sa.String(length=255), nullable=False),
-        sa.Column("document_type", sa.String(length=64), nullable=False),
-        sa.Column("content", sa.Text(), nullable=False),
-        sa.Column("source", sa.String(length=128), nullable=False),
-        sa.Column("metadata", sa.JSON(), nullable=False),
+        sa.Column("title", sa.String(length=200), nullable=False),
+        sa.Column("document_type", sa.String(length=80), nullable=False),
+        sa.Column("path", sa.String(length=500), nullable=False, server_default=""),
+        sa.Column("content_text", sa.Text(), nullable=False, server_default=""),
+        sa.Column("metadata", sa.JSON(), nullable=False, server_default=JSON_OBJECT_DEFAULT),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f("ix_documents_document_type"), "documents", ["document_type"], unique=False)
 
     op.create_table(
         "candidate_tasks",
@@ -78,9 +84,9 @@ def upgrade() -> None:
         sa.Column("title", sa.String(length=255), nullable=False),
         sa.Column("summary", sa.Text(), nullable=False),
         sa.Column("evidence_excerpt", sa.Text(), nullable=False),
-        sa.Column("recommended_agents", sa.JSON(), nullable=False),
-        sa.Column("status", sa.String(length=64), nullable=False),
-        sa.Column("metadata", sa.JSON(), nullable=False),
+        sa.Column("recommended_agents", sa.JSON(), nullable=False, server_default=JSON_ARRAY_DEFAULT),
+        sa.Column("status", sa.String(length=64), nullable=False, server_default="draft"),
+        sa.Column("metadata", sa.JSON(), nullable=False, server_default=JSON_OBJECT_DEFAULT),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(["intake_item_id"], ["intake_items.id"]),
@@ -93,15 +99,16 @@ def upgrade() -> None:
     op.create_table(
         "embeddings",
         sa.Column("id", sa.String(length=64), nullable=False),
-        sa.Column("document_id", sa.String(length=64), nullable=True),
-        sa.Column("chunk_text", sa.Text(), nullable=False),
-        sa.Column("embedding", sa.JSON(), nullable=False),
-        sa.Column("metadata", sa.JSON(), nullable=False),
+        sa.Column("owner_type", sa.String(length=80), nullable=False),
+        sa.Column("owner_id", sa.String(length=64), nullable=False),
+        sa.Column("embedding", sa.JSON(), nullable=True),
+        sa.Column("text_chunk", sa.Text(), nullable=False),
+        sa.Column("metadata", sa.JSON(), nullable=False, server_default=JSON_OBJECT_DEFAULT),
         sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(["document_id"], ["documents.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f("ix_embeddings_document_id"), "embeddings", ["document_id"], unique=False)
+    op.create_index("ix_embeddings_owner_id", "embeddings", ["owner_id"], unique=False)
+    op.create_index("ix_embeddings_owner_type", "embeddings", ["owner_type"], unique=False)
 
     op.create_table(
         "tasks",
@@ -110,9 +117,9 @@ def upgrade() -> None:
         sa.Column("task_type", sa.String(length=64), nullable=False),
         sa.Column("title", sa.String(length=255), nullable=False),
         sa.Column("description", sa.Text(), nullable=False),
-        sa.Column("status", sa.String(length=64), nullable=False),
-        sa.Column("priority", sa.String(length=64), nullable=False),
-        sa.Column("assigned_agents", sa.JSON(), nullable=False),
+        sa.Column("status", sa.String(length=64), nullable=False, server_default="draft"),
+        sa.Column("priority", sa.String(length=64), nullable=False, server_default="normal"),
+        sa.Column("assigned_agents", sa.JSON(), nullable=False, server_default=JSON_ARRAY_DEFAULT),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(["candidate_task_id"], ["candidate_tasks.id"]),
@@ -126,9 +133,9 @@ def upgrade() -> None:
         sa.Column("id", sa.String(length=64), nullable=False),
         sa.Column("workflow_type", sa.String(length=64), nullable=False),
         sa.Column("task_id", sa.String(length=64), nullable=True),
-        sa.Column("status", sa.String(length=64), nullable=False),
+        sa.Column("status", sa.String(length=64), nullable=False, server_default="running"),
         sa.Column("current_step", sa.String(length=128), nullable=False),
-        sa.Column("checkpoint", sa.JSON(), nullable=False),
+        sa.Column("checkpoint", sa.JSON(), nullable=False, server_default=JSON_OBJECT_DEFAULT),
         sa.Column("started_at", sa.DateTime(), nullable=False),
         sa.Column("completed_at", sa.DateTime(), nullable=True),
         sa.Column("error", sa.Text(), nullable=True),
@@ -146,8 +153,8 @@ def upgrade() -> None:
         sa.Column("artifact_type", sa.String(length=64), nullable=False),
         sa.Column("title", sa.String(length=255), nullable=False),
         sa.Column("content", sa.Text(), nullable=False),
-        sa.Column("status", sa.String(length=64), nullable=False),
-        sa.Column("metadata", sa.JSON(), nullable=False),
+        sa.Column("status", sa.String(length=64), nullable=False, server_default="draft"),
+        sa.Column("metadata", sa.JSON(), nullable=False, server_default=JSON_OBJECT_DEFAULT),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(["task_id"], ["tasks.id"]),
@@ -165,10 +172,10 @@ def upgrade() -> None:
         sa.Column("agent_id", sa.String(length=64), nullable=True),
         sa.Column("input_summary", sa.Text(), nullable=False),
         sa.Column("output_summary", sa.Text(), nullable=False),
-        sa.Column("status", sa.String(length=64), nullable=False),
+        sa.Column("status", sa.String(length=64), nullable=False, server_default="completed"),
         sa.Column("started_at", sa.DateTime(), nullable=False),
         sa.Column("completed_at", sa.DateTime(), nullable=True),
-        sa.Column("metadata", sa.JSON(), nullable=False),
+        sa.Column("metadata", sa.JSON(), nullable=False, server_default=JSON_OBJECT_DEFAULT),
         sa.ForeignKeyConstraint(["agent_id"], ["agents.id"]),
         sa.ForeignKeyConstraint(["workflow_run_id"], ["workflow_runs.id"]),
         sa.PrimaryKeyConstraint("id"),
@@ -181,7 +188,7 @@ def upgrade() -> None:
         sa.Column("task_id", sa.String(length=64), nullable=False),
         sa.Column("artifact_id", sa.String(length=64), nullable=False),
         sa.Column("approval_type", sa.String(length=64), nullable=False),
-        sa.Column("status", sa.String(length=64), nullable=False),
+        sa.Column("status", sa.String(length=64), nullable=False, server_default="pending_approval"),
         sa.Column("title", sa.String(length=255), nullable=False),
         sa.Column("summary", sa.Text(), nullable=False),
         sa.Column("before_content", sa.Text(), nullable=False),
@@ -202,21 +209,21 @@ def upgrade() -> None:
     op.create_table(
         "knowledge_items",
         sa.Column("id", sa.String(length=64), nullable=False),
-        sa.Column("approval_id", sa.String(length=64), nullable=True),
-        sa.Column("knowledge_type", sa.String(length=64), nullable=False),
-        sa.Column("title", sa.String(length=255), nullable=False),
+        sa.Column("knowledge_type", sa.String(length=80), nullable=False),
+        sa.Column("title", sa.String(length=200), nullable=False),
         sa.Column("content", sa.Text(), nullable=False),
-        sa.Column("status", sa.String(length=64), nullable=False),
-        sa.Column("source", sa.String(length=128), nullable=False),
-        sa.Column("metadata", sa.JSON(), nullable=False),
+        sa.Column("status", sa.String(length=40), nullable=False, server_default="draft"),
+        sa.Column("source_artifact_id", sa.String(length=64), nullable=True),
+        sa.Column("source_approval_id", sa.String(length=64), nullable=True),
+        sa.Column("metadata", sa.JSON(), nullable=False, server_default=JSON_OBJECT_DEFAULT),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(["approval_id"], ["approvals.id"]),
+        sa.ForeignKeyConstraint(["source_approval_id"], ["approvals.id"]),
+        sa.ForeignKeyConstraint(["source_artifact_id"], ["artifacts.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f("ix_knowledge_items_approval_id"), "knowledge_items", ["approval_id"], unique=False)
-    op.create_index(op.f("ix_knowledge_items_knowledge_type"), "knowledge_items", ["knowledge_type"], unique=False)
-    op.create_index(op.f("ix_knowledge_items_status"), "knowledge_items", ["status"], unique=False)
+    op.create_index("ix_knowledge_items_knowledge_type", "knowledge_items", ["knowledge_type"], unique=False)
+    op.create_index("ix_knowledge_items_status", "knowledge_items", ["status"], unique=False)
 
 
 def downgrade() -> None:
@@ -229,7 +236,7 @@ def downgrade() -> None:
     op.drop_table("embeddings")
     op.drop_table("candidate_tasks")
     op.drop_table("documents")
-    op.drop_table("office_settings")
+    op.drop_table("settings")
     op.drop_table("intake_items")
     op.drop_table("agents")
     op.execute("DROP EXTENSION IF EXISTS vector")

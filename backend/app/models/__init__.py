@@ -3,7 +3,7 @@ from app.models.approval import Approval
 from app.models.artifact import Artifact
 from app.models.intake import CandidateTask, IntakeItem
 from app.models.knowledge import Document, Embedding, KnowledgeItem
-from app.models.settings import OfficeSetting
+from app.models.settings import AppSetting
 from app.models.task import Task
 from app.models.workflow import WorkflowRun, WorkflowStep
 
@@ -16,7 +16,7 @@ __all__ = [
     "Embedding",
     "IntakeItem",
     "KnowledgeItem",
-    "OfficeSetting",
+    "AppSetting",
     "Task",
     "WorkflowRun",
     "WorkflowStep",
