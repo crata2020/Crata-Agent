@@ -29,11 +29,14 @@ export function ApprovalCard({ approval }: ApprovalCardProps) {
   const router = useRouter();
   const [pendingDecision, setPendingDecision] = useState<ApprovalDecision | null>(null);
   const [decidedStatus, setDecidedStatus] = useState<ApprovalDecision | null>(null);
+  const [isRevisionFormOpen, setIsRevisionFormOpen] = useState(false);
+  const [revisionReason, setRevisionReason] = useState("");
+  const [revisionCandidate, setRevisionCandidate] = useState(approval.revision_candidate_task ?? null);
   const [error, setError] = useState("");
   const currentStatus = decidedStatus ?? approval.status;
   const canDecide = approval.status === "pending_approval" && decidedStatus === null;
 
-  async function handleDecision(decision: ApprovalDecision) {
+  async function handleDecision(decision: ApprovalDecision, reason = "") {
     if (!canDecide || pendingDecision !== null) {
       return;
     }
@@ -42,13 +45,39 @@ export function ApprovalCard({ approval }: ApprovalCardProps) {
     setError("");
 
     try {
-      await decideApproval(approval.id, decision);
+      const decidedApproval = reason
+        ? await decideApproval(approval.id, decision, reason)
+        : await decideApproval(approval.id, decision);
       setDecidedStatus(decision);
+      if (decidedApproval.revision_candidate_task) {
+        setRevisionCandidate(decidedApproval.revision_candidate_task);
+      }
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "승인 처리에 실패했습니다.");
       setPendingDecision(null);
     }
+  }
+
+  function openRevisionForm() {
+    setIsRevisionFormOpen(true);
+    setError("");
+  }
+
+  function cancelRevisionForm() {
+    setIsRevisionFormOpen(false);
+    setRevisionReason("");
+    setError("");
+  }
+
+  function submitRevisionRequest() {
+    const reason = revisionReason.trim();
+    if (!reason) {
+      setError("수정 사유를 입력하세요.");
+      return;
+    }
+
+    void handleDecision("revise_requested", reason);
   }
 
   return (
@@ -87,7 +116,7 @@ export function ApprovalCard({ approval }: ApprovalCardProps) {
             </button>
             <button
               type="button"
-              onClick={() => handleDecision("revise_requested")}
+              onClick={openRevisionForm}
               disabled={pendingDecision !== null}
               className="inline-flex h-9 items-center gap-1.5 rounded-button border border-border bg-surface px-3 text-sm font-semibold text-[#1F2723] transition hover:bg-surfaceAlt disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -114,6 +143,48 @@ export function ApprovalCard({ approval }: ApprovalCardProps) {
           </pre>
         </section>
       </div>
+
+      {isRevisionFormOpen && canDecide ? (
+        <section className="mt-4 rounded-card border border-approval/40 bg-[#FFF8EC] p-3">
+          <label className="block">
+            <span className="text-xs font-semibold text-[#7A5A2E]">수정 사유</span>
+            <textarea
+              value={revisionReason}
+              onChange={(event) => setRevisionReason(event.target.value)}
+              rows={3}
+              placeholder="어떤 부분을 어떻게 다시 작업해야 하는지 적어주세요."
+              className="mt-1 w-full resize-y rounded-card border border-border bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-primary"
+            />
+          </label>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={submitRevisionRequest}
+              disabled={pendingDecision !== null}
+              className="inline-flex h-9 items-center gap-1.5 rounded-button bg-primary px-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RotateCcw size={16} aria-hidden="true" />
+              수정요청 확정
+            </button>
+            <button
+              type="button"
+              onClick={cancelRevisionForm}
+              disabled={pendingDecision !== null}
+              className="inline-flex h-9 items-center rounded-button border border-border bg-white px-3 text-sm font-semibold text-[#1F2723] transition hover:bg-surfaceAlt disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              취소
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {revisionCandidate ? (
+        <section className="mt-4 rounded-card border border-primary/30 bg-surfaceAlt p-3">
+          <p className="text-sm font-semibold text-primary">재작업 후보가 생성되었습니다.</p>
+          <p className="mt-2 text-sm font-semibold text-[#1F2723]">{revisionCandidate.title}</p>
+          <p className="mt-1 text-xs leading-5 text-[#5F6B64]">{revisionCandidate.summary}</p>
+        </section>
+      ) : null}
 
       {error ? (
         <p role="alert" className="mt-3 rounded-button border border-danger/30 bg-red-50 px-3 py-2 text-sm text-danger">

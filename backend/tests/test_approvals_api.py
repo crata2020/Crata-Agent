@@ -63,6 +63,49 @@ def test_approve_item_changes_status(app: FastAPI, db_session: Session) -> None:
     assert candidate.status == "approved"
 
 
+def test_revise_request_creates_revision_candidate_task(
+    app: FastAPI, db_session: Session
+) -> None:
+    client = TestClient(app)
+    candidate_id, approval_id = _create_pending_approval(client)
+
+    response = client.post(
+        f"/approvals/{approval_id}/decide",
+        json={"decision": "revise_requested", "reason": "문장을 더 상담형으로 낮춰 주세요."},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "revise_requested"
+    assert body["revision_candidate_task"]["id"]
+    assert body["revision_candidate_task"]["status"] == "draft"
+    assert body["revision_candidate_task"]["task_type"] == "report_phrase_revision"
+    assert "문장을 더 상담형으로 낮춰 주세요." in body["revision_candidate_task"]["summary"]
+
+    original_candidate = db_session.get(CandidateTask, candidate_id)
+    revision_candidate = db_session.get(CandidateTask, body["revision_candidate_task"]["id"])
+    assert original_candidate is not None
+    assert original_candidate.status == "revise_requested"
+    assert revision_candidate is not None
+    assert revision_candidate.status == "draft"
+    assert revision_candidate.intake_item_id == original_candidate.intake_item_id
+    assert revision_candidate.recommended_agents == original_candidate.recommended_agents
+    assert revision_candidate.item_metadata["source_approval_id"] == approval_id
+    assert revision_candidate.item_metadata["revision_reason"] == "문장을 더 상담형으로 낮춰 주세요."
+
+
+def test_revise_request_requires_reason(app: FastAPI) -> None:
+    client = TestClient(app)
+    _candidate_id, approval_id = _create_pending_approval(client)
+
+    response = client.post(
+        f"/approvals/{approval_id}/decide",
+        json={"decision": "revise_requested", "reason": " "},
+    )
+
+    assert response.status_code == 422
+
+
 def test_decide_rejects_second_decision_and_preserves_statuses(
     app: FastAPI, db_session: Session
 ) -> None:

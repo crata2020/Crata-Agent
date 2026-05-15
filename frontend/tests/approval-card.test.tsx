@@ -84,6 +84,53 @@ describe("ApprovalCard", () => {
     expect(refreshMock).not.toHaveBeenCalled();
   });
 
+  it("asks for a revision reason and shows the generated rework candidate", async () => {
+    decideApprovalMock.mockResolvedValue({
+      ...pendingApproval,
+      status: "revise_requested",
+      revision_candidate_task: {
+        id: "candidate-revision-1",
+        task_type: "report_phrase_revision",
+        title: "조직행동검사 5페이지 문구 수정 재작업 후보",
+        summary: "수정 사유: 문장을 더 상담형으로 낮춰 주세요.",
+        evidence_excerpt: "문장을 더 상담형으로 낮춰 주세요.",
+        recommended_agents: ["crata_ceo", "report_editor"],
+        status: "draft",
+      },
+    });
+
+    render(<ApprovalCard approval={pendingApproval} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "수정요청" }));
+    expect(screen.getByLabelText("수정 사유")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("수정 사유"), {
+      target: { value: "문장을 더 상담형으로 낮춰 주세요." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "수정요청 확정" }));
+
+    await waitFor(() => expect(refreshMock).toHaveBeenCalledTimes(1));
+
+    expect(decideApprovalMock).toHaveBeenCalledWith(
+      "approval-1",
+      "revise_requested",
+      "문장을 더 상담형으로 낮춰 주세요.",
+    );
+    expect(screen.getByText("최종 상태: 수정요청")).toBeInTheDocument();
+    expect(screen.getByText("재작업 후보가 생성되었습니다.")).toBeInTheDocument();
+    expect(screen.getByText("조직행동검사 5페이지 문구 수정 재작업 후보")).toBeInTheDocument();
+  });
+
+  it("requires a revision reason before submitting a revise request", async () => {
+    render(<ApprovalCard approval={pendingApproval} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "수정요청" }));
+    fireEvent.click(screen.getByRole("button", { name: "수정요청 확정" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("수정 사유를 입력하세요.");
+    expect(decideApprovalMock).not.toHaveBeenCalled();
+  });
+
   it("does not show active decision buttons for already decided approvals", () => {
     render(<ApprovalCard approval={{ ...pendingApproval, status: "rejected" }} />);
 

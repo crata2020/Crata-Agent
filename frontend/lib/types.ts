@@ -64,6 +64,7 @@ export interface Approval {
   after_content: string;
   affected_area: string;
   reviewer_note: string;
+  revision_candidate_task?: CandidateTask | null;
 }
 
 export interface DashboardSummary {
