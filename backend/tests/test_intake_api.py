@@ -16,9 +16,9 @@ def test_create_intake_extracts_candidate_tasks(app: FastAPI, db_session: Sessio
     response = client.post(
         "/intake",
         json={
-            "title": "5월 상담 회의록",
+            "title": "  5월 상담 회의록  ",
             "input_type": "meeting_notes",
-            "raw_content": raw_content,
+            "raw_content": f"  {raw_content}  ",
             "source": "manual",
         },
     )
@@ -26,6 +26,7 @@ def test_create_intake_extracts_candidate_tasks(app: FastAPI, db_session: Sessio
     assert response.status_code == 201
     body = response.json()
     assert body["title"] == "5월 상담 회의록"
+    assert body["raw_content"] == raw_content
     assert [task["task_type"] for task in body["candidate_tasks"]] == [
         "report_phrase_revision",
         "counseling_case_learning",
@@ -84,3 +85,29 @@ def test_create_intake_falls_back_to_general_task_for_unmatched_text(app: FastAP
     assert [task["task_type"] for task in body["candidate_tasks"]] == ["general_agent_task"]
     assert body["candidate_tasks"][0]["title"] == "일반 에이전트 작업 후보"
     assert body["candidate_tasks"][0]["recommended_agents"] == ["crata_ceo"]
+
+
+def test_create_intake_rejects_whitespace_only_required_fields(
+    app: FastAPI, db_session: Session
+) -> None:
+    client = TestClient(app)
+
+    title_response = client.post(
+        "/intake",
+        json={
+            "title": "   ",
+            "raw_content": "검사 결과지 문구를 수정하자.",
+        },
+    )
+    raw_content_response = client.post(
+        "/intake",
+        json={
+            "title": "검사 결과지 수정",
+            "raw_content": "\n\t  ",
+        },
+    )
+
+    assert title_response.status_code == 422
+    assert raw_content_response.status_code == 422
+    assert len(db_session.scalars(select(IntakeItem)).all()) == 0
+    assert len(db_session.scalars(select(CandidateTask)).all()) == 0

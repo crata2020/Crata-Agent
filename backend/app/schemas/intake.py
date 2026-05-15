@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class IntakeCreate(BaseModel):
@@ -6,6 +6,13 @@ class IntakeCreate(BaseModel):
     input_type: str = Field(default="memo", max_length=60)
     raw_content: str = Field(min_length=1)
     source: str = Field(default="manual", max_length=120)
+
+    @field_validator("title", "raw_content", "input_type", "source", mode="before")
+    @classmethod
+    def strip_string_fields(cls, value: object) -> object:
+        if isinstance(value, str):
+            return value.strip()
+        return value
 
 
 class CandidateTaskRead(BaseModel):
