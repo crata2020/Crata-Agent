@@ -54,4 +54,12 @@ describe("MemoryBrowser", () => {
     expect(screen.queryByText("CRATA 에이전트 작업 가이드")).not.toBeInTheDocument();
     expect(screen.getByText("CRATA 지식 파일 구조")).toBeInTheDocument();
   });
+
+  it("uses an initial query when opened from another screen", () => {
+    render(<MemoryBrowser entries={entries} initialQuery="집단" />);
+
+    expect(screen.getByDisplayValue("집단")).toBeInTheDocument();
+    expect(screen.queryByText("개인행동 동기검사 MASTER")).not.toBeInTheDocument();
+    expect(screen.getByText("집단행동검사 MASTER")).toBeInTheDocument();
+  });
 });

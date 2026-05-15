@@ -26,8 +26,14 @@ const filters: Array<{ label: string; value: "all" | MemoryEntryKind }> = [
   { label: "원본 자료", value: "source" },
 ];
 
-export function MemoryBrowser({ entries }: { entries: MemoryEntry[] }) {
-  const [query, setQuery] = useState("");
+export function MemoryBrowser({
+  entries,
+  initialQuery = "",
+}: {
+  entries: MemoryEntry[];
+  initialQuery?: string;
+}) {
+  const [query, setQuery] = useState(initialQuery);
   const [activeKind, setActiveKind] = useState<"all" | MemoryEntryKind>("all");
 
   const visibleEntries = useMemo(() => {

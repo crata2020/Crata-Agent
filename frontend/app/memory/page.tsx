@@ -7,7 +7,13 @@ import { MemoryBrowser, type MemoryEntry } from "@/components/memory-browser";
 const repoRoot = path.resolve(process.cwd(), "..");
 const knowledgeRoot = path.join(repoRoot, "knowledge");
 
-export default async function MemoryPage() {
+type MemoryPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function MemoryPage({ searchParams }: MemoryPageProps = {}) {
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const initialQuery = firstParam(resolvedSearchParams.query) ?? "";
   const entries = await loadKnowledgeEntries();
   const entriesByKind = {
     official: entries.filter((entry) => entry.kind === "official"),
@@ -35,7 +41,7 @@ export default async function MemoryPage() {
         </div>
 
         <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-          <MemoryBrowser entries={entries} />
+          <MemoryBrowser entries={entries} initialQuery={initialQuery} />
 
           <aside className="rounded-[14px] border border-[#38BDF8]/25 bg-[#0B2535]/38 p-4">
             <h2 className="text-base font-semibold text-white">운영 원칙</h2>
@@ -49,6 +55,10 @@ export default async function MemoryPage() {
       </section>
     </AppShell>
   );
+}
+
+function firstParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
 }
 
 async function loadKnowledgeEntries(): Promise<MemoryEntry[]> {

@@ -44,6 +44,53 @@ def test_approval_inbox_lists_pending_items(app: FastAPI) -> None:
     ]
 
 
+def test_approval_inbox_adds_default_references_for_legacy_artifacts(
+    app: FastAPI, db_session: Session
+) -> None:
+    client = TestClient(app)
+    task = Task(
+        task_type="report_phrase_revision",
+        title="Legacy report phrase task",
+        description="Created before knowledge references were stored.",
+        status="pending_approval",
+        assigned_agents=["report_editor"],
+    )
+    db_session.add(task)
+    db_session.flush()
+    artifact = Artifact(
+        task_id=task.id,
+        artifact_type="draft",
+        title="Legacy draft",
+        content="Legacy approval content",
+        status="pending_approval",
+        item_metadata={},
+    )
+    db_session.add(artifact)
+    db_session.flush()
+    approval = Approval(
+        task_id=task.id,
+        artifact_id=artifact.id,
+        approval_type="report_phrase_change",
+        status="pending_approval",
+        title="Legacy approval",
+        summary="Legacy approval without stored knowledge references.",
+        affected_area=task.task_type,
+        after_content=artifact.content,
+    )
+    db_session.add(approval)
+    db_session.commit()
+
+    response = client.get("/approvals")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body[0]["knowledge_references"] == [
+        "knowledge/official/personal-behavior-motivation/MASTER.md",
+        "knowledge/official/group-behavior/MASTER.md",
+        "knowledge/agent-guides/agent-operating-guides.md",
+    ]
+
+
 def test_approve_item_changes_status(app: FastAPI, db_session: Session) -> None:
     client = TestClient(app)
     candidate_id, approval_id = _create_pending_approval(client)

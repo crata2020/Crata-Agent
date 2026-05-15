@@ -8,6 +8,7 @@ from app.core.database import get_db
 from app.models import Approval, Artifact, CandidateTask, Task
 from app.schemas.approval import ApprovalDecision, ApprovalRead
 from app.schemas.intake import CandidateTaskRead
+from app.services.knowledge_context import AGENT_GUIDE_REFERENCE, OFFICIAL_MASTER_REFERENCES
 
 router = APIRouter(prefix="/approvals", tags=["approvals"])
 
@@ -131,7 +132,6 @@ def _revision_candidate_for(item: Approval, db: Session) -> CandidateTask | None
 def _read(item: Approval, db: Session) -> ApprovalRead:
     revision_candidate = _revision_candidate_for(item, db)
     artifact = db.get(Artifact, item.artifact_id)
-    artifact_metadata = artifact.item_metadata if artifact is not None else {}
     return ApprovalRead(
         id=item.id,
         task_id=item.task_id,
@@ -144,8 +144,17 @@ def _read(item: Approval, db: Session) -> ApprovalRead:
         after_content=item.after_content,
         affected_area=item.affected_area,
         reviewer_note=item.reviewer_note,
-        knowledge_references=artifact_metadata.get("knowledge_references", []),
+        knowledge_references=_knowledge_references_for(artifact),
         revision_candidate_task=_candidate_to_read(revision_candidate)
         if revision_candidate is not None
         else None,
     )
+
+
+def _knowledge_references_for(artifact: Artifact | None) -> list[str]:
+    if artifact is not None:
+        references = (artifact.item_metadata or {}).get("knowledge_references", [])
+        if isinstance(references, list) and references:
+            return [reference for reference in references if isinstance(reference, str)]
+
+    return [*OFFICIAL_MASTER_REFERENCES, AGENT_GUIDE_REFERENCE]

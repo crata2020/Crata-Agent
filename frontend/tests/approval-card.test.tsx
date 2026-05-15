@@ -62,7 +62,10 @@ describe("ApprovalCard", () => {
     render(<ApprovalCard approval={pendingApproval} />);
 
     expect(screen.getByText("참조 지식")).toBeInTheDocument();
-    expect(screen.getByText("개인행동 동기검사 MASTER")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "개인행동 동기검사 MASTER" })).toHaveAttribute(
+      "href",
+      "/memory?query=%EA%B0%9C%EC%9D%B8%ED%96%89%EB%8F%99%20%EB%8F%99%EA%B8%B0%EA%B2%80%EC%82%AC%20MASTER",
+    );
     expect(screen.getByText("집단행동검사 MASTER")).toBeInTheDocument();
     expect(screen.getByText("에이전트 작업 가이드")).toBeInTheDocument();
   });

@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, RotateCcw, X } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -187,15 +188,20 @@ export function ApprovalCard({ approval, highlighted = false }: ApprovalCardProp
         <section className="mt-4 rounded-[10px] border border-[#38BDF8]/25 bg-[#07141C] p-3">
           <h3 className="text-xs font-semibold uppercase tracking-normal text-[#7DD7FF]">참조 지식</h3>
           <div className="mt-2 flex flex-wrap gap-2">
-            {approval.knowledge_references.map((reference) => (
-              <span
-                key={reference}
-                title={reference}
-                className="rounded-button border border-[#38BDF8]/25 bg-[#092234] px-2.5 py-1 text-xs font-semibold text-[#DDE6EE]"
-              >
-                {knowledgeReferenceLabel(reference)}
-              </span>
-            ))}
+            {approval.knowledge_references.map((reference) => {
+              const label = knowledgeReferenceLabel(reference);
+
+              return (
+                <Link
+                  key={reference}
+                  href={`/memory?query=${encodeURIComponent(label)}`}
+                  title={reference}
+                  className="rounded-button border border-[#38BDF8]/25 bg-[#092234] px-2.5 py-1 text-xs font-semibold text-[#DDE6EE] transition hover:border-[#7DD7FF]/60 hover:bg-[#10344A]"
+                >
+                  {label}
+                </Link>
+              );
+            })}
           </div>
         </section>
       ) : null}
