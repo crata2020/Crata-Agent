@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Artifact, CandidateTask, Task
+from app.models import Approval, Artifact, CandidateTask, Task
 
 
 def _create_pending_approval(client: TestClient) -> tuple[str, str]:
@@ -55,6 +55,41 @@ def test_approve_item_changes_status(app: FastAPI, db_session: Session) -> None:
     artifact = db_session.scalar(select(Artifact).where(Artifact.id == body["artifact_id"]))
     task = db_session.scalar(select(Task).where(Task.id == body["task_id"]))
     candidate = db_session.get(CandidateTask, candidate_id)
+    assert artifact is not None
+    assert artifact.status == "approved"
+    assert task is not None
+    assert task.status == "approved"
+    assert candidate is not None
+    assert candidate.status == "approved"
+
+
+def test_decide_rejects_second_decision_and_preserves_statuses(
+    app: FastAPI, db_session: Session
+) -> None:
+    client = TestClient(app)
+    candidate_id, approval_id = _create_pending_approval(client)
+
+    first_response = client.post(
+        f"/approvals/{approval_id}/decide",
+        json={"decision": "approved", "reason": "initial approval"},
+    )
+    second_response = client.post(
+        f"/approvals/{approval_id}/decide",
+        json={"decision": "rejected", "reason": "second decision"},
+    )
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 409
+    assert second_response.json()["detail"] == "Approval already decided"
+
+    approval = db_session.get(Approval, approval_id)
+    artifact = db_session.scalar(
+        select(Artifact).where(Artifact.id == first_response.json()["artifact_id"])
+    )
+    task = db_session.scalar(select(Task).where(Task.id == first_response.json()["task_id"]))
+    candidate = db_session.get(CandidateTask, candidate_id)
+    assert approval is not None
+    assert approval.status == "approved"
     assert artifact is not None
     assert artifact.status == "approved"
     assert task is not None

@@ -24,6 +24,8 @@ def decide_approval(
     approval = db.get(Approval, approval_id)
     if approval is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Approval not found")
+    if approval.status != "pending_approval":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Approval already decided")
 
     approval.status = payload.decision
     approval.decision_reason = payload.reason
