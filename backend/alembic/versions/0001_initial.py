@@ -28,7 +28,7 @@ def upgrade() -> None:
         sa.Column("name", sa.String(length=128), nullable=False),
         sa.Column("display_name", sa.String(length=128), nullable=False),
         sa.Column("role", sa.String(length=128), nullable=False),
-        sa.Column("description", sa.Text(), nullable=False),
+        sa.Column("description", sa.Text(), nullable=False, server_default=""),
         sa.Column("status", sa.String(length=64), nullable=False, server_default="idle"),
         sa.Column("default_model_provider", sa.String(length=64), nullable=False, server_default="openai"),
         sa.Column("default_model_name", sa.String(length=128), nullable=False, server_default="gpt-4.1-mini"),
@@ -138,7 +138,7 @@ def upgrade() -> None:
         sa.Column("checkpoint", sa.JSON(), nullable=False, server_default=JSON_OBJECT_DEFAULT),
         sa.Column("started_at", sa.DateTime(), nullable=False),
         sa.Column("completed_at", sa.DateTime(), nullable=True),
-        sa.Column("error", sa.Text(), nullable=True),
+        sa.Column("error", sa.Text(), nullable=False, server_default=""),
         sa.ForeignKeyConstraint(["task_id"], ["tasks.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
