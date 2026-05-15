@@ -261,14 +261,20 @@ describe("dashboard agent flow map", () => {
   it("shows recent workflow runs in the live logs panel", () => {
     render(<DashboardContent summary={summary} agentActivity={activity} workflowActivity={workflowActivity} />);
 
-    expect(screen.getByText("Live Logs")).toBeInTheDocument();
-    expect(screen.getByTestId("live-logs-panel")).toHaveClass("xl:right-[360px]");
+    expect(screen.getByRole("tab", { name: "에이전트" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.queryByTestId("live-logs-panel")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "실행 로그" }));
+
+    expect(screen.getByRole("tab", { name: "실행 로그" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("live-logs-panel")).toHaveClass("mt-4");
     expect(screen.getByTestId("agent-inspector-panel")).toHaveClass("right-5", "w-[320px]");
     expect(screen.getAllByText("결과지 문구 수정 후보").length).toBeGreaterThan(0);
     expect(screen.getByText("4단계")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "결과지 에디터 상세 보기" }));
 
+    expect(screen.getByRole("tab", { name: "에이전트" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByText("초안 작성")).toBeInTheDocument();
   });
 

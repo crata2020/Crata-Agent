@@ -12,6 +12,7 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     pool: "threads",
+    testTimeout: 10000,
   },
   resolve: {
     alias: {

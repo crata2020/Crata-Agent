@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, ClipboardCheck, Loader2, Maximize2, Minus, Move, Play, Plus, RotateCcw } from "lucide-react";
+import { AlertCircle, ClipboardCheck, Loader2, Minus, Move, Play, Plus, RotateCcw } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import type { PointerEvent, ReactNode, WheelEvent } from "react";
 
@@ -127,6 +127,7 @@ interface AgentFlowCanvasProps {
 export function AgentFlowCanvas({ agents, summary, workflowRuns = [] }: AgentFlowCanvasProps) {
   const [view, setView] = useState({ x: 24, y: 48, scale: 0.61 });
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [inspectorTab, setInspectorTab] = useState<"agent" | "logs">("agent");
   const [runningWorkItemKey, setRunningWorkItemKey] = useState<string | null>(null);
   const [workItemOverrides, setWorkItemOverrides] = useState<Record<string, Partial<AgentWorkItem>>>({});
   const [workItemMessages, setWorkItemMessages] = useState<Record<string, { tone: "success" | "error"; text: string }>>({});
@@ -262,110 +263,151 @@ export function AgentFlowCanvas({ agents, summary, workflowRuns = [] }: AgentFlo
         data-testid="agent-inspector-panel"
         className="absolute right-5 top-24 z-30 hidden max-h-[calc(100vh-8rem)] w-[320px] overflow-y-auto rounded-card border border-white/10 bg-[#11161C]/94 p-4 text-white shadow-[0_18px_60px_rgba(0,0,0,0.42)] backdrop-blur xl:block"
       >
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8EA0AE]">Agent Inspector</p>
-        <div className="mt-3 flex items-start gap-3">
-          <div
-            className="flex size-10 shrink-0 items-center justify-center rounded-[9px] border text-xs font-black"
-            style={{
-              borderColor: selectedAgent?.color ?? "#38BDF8",
-              color: selectedAgent?.color ?? "#38BDF8",
-              backgroundColor: `${selectedAgent?.color ?? "#38BDF8"}1A`,
-            }}
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8EA0AE]">Agent Inspector</p>
+          <span className="rounded-full bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-[#AEB9C4]">
+            {workflowRuns.length}개 실행
+          </span>
+        </div>
+
+        <div
+          role="tablist"
+          aria-label="에이전트 인스펙터 보기"
+          className="mt-3 grid grid-cols-2 rounded-button border border-white/10 bg-black/20 p-1 text-xs font-semibold"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={inspectorTab === "agent"}
+            onClick={() => setInspectorTab("agent")}
+            className={`rounded-button px-3 py-2 transition ${
+              inspectorTab === "agent" ? "bg-[#102A1C] text-[#6FF0A0]" : "text-[#94A1AD] hover:bg-white/[0.06] hover:text-white"
+            }`}
           >
-            {selectedAgent ? agentInitials(selectedAgent.display_name) : "AI"}
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold leading-5">{selectedAgent?.display_name ?? "CRATA CEO"}</h2>
-            <p className="mt-1 line-clamp-2 text-xs leading-5 text-[#B1BDC7]">{selectedAgent?.role}</p>
-          </div>
+            에이전트
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={inspectorTab === "logs"}
+            onClick={() => setInspectorTab("logs")}
+            className={`rounded-button px-3 py-2 transition ${
+              inspectorTab === "logs" ? "bg-[#2A1820] text-[#FF6B7A]" : "text-[#94A1AD] hover:bg-white/[0.06] hover:text-white"
+            }`}
+          >
+            실행 로그
+          </button>
         </div>
 
-        <div className="mt-4 rounded-card border border-white/10 bg-black/20 p-3">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-[11px] text-[#8E99A3]">현재 작업</p>
-            {selectedAgent ? (
-              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold ${statusMeta[selectedAgent.activity_status].badgeClass}`}>
-                <span className="size-1.5 rounded-full" style={{ backgroundColor: statusMeta[selectedAgent.activity_status].dot }} />
-                {statusMeta[selectedAgent.activity_status].label}
-              </span>
-            ) : null}
-          </div>
-          <p className="mt-2 line-clamp-3 text-sm leading-5 text-white">{selectedAgent?.current_focus ?? "요청 대기"}</p>
-          {selectedAgent?.current_task_type ? (
-            <p className="mt-2 rounded-button bg-white/[0.06] px-2 py-1 text-xs font-semibold text-[#AEB9C4]">
-              {selectedAgent.current_task_type}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-          <InspectorStat label="작업" value={selectedAgent?.workload_count ?? 0} />
-          <InspectorStat label="후보" value={selectedAgent?.candidate_count ?? 0} />
-          <InspectorStat label="승인" value={selectedAgent?.pending_approval_count ?? 0} />
-        </div>
-
-        <div className="mt-4">
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8EA0AE]">Work Queue</p>
-            <span className="rounded-full bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-[#AEB9C4]">
-              {selectedWorkItems.length}개
-            </span>
-          </div>
-          <div className="max-h-[230px] space-y-2 overflow-y-auto pr-1">
-            {selectedWorkItems.length > 0 ? (
-              selectedWorkItems.map(({ itemKey, item }) => (
-                <WorkItemCard
-                  key={itemKey}
-                  item={item}
-                  isRunning={runningWorkItemKey === itemKey}
-                  message={workItemMessages[itemKey]}
-                  onRun={() => handleRunWorkItem(itemKey, item)}
-                />
-              ))
-            ) : (
-              <div className="rounded-card border border-dashed border-white/10 bg-black/15 p-3 text-xs leading-5 text-[#8F9AA4]">
-                이 에이전트에게 배정된 후보나 승인 대기 작업이 아직 없습니다.
+        {inspectorTab === "agent" ? (
+          <>
+            <div className="mt-4 flex items-start gap-3">
+              <div
+                className="flex size-10 shrink-0 items-center justify-center rounded-[9px] border text-xs font-black"
+                style={{
+                  borderColor: selectedAgent?.color ?? "#38BDF8",
+                  color: selectedAgent?.color ?? "#38BDF8",
+                  backgroundColor: `${selectedAgent?.color ?? "#38BDF8"}1A`,
+                }}
+              >
+                {selectedAgent ? agentInitials(selectedAgent.display_name) : "AI"}
               </div>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8EA0AE]">Agent Timeline</p>
-            <span className="rounded-full bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-[#AEB9C4]">
-              {selectedAgentSteps.length}단계
-            </span>
-          </div>
-          {selectedAgentSteps.length > 0 ? (
-            <div className="space-y-2">
-              {selectedAgentSteps.map(({ run, step }) => (
-                <AgentStepCard key={step.id} run={run} step={step} />
-              ))}
+              <div className="min-w-0">
+                <h2 className="text-base font-semibold leading-5">{selectedAgent?.display_name ?? "CRATA CEO"}</h2>
+                <p className="mt-1 line-clamp-2 text-xs leading-5 text-[#B1BDC7]">{selectedAgent?.role}</p>
+              </div>
             </div>
-          ) : (
-            <div className="rounded-card border border-dashed border-white/10 bg-black/15 p-3 text-xs leading-5 text-[#8F9AA4]">
-              아직 이 에이전트가 수행한 실행 단계가 없습니다.
+
+            <div className="mt-4 rounded-card border border-white/10 bg-black/20 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[11px] text-[#8E99A3]">현재 작업</p>
+                {selectedAgent ? (
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold ${statusMeta[selectedAgent.activity_status].badgeClass}`}>
+                    <span className="size-1.5 rounded-full" style={{ backgroundColor: statusMeta[selectedAgent.activity_status].dot }} />
+                    {statusMeta[selectedAgent.activity_status].label}
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-2 line-clamp-3 text-sm leading-5 text-white">{selectedAgent?.current_focus ?? "요청 대기"}</p>
+              {selectedAgent?.current_task_type ? (
+                <p className="mt-2 rounded-button bg-white/[0.06] px-2 py-1 text-xs font-semibold text-[#AEB9C4]">
+                  {selectedAgent.current_task_type}
+                </p>
+              ) : null}
             </div>
-          )}
-        </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <a
-            href="/request-intake"
-            className="rounded-button border border-white/10 bg-white/[0.06] px-3 py-2 text-center text-xs font-semibold text-[#DDE6EE] transition hover:bg-white/10"
-          >
-            후보 보기
-          </a>
-          <a
-            href="/approvals"
-            className="rounded-button border border-[#F2B84B]/30 bg-[#302410] px-3 py-2 text-center text-xs font-semibold text-[#FFD37A] transition hover:bg-[#3A2B13]"
-          >
-            승인함
-          </a>
-        </div>
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+              <InspectorStat label="작업" value={selectedAgent?.workload_count ?? 0} />
+              <InspectorStat label="후보" value={selectedAgent?.candidate_count ?? 0} />
+              <InspectorStat label="승인" value={selectedAgent?.pending_approval_count ?? 0} />
+            </div>
 
-        <p className="mt-3 text-[11px] leading-5 text-[#7F8A93]">후보는 요청 콘솔, 승인 항목은 승인함으로 연결됩니다.</p>
+            <div className="mt-4">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8EA0AE]">Work Queue</p>
+                <span className="rounded-full bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-[#AEB9C4]">
+                  {selectedWorkItems.length}개
+                </span>
+              </div>
+              <div className="max-h-[230px] space-y-2 overflow-y-auto pr-1">
+                {selectedWorkItems.length > 0 ? (
+                  selectedWorkItems.map(({ itemKey, item }) => (
+                    <WorkItemCard
+                      key={itemKey}
+                      item={item}
+                      isRunning={runningWorkItemKey === itemKey}
+                      message={workItemMessages[itemKey]}
+                      onRun={() => handleRunWorkItem(itemKey, item)}
+                    />
+                  ))
+                ) : (
+                  <div className="rounded-card border border-dashed border-white/10 bg-black/15 p-3 text-xs leading-5 text-[#8F9AA4]">
+                    이 에이전트에게 배정된 후보나 승인 대기 작업이 아직 없습니다.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8EA0AE]">Agent Timeline</p>
+                <span className="rounded-full bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-[#AEB9C4]">
+                  {selectedAgentSteps.length}단계
+                </span>
+              </div>
+              {selectedAgentSteps.length > 0 ? (
+                <div className="space-y-2">
+                  {selectedAgentSteps.map(({ run, step }) => (
+                    <AgentStepCard key={step.id} run={run} step={step} />
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-card border border-dashed border-white/10 bg-black/15 p-3 text-xs leading-5 text-[#8F9AA4]">
+                  아직 이 에이전트가 수행한 실행 단계가 없습니다.
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <a
+                href="/request-intake"
+                className="rounded-button border border-white/10 bg-white/[0.06] px-3 py-2 text-center text-xs font-semibold text-[#DDE6EE] transition hover:bg-white/10"
+              >
+                후보 보기
+              </a>
+              <a
+                href="/approvals"
+                className="rounded-button border border-[#F2B84B]/30 bg-[#302410] px-3 py-2 text-center text-xs font-semibold text-[#FFD37A] transition hover:bg-[#3A2B13]"
+              >
+                승인함
+              </a>
+            </div>
+
+            <p className="mt-3 text-[11px] leading-5 text-[#7F8A93]">후보는 요청 콘솔, 승인 항목은 승인함으로 연결됩니다.</p>
+          </>
+        ) : (
+          <LiveLogsContent workflowRuns={workflowRuns} agentNameById={agentNameById} />
+        )}
       </aside>
 
       <div className="absolute bottom-6 left-6 z-20 flex flex-col overflow-hidden rounded-full border border-white/10 bg-[#12171D]/90 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur">
@@ -434,7 +476,10 @@ export function AgentFlowCanvas({ agents, summary, workflowRuns = [] }: AgentFlo
                 x={position.x}
                 y={position.y}
                 selected={selectedAgent?.id === agent.id}
-                onSelect={() => setSelectedAgentId(agent.id)}
+                onSelect={() => {
+                  setSelectedAgentId(agent.id);
+                  setInspectorTab("agent");
+                }}
               />
             );
           })}
@@ -444,7 +489,6 @@ export function AgentFlowCanvas({ agents, summary, workflowRuns = [] }: AgentFlo
         <span className="rounded-full px-5 py-2">Teams</span>
         <span className="rounded-full bg-[#362029] px-5 py-2 text-[#FF5F6D]">Hierarchy</span>
       </div>
-      <LiveLogsPanel workflowRuns={workflowRuns} agentNameById={agentNameById} />
     </section>
   );
 }
@@ -556,7 +600,7 @@ function AgentStepCard({ run, step }: { run: WorkflowRunActivity; step: Workflow
   );
 }
 
-function LiveLogsPanel({
+function LiveLogsContent({
   workflowRuns,
   agentNameById,
 }: {
@@ -566,16 +610,18 @@ function LiveLogsPanel({
   const recentRuns = workflowRuns.slice(0, 3);
 
   return (
-    <section
+    <div
       data-testid="live-logs-panel"
-      className="absolute bottom-6 right-6 z-20 hidden w-[390px] rounded-card border border-white/10 bg-[#12171D]/92 p-4 text-[#C2CAD2] shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur lg:block xl:right-[360px]"
+      className="mt-4 text-[#C2CAD2]"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="inline-flex size-2 rounded-full bg-[#FF5F6D]" />
-          <p className="text-sm font-semibold text-white">Live Logs</p>
+          <p className="text-sm font-semibold text-white">실행 로그</p>
         </div>
-        <Maximize2 size={14} aria-hidden="true" />
+        <span className="rounded-full bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-[#AEB9C4]">
+          최근 {recentRuns.length}개
+        </span>
       </div>
 
       {recentRuns.length > 0 ? (
@@ -618,7 +664,7 @@ function LiveLogsPanel({
           아직 실행 기록이 없습니다. 후보를 실행하면 이곳에 단계가 쌓입니다.
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
