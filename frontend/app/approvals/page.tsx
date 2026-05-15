@@ -1,4 +1,4 @@
-import { ApprovalCard } from "@/components/approval-card";
+import { ApprovalInbox } from "@/components/approval-inbox";
 import { AppShell } from "@/components/app-shell";
 import { listApprovals } from "@/lib/api";
 
@@ -10,7 +10,7 @@ function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function ApprovalsPage({ searchParams }: ApprovalsPageProps) {
+export default async function ApprovalsPage({ searchParams }: ApprovalsPageProps = {}) {
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const highlightedApprovalId = firstParam(resolvedSearchParams.approvalId);
 
@@ -44,21 +44,7 @@ export default async function ApprovalsPage({ searchParams }: ApprovalsPageProps
             </section>
           ) : null}
 
-          {approvals.length === 0 ? (
-            <section className="mt-5 rounded-[14px] border border-white/10 bg-[#111820] p-6 text-sm text-[#AEB9C4]">
-              승인대기 항목이 없습니다.
-            </section>
-          ) : (
-            <section className="mt-5 space-y-3" aria-label="승인 항목">
-              {approvals.map((approval) => (
-                <ApprovalCard
-                  key={approval.id}
-                  approval={approval}
-                  highlighted={approval.id === highlightedApprovalId}
-                />
-              ))}
-            </section>
-          )}
+          <ApprovalInbox approvals={approvals} highlightedApprovalId={highlightedApprovalId} />
         </section>
       </AppShell>
     );
