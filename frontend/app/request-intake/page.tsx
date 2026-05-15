@@ -1,10 +1,10 @@
 "use client";
 
-import { CheckCircle2, PauseCircle, Play, Send } from "lucide-react";
+import { CheckCircle2, PauseCircle, Pencil, Play, Save, Send, X } from "lucide-react";
 import { FormEvent, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
-import { createIntake, runCandidate } from "@/lib/api";
+import { createIntake, runCandidate, updateCandidate } from "@/lib/api";
 import {
   detectInputType,
   inputTypeLabels,
@@ -15,6 +15,12 @@ import type { CandidateTask } from "@/lib/types";
 
 const exampleContent =
   "조직행동검사 5페이지 문구를 수정하자. A유형 B유형 상담 사례는 학습 후보로 저장하자. 공공기관 제안서 프로그램도 기획해보자.";
+
+type CandidateEdit = {
+  title: string;
+  summary: string;
+  recommendedAgentsText: string;
+};
 
 const taskTypeLabels: Record<string, string> = {
   report_phrase_revision: "결과지 문구 수정",
@@ -34,6 +40,18 @@ const candidateStatusLabels: Record<string, string> = {
   error: "오류",
 };
 
+function candidateToEdit(candidate: CandidateTask): CandidateEdit {
+  return {
+    title: candidate.title,
+    summary: candidate.summary,
+    recommendedAgentsText: candidate.recommended_agents.join(", "),
+  };
+}
+
+function parseRecommendedAgents(value: string) {
+  return Array.from(new Set(value.split(/[\s,]+/).map((agent) => agent.trim()).filter(Boolean)));
+}
+
 export default function RequestIntakePage() {
   const [title, setTitle] = useState("회의록");
   const [inputType, setInputType] = useState<InputTypeMode>("auto");
@@ -45,6 +63,9 @@ export default function RequestIntakePage() {
   const [runningCandidateId, setRunningCandidateId] = useState<string | null>(null);
   const [runApprovals, setRunApprovals] = useState<Record<string, string>>({});
   const [candidateSelections, setCandidateSelections] = useState<Record<string, boolean>>({});
+  const [editingCandidateId, setEditingCandidateId] = useState<string | null>(null);
+  const [savingCandidateId, setSavingCandidateId] = useState<string | null>(null);
+  const [candidateEdits, setCandidateEdits] = useState<Record<string, CandidateEdit>>({});
   const detectedInputType = detectInputType(title, rawContent);
   const resolvedInputType = resolveInputType(inputType, title, rawContent);
   const selectedCandidateCount = candidates.filter((candidate) => candidateSelections[candidate.id] !== false).length;
@@ -67,10 +88,16 @@ export default function RequestIntakePage() {
       setCandidateSelections(
         Object.fromEntries(response.candidate_tasks.map((candidate) => [candidate.id, true])),
       );
+      setCandidateEdits(
+        Object.fromEntries(response.candidate_tasks.map((candidate) => [candidate.id, candidateToEdit(candidate)])),
+      );
+      setEditingCandidateId(null);
       setMessage(`작업 후보 ${response.candidate_tasks.length}개를 추출했습니다.`);
     } catch (err) {
       setCandidates([]);
       setCandidateSelections({});
+      setCandidateEdits({});
+      setEditingCandidateId(null);
       setError(err instanceof Error ? err.message : "작업 후보 추출에 실패했습니다.");
     } finally {
       setIsSubmitting(false);
@@ -78,6 +105,10 @@ export default function RequestIntakePage() {
   }
 
   async function handleRunCandidate(candidate: CandidateTask) {
+    if (editingCandidateId === candidate.id) {
+      setError("수정 중인 후보는 저장하거나 취소한 뒤 실행하세요.");
+      return;
+    }
     if (candidateSelections[candidate.id] === false) {
       setError("보류한 후보는 실행할 수 없습니다. 실행 대상에 다시 포함한 뒤 실행하세요.");
       return;
@@ -97,6 +128,73 @@ export default function RequestIntakePage() {
       setError(err instanceof Error ? err.message : "작업 실행에 실패했습니다.");
     } finally {
       setRunningCandidateId(null);
+    }
+  }
+
+  function updateCandidateEdit(candidateId: string, patch: Partial<CandidateEdit>) {
+    setCandidateEdits((current) => ({
+      ...current,
+      [candidateId]: {
+        ...(current[candidateId] ?? { title: "", summary: "", recommendedAgentsText: "" }),
+        ...patch,
+      },
+    }));
+  }
+
+  function startEditingCandidate(candidate: CandidateTask) {
+    setError("");
+    setMessage("");
+    setEditingCandidateId(candidate.id);
+    setCandidateEdits((current) => ({
+      ...current,
+      [candidate.id]: current[candidate.id] ?? candidateToEdit(candidate),
+    }));
+  }
+
+  function cancelEditingCandidate(candidate: CandidateTask) {
+    setEditingCandidateId(null);
+    setCandidateEdits((current) => ({
+      ...current,
+      [candidate.id]: candidateToEdit(candidate),
+    }));
+  }
+
+  async function saveCandidate(candidate: CandidateTask) {
+    const edit = candidateEdits[candidate.id] ?? candidateToEdit(candidate);
+    const nextTitle = edit.title.trim();
+    const nextSummary = edit.summary.trim();
+    const nextAgents = parseRecommendedAgents(edit.recommendedAgentsText);
+
+    if (!nextTitle || !nextSummary || nextAgents.length === 0) {
+      setError("후보 제목, 요약, 추천 에이전트를 모두 입력하세요.");
+      return;
+    }
+
+    setSavingCandidateId(candidate.id);
+    setError("");
+    setMessage("");
+
+    try {
+      const updatedCandidate = await updateCandidate(candidate.id, {
+        title: nextTitle,
+        summary: nextSummary,
+        recommended_agents: nextAgents,
+      });
+      setCandidates((current) =>
+        current.map((currentCandidate) =>
+          currentCandidate.id === updatedCandidate.id ? updatedCandidate : currentCandidate,
+        ),
+      );
+      setCandidateEdits((current) => ({
+        ...current,
+        [updatedCandidate.id]: candidateToEdit(updatedCandidate),
+      }));
+      setEditingCandidateId(null);
+      setMessage("후보를 저장했습니다.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "후보 저장에 실패했습니다.");
+    } finally {
+      setSavingCandidateId(null);
     }
   }
 
@@ -212,6 +310,9 @@ export default function RequestIntakePage() {
               const statusLabel = isSelected
                 ? candidateStatusLabels[candidate.status] ?? candidate.status
                 : "보류됨";
+              const isEditing = editingCandidateId === candidate.id;
+              const edit = candidateEdits[candidate.id] ?? candidateToEdit(candidate);
+              const isSaving = savingCandidateId === candidate.id;
 
               return (
                 <article
@@ -234,8 +335,42 @@ export default function RequestIntakePage() {
                           {statusLabel}
                         </span>
                       </div>
-                      <h2 className="mt-3 text-base font-semibold text-[#1F2723]">{candidate.title}</h2>
-                      <p className="mt-2 text-sm leading-6 text-[#5F6B64]">{candidate.summary}</p>
+                      {isEditing ? (
+                        <div className="mt-3 grid gap-3">
+                          <label className="block">
+                            <span className="text-xs font-semibold text-[#5F6B64]">후보 제목</span>
+                            <input
+                              value={edit.title}
+                              onChange={(event) => updateCandidateEdit(candidate.id, { title: event.target.value })}
+                              className="mt-1 h-10 w-full rounded-button border border-border bg-white px-3 text-sm outline-none focus:border-primary"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="text-xs font-semibold text-[#5F6B64]">후보 요약</span>
+                            <textarea
+                              value={edit.summary}
+                              onChange={(event) => updateCandidateEdit(candidate.id, { summary: event.target.value })}
+                              rows={3}
+                              className="mt-1 w-full resize-y rounded-card border border-border bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-primary"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="text-xs font-semibold text-[#5F6B64]">추천 에이전트</span>
+                            <input
+                              value={edit.recommendedAgentsText}
+                              onChange={(event) =>
+                                updateCandidateEdit(candidate.id, { recommendedAgentsText: event.target.value })
+                              }
+                              className="mt-1 h-10 w-full rounded-button border border-border bg-white px-3 text-sm outline-none focus:border-primary"
+                            />
+                          </label>
+                        </div>
+                      ) : (
+                        <>
+                          <h2 className="mt-3 text-base font-semibold text-[#1F2723]">{candidate.title}</h2>
+                          <p className="mt-2 text-sm leading-6 text-[#5F6B64]">{candidate.summary}</p>
+                        </>
+                      )}
                     </div>
                     <div className="flex shrink-0 flex-col gap-2 sm:items-end">
                       <label className="inline-flex h-9 items-center gap-2 rounded-button border border-border bg-white px-3 text-xs font-semibold text-[#1F2723]">
@@ -243,7 +378,7 @@ export default function RequestIntakePage() {
                           type="checkbox"
                           aria-label={`${candidate.title} 실행 대상`}
                           checked={isSelected}
-                          disabled={isRunning || hasRun}
+                          disabled={isRunning || hasRun || isEditing}
                           onChange={(event) =>
                             setCandidateSelections((current) => ({
                               ...current,
@@ -254,10 +389,42 @@ export default function RequestIntakePage() {
                         />
                         실행 대상
                       </label>
+                      {isEditing ? (
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => saveCandidate(candidate)}
+                            disabled={isSaving}
+                            className="inline-flex h-10 items-center justify-center gap-2 rounded-button bg-primary px-4 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <Save size={16} aria-hidden="true" />
+                            {isSaving ? "저장 중" : "후보 저장"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => cancelEditingCandidate(candidate)}
+                            disabled={isSaving}
+                            className="inline-flex h-10 items-center justify-center gap-2 rounded-button border border-border bg-white px-4 text-sm font-semibold text-[#1F2723] transition hover:bg-surfaceAlt disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <X size={16} aria-hidden="true" />
+                            취소
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => startEditingCandidate(candidate)}
+                          disabled={isRunning || hasRun}
+                          className="inline-flex h-10 items-center justify-center gap-2 rounded-button border border-border bg-white px-4 text-sm font-semibold text-[#1F2723] transition hover:bg-surfaceAlt disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <Pencil size={16} aria-hidden="true" />
+                          후보 수정
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => handleRunCandidate(candidate)}
-                        disabled={!isSelected || isRunning || hasRun}
+                        disabled={!isSelected || isRunning || hasRun || isEditing}
                         className="inline-flex h-10 items-center justify-center gap-2 rounded-button bg-analysis px-4 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         <Play size={16} aria-hidden="true" />

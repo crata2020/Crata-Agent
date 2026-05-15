@@ -91,6 +91,35 @@ describe("api client", () => {
     );
   });
 
+  it("patches a candidate task before execution", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: "candidate-1", title: "수정 후보" }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const { updateCandidate } = await import("@/lib/api");
+
+    await updateCandidate("candidate-1", {
+      title: "수정 후보",
+      summary: "실행 전 후보를 정리한다.",
+      recommended_agents: ["crata_ceo", "report_editor"],
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8000/intake/candidates/candidate-1",
+      expect.objectContaining({
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "수정 후보",
+          summary: "실행 전 후보를 정리한다.",
+          recommended_agents: ["crata_ceo", "report_editor"],
+        }),
+      }),
+    );
+  });
+
   it("posts approval decisions with an optional reason", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

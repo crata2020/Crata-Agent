@@ -3,15 +3,17 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import RequestIntakePage from "@/app/request-intake/page";
-import { createIntake, runCandidate } from "@/lib/api";
+import { createIntake, runCandidate, updateCandidate } from "@/lib/api";
 
 vi.mock("@/lib/api", () => ({
   createIntake: vi.fn(),
   runCandidate: vi.fn(),
+  updateCandidate: vi.fn(),
 }));
 
 const createIntakeMock = vi.mocked(createIntake);
 const runCandidateMock = vi.mocked(runCandidate);
+const updateCandidateMock = vi.mocked(updateCandidate);
 
 const candidateTasks = [
   {
@@ -38,6 +40,7 @@ describe("RequestIntakePage candidate review", () => {
   beforeEach(() => {
     createIntakeMock.mockReset();
     runCandidateMock.mockReset();
+    updateCandidateMock.mockReset();
   });
 
   it("shows a review workspace for extracted candidates and lets the user hold one", async () => {
@@ -96,5 +99,53 @@ describe("RequestIntakePage candidate review", () => {
 
     await waitFor(() => expect(runCandidateMock).toHaveBeenCalledWith("candidate-report"));
     expect(runCandidateMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("edits and saves candidate title, summary, and recommended agents before execution", async () => {
+    createIntakeMock.mockResolvedValue({
+      id: "intake-1",
+      title: "회의록",
+      input_type: "meeting_notes",
+      raw_content: "원문",
+      candidate_tasks: candidateTasks,
+    });
+    updateCandidateMock.mockResolvedValue({
+      ...candidateTasks[0],
+      title: "조직행동검사 5페이지 문구 수정",
+      summary: "상담형 결과지 문장으로 수정합니다.",
+      recommended_agents: ["crata_ceo", "report_editor", "quality_inspector"],
+    });
+
+    render(<RequestIntakePage />);
+
+    fireEvent.change(screen.getByLabelText("원문"), {
+      target: { value: "조직행동검사 5페이지 문구를 수정하자." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "작업 후보 추출" }));
+
+    await screen.findByText("작업 후보 검토");
+    fireEvent.click(screen.getAllByRole("button", { name: "후보 수정" })[0]);
+    fireEvent.change(screen.getByLabelText("후보 제목"), {
+      target: { value: "조직행동검사 5페이지 문구 수정" },
+    });
+    fireEvent.change(screen.getByLabelText("후보 요약"), {
+      target: { value: "상담형 결과지 문장으로 수정합니다." },
+    });
+    fireEvent.change(screen.getByLabelText("추천 에이전트"), {
+      target: { value: "crata_ceo, report_editor, quality_inspector" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "후보 저장" }));
+
+    await waitFor(() =>
+      expect(updateCandidateMock).toHaveBeenCalledWith("candidate-report", {
+        title: "조직행동검사 5페이지 문구 수정",
+        summary: "상담형 결과지 문장으로 수정합니다.",
+        recommended_agents: ["crata_ceo", "report_editor", "quality_inspector"],
+      }),
+    );
+    expect(await screen.findByText("후보를 저장했습니다.")).toBeInTheDocument();
+    expect(screen.getByText("조직행동검사 5페이지 문구 수정")).toBeInTheDocument();
+    expect(screen.getByText("상담형 결과지 문장으로 수정합니다.")).toBeInTheDocument();
+    expect(screen.getByText("quality_inspector")).toBeInTheDocument();
   });
 });

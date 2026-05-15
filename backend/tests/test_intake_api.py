@@ -103,6 +103,63 @@ def test_create_intake_resolves_auto_input_type_from_title(app: FastAPI) -> None
     assert response.json()["input_type"] == "meeting_notes"
 
 
+def test_update_candidate_task_before_execution(app: FastAPI, db_session: Session) -> None:
+    client = TestClient(app)
+    intake_response = client.post(
+        "/intake",
+        json={
+            "title": "회의록",
+            "raw_content": "결과지 문구를 수정하자.",
+        },
+    )
+    candidate_id = intake_response.json()["candidate_tasks"][0]["id"]
+
+    response = client.patch(
+        f"/intake/candidates/{candidate_id}",
+        json={
+            "title": "조직행동검사 5페이지 문구 수정",
+            "summary": "기존 결과지 표현을 상담형 문장으로 바꾸는 작업입니다.",
+            "recommended_agents": ["crata_ceo", "report_editor", "quality_inspector"],
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["title"] == "조직행동검사 5페이지 문구 수정"
+    assert body["summary"] == "기존 결과지 표현을 상담형 문장으로 바꾸는 작업입니다."
+    assert body["recommended_agents"] == ["crata_ceo", "report_editor", "quality_inspector"]
+
+    candidate = db_session.get(CandidateTask, candidate_id)
+    assert candidate is not None
+    assert candidate.title == "조직행동검사 5페이지 문구 수정"
+    assert candidate.recommended_agents == ["crata_ceo", "report_editor", "quality_inspector"]
+
+
+def test_update_candidate_task_rejects_started_candidates(app: FastAPI) -> None:
+    client = TestClient(app)
+    intake_response = client.post(
+        "/intake",
+        json={
+            "title": "회의록",
+            "raw_content": "결과지 문구를 수정하자.",
+        },
+    )
+    candidate_id = intake_response.json()["candidate_tasks"][0]["id"]
+    run_response = client.post(f"/tasks/from-candidate/{candidate_id}/run")
+
+    response = client.patch(
+        f"/intake/candidates/{candidate_id}",
+        json={
+            "title": "실행 후 수정",
+            "summary": "이미 실행된 후보는 수정하지 않는다.",
+            "recommended_agents": ["crata_ceo"],
+        },
+    )
+
+    assert run_response.status_code == 201
+    assert response.status_code == 409
+
+
 def test_create_intake_falls_back_to_general_task_for_unmatched_text(app: FastAPI) -> None:
     client = TestClient(app)
 

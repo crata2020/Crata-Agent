@@ -1,4 +1,4 @@
-import type { Approval, DashboardSummary, IntakeResponse } from "@/lib/types";
+import type { Approval, CandidateTask, DashboardSummary, IntakeResponse } from "@/lib/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
 
@@ -7,6 +7,12 @@ type IntakePayload = {
   input_type: string;
   raw_content: string;
   source?: string;
+};
+
+export type CandidateUpdatePayload = {
+  title: string;
+  summary: string;
+  recommended_agents: string[];
 };
 
 export type ApprovalDecision = "approved" | "rejected" | "revise_requested";
@@ -59,6 +65,14 @@ export function createIntake(payload: IntakePayload) {
 export function runCandidate(candidateId: string) {
   return requestJson<RunCandidateResponse>(`/tasks/from-candidate/${candidateId}/run`, {
     method: "POST",
+  });
+}
+
+export function updateCandidate(candidateId: string, payload: CandidateUpdatePayload) {
+  return requestJson<CandidateTask>(`/intake/candidates/${candidateId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
   });
 }
 
