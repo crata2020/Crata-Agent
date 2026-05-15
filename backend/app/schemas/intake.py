@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field, field_validator
 
 class IntakeCreate(BaseModel):
     title: str = Field(min_length=1, max_length=200)
-    input_type: str = Field(default="memo", max_length=60)
+    input_type: str = Field(default="auto", max_length=60)
     raw_content: str = Field(min_length=1)
     source: str = Field(default="manual", max_length=120)
 

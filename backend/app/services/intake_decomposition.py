@@ -52,6 +52,45 @@ _CATEGORIES = [
 ]
 
 
+def detect_input_type(title: str, raw_content: str) -> str:
+    text = f"{title}\n{raw_content}".casefold()
+
+    transcript_score = _keyword_score(
+        text,
+        [
+            "상담자:",
+            "내담자:",
+            "상담사:",
+            "담당자:",
+            "전사록",
+            "축어록",
+            "발화",
+            "상담 기록",
+        ],
+    )
+    meeting_score = _keyword_score(
+        text,
+        [
+            "회의록",
+            "회의",
+            "안건",
+            "결정사항",
+            "논의",
+            "참석자",
+            "액션아이템",
+            "action item",
+        ],
+    )
+
+    if transcript_score >= 2 or "전사록" in text or ("상담자:" in text and "내담자:" in text):
+        return "transcript"
+
+    if meeting_score >= 1:
+        return "meeting_notes"
+
+    return "memo"
+
+
 def decompose_input(raw_content: str) -> list[CandidateTaskDraft]:
     text = raw_content.strip()
     drafts: list[CandidateTaskDraft] = []
@@ -86,6 +125,10 @@ def decompose_input(raw_content: str) -> list[CandidateTaskDraft]:
 def _has_keyword(text: str, keywords: list[str]) -> bool:
     normalized_text = text.casefold()
     return any(keyword.casefold() in normalized_text for keyword in keywords)
+
+
+def _keyword_score(text: str, keywords: list[str]) -> int:
+    return sum(1 for keyword in keywords if keyword.casefold() in text)
 
 
 def _excerpt(text: str, keywords: list[str]) -> str:

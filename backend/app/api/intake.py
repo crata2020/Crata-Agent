@@ -4,16 +4,20 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models import CandidateTask, IntakeItem
 from app.schemas.intake import CandidateTaskRead, IntakeCreate, IntakeRead
-from app.services.intake_decomposition import decompose_input
+from app.services.intake_decomposition import decompose_input, detect_input_type
 
 router = APIRouter(prefix="/intake", tags=["intake"])
 
 
 @router.post("", response_model=IntakeRead, status_code=status.HTTP_201_CREATED)
 def create_intake(payload: IntakeCreate, db: Session = Depends(get_db)) -> IntakeRead:
+    input_type = payload.input_type
+    if not input_type or input_type == "auto":
+        input_type = detect_input_type(payload.title, payload.raw_content)
+
     intake_item = IntakeItem(
         title=payload.title,
-        input_type=payload.input_type,
+        input_type=input_type,
         raw_content=payload.raw_content,
         source=payload.source,
         item_metadata={},

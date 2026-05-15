@@ -69,6 +69,40 @@ def test_create_intake_extracts_all_mixed_candidate_task_types_in_order(app: Fas
     ]
 
 
+def test_create_intake_resolves_auto_input_type_from_content(app: FastAPI, db_session: Session) -> None:
+    client = TestClient(app)
+
+    response = client.post(
+        "/intake",
+        json={
+            "title": "상담 기록",
+            "input_type": "auto",
+            "raw_content": "상담자: 오늘 어떤 부분이 가장 힘드셨나요?\n내담자: 남편이 침묵하면 불안해서 계속 확인하게 됩니다.",
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["input_type"] == "transcript"
+    assert db_session.scalars(select(IntakeItem)).one().input_type == "transcript"
+
+
+def test_create_intake_resolves_auto_input_type_from_title(app: FastAPI) -> None:
+    client = TestClient(app)
+
+    response = client.post(
+        "/intake",
+        json={
+            "title": "5월 운영 회의록",
+            "input_type": "auto",
+            "raw_content": "결정사항: 조직행동검사 결과지 문구를 수정하고 제안서 기획도 진행한다.",
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["input_type"] == "meeting_notes"
+
+
 def test_create_intake_falls_back_to_general_task_for_unmatched_text(app: FastAPI) -> None:
     client = TestClient(app)
 

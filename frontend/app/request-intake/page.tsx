@@ -5,6 +5,12 @@ import { FormEvent, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { createIntake, runCandidate } from "@/lib/api";
+import {
+  detectInputType,
+  inputTypeLabels,
+  resolveInputType,
+  type InputTypeMode,
+} from "@/lib/intake-input-type";
 import type { CandidateTask } from "@/lib/types";
 
 const exampleContent =
@@ -12,7 +18,7 @@ const exampleContent =
 
 export default function RequestIntakePage() {
   const [title, setTitle] = useState("회의록");
-  const [inputType, setInputType] = useState("meeting_notes");
+  const [inputType, setInputType] = useState<InputTypeMode>("auto");
   const [rawContent, setRawContent] = useState("");
   const [candidates, setCandidates] = useState<CandidateTask[]>([]);
   const [message, setMessage] = useState("");
@@ -20,6 +26,8 @@ export default function RequestIntakePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [runningCandidateId, setRunningCandidateId] = useState<string | null>(null);
   const [runApprovals, setRunApprovals] = useState<Record<string, string>>({});
+  const detectedInputType = detectInputType(title, rawContent);
+  const resolvedInputType = resolveInputType(inputType, title, rawContent);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -31,7 +39,7 @@ export default function RequestIntakePage() {
     try {
       const response = await createIntake({
         title,
-        input_type: inputType,
+        input_type: resolvedInputType,
         raw_content: rawContent,
         source: "manual",
       });
@@ -88,13 +96,19 @@ export default function RequestIntakePage() {
               <span className="text-xs font-semibold text-[#5F6B64]">입력 유형</span>
               <select
                 value={inputType}
-                onChange={(event) => setInputType(event.target.value)}
+                onChange={(event) => setInputType(event.target.value as InputTypeMode)}
                 className="mt-1 h-10 w-full rounded-button border border-border bg-white px-3 text-sm outline-none focus:border-primary"
               >
-                <option value="meeting_notes">meeting_notes</option>
-                <option value="transcript">transcript</option>
-                <option value="memo">memo</option>
+                <option value="auto">{inputTypeLabels.auto}</option>
+                <option value="meeting_notes">{inputTypeLabels.meeting_notes}</option>
+                <option value="transcript">{inputTypeLabels.transcript}</option>
+                <option value="memo">{inputTypeLabels.memo}</option>
               </select>
+              <p className="mt-1 text-xs font-medium text-[#5F6B64]">
+                {inputType === "auto"
+                  ? `자동 판별: ${inputTypeLabels[detectedInputType]}`
+                  : `수동 지정: ${inputTypeLabels[resolvedInputType]}`}
+              </p>
             </label>
           </div>
 
