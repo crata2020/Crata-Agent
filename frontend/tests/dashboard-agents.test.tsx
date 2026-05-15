@@ -262,6 +262,8 @@ describe("dashboard agent flow map", () => {
     render(<DashboardContent summary={summary} agentActivity={activity} workflowActivity={workflowActivity} />);
 
     expect(screen.getByText("Live Logs")).toBeInTheDocument();
+    expect(screen.getByTestId("live-logs-panel")).toHaveClass("xl:right-[360px]");
+    expect(screen.getByTestId("agent-inspector-panel")).toHaveClass("right-5", "w-[320px]");
     expect(screen.getAllByText("결과지 문구 수정 후보").length).toBeGreaterThan(0);
     expect(screen.getByText("4단계")).toBeInTheDocument();
 

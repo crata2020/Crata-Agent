@@ -258,7 +258,10 @@ export function AgentFlowCanvas({ agents, summary, workflowRuns = [] }: AgentFlo
         </div>
       </header>
 
-      <aside className="absolute right-5 top-24 z-30 hidden max-h-[calc(100vh-8rem)] w-[320px] overflow-y-auto rounded-card border border-white/10 bg-[#11161C]/94 p-4 text-white shadow-[0_18px_60px_rgba(0,0,0,0.42)] backdrop-blur xl:block">
+      <aside
+        data-testid="agent-inspector-panel"
+        className="absolute right-5 top-24 z-30 hidden max-h-[calc(100vh-8rem)] w-[320px] overflow-y-auto rounded-card border border-white/10 bg-[#11161C]/94 p-4 text-white shadow-[0_18px_60px_rgba(0,0,0,0.42)] backdrop-blur xl:block"
+      >
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8EA0AE]">Agent Inspector</p>
         <div className="mt-3 flex items-start gap-3">
           <div
@@ -563,7 +566,10 @@ function LiveLogsPanel({
   const recentRuns = workflowRuns.slice(0, 3);
 
   return (
-    <section className="absolute bottom-6 right-6 z-20 hidden w-[390px] rounded-card border border-white/10 bg-[#12171D]/92 p-4 text-[#C2CAD2] shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur lg:block">
+    <section
+      data-testid="live-logs-panel"
+      className="absolute bottom-6 right-6 z-20 hidden w-[390px] rounded-card border border-white/10 bg-[#12171D]/92 p-4 text-[#C2CAD2] shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur lg:block xl:right-[360px]"
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="inline-flex size-2 rounded-full bg-[#FF5F6D]" />
