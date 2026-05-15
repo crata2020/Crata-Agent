@@ -1,9 +1,10 @@
 "use client";
 
-import { Maximize2, Minus, Move, Plus, RotateCcw } from "lucide-react";
+import { AlertCircle, ClipboardCheck, Loader2, Maximize2, Minus, Move, Play, Plus, RotateCcw } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import type { PointerEvent, ReactNode, WheelEvent } from "react";
 
+import { runCandidate } from "@/lib/api";
 import type { AgentActivity, AgentActivityStatus, AgentWorkItem, DashboardSummary } from "@/lib/types";
 
 const WORLD_WIDTH = 1780;
@@ -101,11 +102,23 @@ interface AgentFlowCanvasProps {
 export function AgentFlowCanvas({ agents, summary }: AgentFlowCanvasProps) {
   const [view, setView] = useState({ x: 24, y: 48, scale: 0.61 });
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [runningWorkItemKey, setRunningWorkItemKey] = useState<string | null>(null);
+  const [workItemOverrides, setWorkItemOverrides] = useState<Record<string, Partial<AgentWorkItem>>>({});
+  const [workItemMessages, setWorkItemMessages] = useState<Record<string, { tone: "success" | "error"; text: string }>>({});
   const dragRef = useRef<{ active: boolean; x: number; y: number }>({ active: false, x: 0, y: 0 });
   const activityById = useMemo(() => new Map(agents.map((agent) => [agent.id, agent])), [agents]);
   const leadAgent = agents.find((agent) => agent.activity_status !== "idle" && agent.activity_status !== "planned") ?? agents[0];
   const selectedAgent = agents.find((agent) => agent.id === selectedAgentId) ?? leadAgent;
-  const selectedWorkItems = selectedAgent?.work_items ?? [];
+  const selectedWorkItems = (selectedAgent?.work_items ?? []).map((item) => {
+    const itemKey = workItemKey(item);
+    return {
+      itemKey,
+      item: {
+        ...item,
+        ...workItemOverrides[itemKey],
+      },
+    };
+  });
 
   function updateScale(nextScale: number) {
     setView((current) => ({
@@ -138,6 +151,47 @@ export function AgentFlowCanvas({ agents, summary }: AgentFlowCanvasProps) {
 
   function handlePointerUp() {
     dragRef.current.active = false;
+  }
+
+  async function handleRunWorkItem(itemKey: string, item: AgentWorkItem) {
+    if (item.source_type !== "candidate" || item.status !== "draft") {
+      return;
+    }
+
+    setRunningWorkItemKey(itemKey);
+    setWorkItemMessages((current) => {
+      const next = { ...current };
+      delete next[itemKey];
+      return next;
+    });
+
+    try {
+      const response = await runCandidate(item.id);
+      setWorkItemOverrides((current) => ({
+        ...current,
+        [itemKey]: {
+          id: response.approval_id,
+          source_type: "approval",
+          status: response.status,
+          href: `/approvals?approvalId=${response.approval_id}`,
+          summary: `${item.summary} 실행 완료 후 승인함에 올라갔습니다.`,
+        },
+      }));
+      setWorkItemMessages((current) => ({
+        ...current,
+        [itemKey]: { tone: "success", text: "실행 완료. 승인함에서 검토하세요." },
+      }));
+    } catch (err) {
+      setWorkItemMessages((current) => ({
+        ...current,
+        [itemKey]: {
+          tone: "error",
+          text: err instanceof Error ? err.message : "작업 실행에 실패했습니다.",
+        },
+      }));
+    } finally {
+      setRunningWorkItemKey(null);
+    }
   }
 
   return (
@@ -221,7 +275,15 @@ export function AgentFlowCanvas({ agents, summary }: AgentFlowCanvasProps) {
           </div>
           <div className="max-h-[230px] space-y-2 overflow-y-auto pr-1">
             {selectedWorkItems.length > 0 ? (
-              selectedWorkItems.map((item) => <WorkItemCard key={`${item.source_type}-${item.id}`} item={item} />)
+              selectedWorkItems.map(({ itemKey, item }) => (
+                <WorkItemCard
+                  key={itemKey}
+                  item={item}
+                  isRunning={runningWorkItemKey === itemKey}
+                  message={workItemMessages[itemKey]}
+                  onRun={() => handleRunWorkItem(itemKey, item)}
+                />
+              ))
             ) : (
               <div className="rounded-card border border-dashed border-white/10 bg-black/15 p-3 text-xs leading-5 text-[#8F9AA4]">
                 이 에이전트에게 배정된 후보나 승인 대기 작업이 아직 없습니다.
@@ -423,15 +485,27 @@ function InspectorStat({ label, value }: { label: string; value: number }) {
   );
 }
 
-function WorkItemCard({ item }: { item: AgentWorkItem }) {
+function WorkItemCard({
+  item,
+  isRunning,
+  message,
+  onRun,
+}: {
+  item: AgentWorkItem;
+  isRunning: boolean;
+  message?: { tone: "success" | "error"; text: string };
+  onRun: () => void;
+}) {
   const statusLabel = workItemStatusLabels[item.status] ?? item.status;
   const sourceLabel = workItemSourceLabels[item.source_type];
+  const isRevisionCandidate =
+    item.source_type === "candidate" &&
+    (item.status === "revise_requested" || item.title.includes("재작업") || item.summary.includes("수정 사유"));
+  const canRun = item.source_type === "candidate" && item.status === "draft" && !isRevisionCandidate;
+  const shouldReviewApproval = item.source_type === "approval" || item.status === "pending_approval";
 
   return (
-    <a
-      href={item.href}
-      className="block rounded-card border border-white/10 bg-[#0B1117]/88 p-3 transition hover:border-[#38BDF8]/40 hover:bg-[#101923]"
-    >
+    <article className="rounded-card border border-white/10 bg-[#0B1117]/88 p-3 transition hover:border-[#38BDF8]/40 hover:bg-[#101923]">
       <div className="flex items-center justify-between gap-2">
         <span className="rounded-full bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-[#C2CDD8]">
           {sourceLabel}
@@ -440,13 +514,68 @@ function WorkItemCard({ item }: { item: AgentWorkItem }) {
           {statusLabel}
         </span>
       </div>
-      <p className="mt-2 line-clamp-2 text-sm font-semibold leading-5 text-white">{item.title}</p>
+      <a href={item.href} className="mt-2 block line-clamp-2 text-sm font-semibold leading-5 text-white hover:text-[#7DD7FF]">
+        {item.title}
+      </a>
       <p className="mt-1 line-clamp-2 text-xs leading-5 text-[#9EABB6]">{item.summary}</p>
-      <p className="mt-2 truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6F7D89]">
-        {item.task_type}
-      </p>
-    </a>
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <p className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6F7D89]">
+          {item.task_type}
+        </p>
+        {canRun ? (
+          <button
+            type="button"
+            onClick={onRun}
+            disabled={isRunning}
+            className="inline-flex h-7 shrink-0 items-center gap-1 rounded-button bg-[#1E88B9] px-2 text-[11px] font-semibold text-white transition hover:bg-[#2398CE] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isRunning ? <Loader2 className="animate-spin" size={12} aria-hidden="true" /> : <Play size={12} aria-hidden="true" />}
+            {isRunning ? "실행 중" : "바로 실행"}
+          </button>
+        ) : isRevisionCandidate ? (
+          <a
+            href={item.href}
+            className="inline-flex h-7 shrink-0 items-center gap-1 rounded-button border border-[#F2B84B]/35 bg-[#302410] px-2 text-[11px] font-semibold text-[#FFD37A] transition hover:bg-[#3A2B13]"
+          >
+            <RotateCcw size={12} aria-hidden="true" />
+            수정요청 확인
+          </a>
+        ) : shouldReviewApproval ? (
+          <a
+            href={item.href}
+            className="inline-flex h-7 shrink-0 items-center gap-1 rounded-button border border-[#F2B84B]/35 bg-[#302410] px-2 text-[11px] font-semibold text-[#FFD37A] transition hover:bg-[#3A2B13]"
+          >
+            <ClipboardCheck size={12} aria-hidden="true" />
+            승인함 이동
+          </a>
+        ) : (
+          <a
+            href={item.href}
+            className="inline-flex h-7 shrink-0 items-center rounded-button border border-white/10 bg-white/[0.06] px-2 text-[11px] font-semibold text-[#DDE6EE] transition hover:bg-white/10"
+          >
+            상세 보기
+          </a>
+        )}
+      </div>
+      {message ? (
+        <p
+          role={message.tone === "error" ? "alert" : "status"}
+          className={`mt-2 inline-flex items-start gap-1 rounded-button px-2 py-1 text-[11px] leading-4 ${
+            message.tone === "success"
+              ? "bg-[#102A1C] text-[#6FF0A0]"
+              : "bg-[#2A1217] text-[#FF6B7A]"
+          }`}
+        >
+          {message.tone === "error" ? <AlertCircle className="mt-0.5 shrink-0" size={12} aria-hidden="true" /> : null}
+          {message.text}
+        </p>
+      ) : null}
+    </article>
   );
+}
+
+function workItemKey(item: AgentWorkItem) {
+  return `${item.source_type}-${item.id}`;
 }
 
 function CanvasButton({

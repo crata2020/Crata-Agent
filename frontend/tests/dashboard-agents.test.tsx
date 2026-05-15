@@ -1,11 +1,20 @@
 import "@testing-library/jest-dom/vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DashboardContent } from "@/app/page";
+import { runCandidate } from "@/lib/api";
 import { agentSeeds } from "@/lib/agent-seeds";
 import type { AgentActivity, DashboardSummary } from "@/lib/types";
 import sharedAgentSeeds from "../../shared/agent-seeds.json";
+
+vi.mock("@/lib/api", () => ({
+  getAgentActivity: vi.fn(),
+  getDashboardSummary: vi.fn(),
+  runCandidate: vi.fn(),
+}));
+
+const runCandidateMock = vi.mocked(runCandidate);
 
 describe("dashboard agent flow map", () => {
   const summary: DashboardSummary = {
@@ -24,10 +33,18 @@ describe("dashboard agent flow map", () => {
     enabled: agent.enabled,
     status: agent.status,
     activity_status:
-      agent.id === "report_editor" ? "waiting_approval" : agent.id === "counseling_coach" ? "queued" : agent.enabled ? "idle" : "planned",
+      agent.id === "report_editor" || agent.id === "case_learner"
+        ? "waiting_approval"
+        : agent.id === "counseling_coach"
+          ? "queued"
+          : agent.enabled
+            ? "idle"
+            : "planned",
     current_focus:
       agent.id === "report_editor"
         ? "결과지 문구 수정 후보 승인 요청"
+        : agent.id === "case_learner"
+          ? "결과지 문구 수정 재작업 후보"
         : agent.id === "counseling_coach"
           ? "상담 전사록 사례 분리 후보"
         : agent.enabled
@@ -36,18 +53,22 @@ describe("dashboard agent flow map", () => {
     current_task_title:
       agent.id === "report_editor"
         ? "결과지 문구 수정 후보 승인 요청"
+        : agent.id === "case_learner"
+          ? "결과지 문구 수정 재작업 후보"
         : agent.id === "counseling_coach"
           ? "상담 전사록 사례 분리 후보"
           : null,
     current_task_type:
       agent.id === "report_editor"
         ? "report_phrase_revision"
+        : agent.id === "case_learner"
+          ? "report_phrase_revision"
         : agent.id === "counseling_coach"
           ? "counseling_case_learning"
           : null,
-    workload_count: agent.id === "report_editor" ? 2 : agent.id === "counseling_coach" ? 1 : 0,
+    workload_count: agent.id === "report_editor" ? 2 : agent.id === "counseling_coach" || agent.id === "case_learner" ? 1 : 0,
     pending_approval_count: agent.id === "report_editor" ? 1 : 0,
-    candidate_count: agent.id === "counseling_coach" ? 1 : 0,
+    candidate_count: agent.id === "counseling_coach" || agent.id === "case_learner" ? 1 : 0,
     work_items:
       agent.id === "report_editor"
         ? [
@@ -61,6 +82,18 @@ describe("dashboard agent flow map", () => {
               href: "/approvals?approvalId=approval-1",
             },
           ]
+        : agent.id === "case_learner"
+          ? [
+              {
+                id: "candidate-revision",
+                source_type: "candidate",
+                title: "결과지 문구 수정 재작업 후보",
+                summary: "수정 사유: 문장을 더 상담형으로 바꿔 주세요.",
+                task_type: "report_phrase_revision",
+                status: "draft",
+                href: "/request-intake?candidateId=candidate-revision",
+              },
+            ]
         : agent.id === "counseling_coach"
           ? [
               {
@@ -75,6 +108,10 @@ describe("dashboard agent flow map", () => {
             ]
           : [],
   }));
+
+  beforeEach(() => {
+    runCandidateMock.mockReset();
+  });
 
   it("uses the shared agent seed source", () => {
     expect(agentSeeds).toEqual(sharedAgentSeeds);
@@ -121,8 +158,47 @@ describe("dashboard agent flow map", () => {
       "href",
       "/request-intake?candidateId=candidate-1",
     );
+    expect(screen.getByRole("button", { name: "바로 실행" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "후보 보기" })).toHaveAttribute("href", "/request-intake");
     expect(screen.getAllByRole("link", { name: "승인함" }).length).toBeGreaterThan(0);
+  });
+
+  it("runs a candidate directly from the inspector and changes it to an approval action", async () => {
+    runCandidateMock.mockResolvedValue({
+      task_id: "task-1",
+      workflow_run_id: "run-1",
+      artifact_id: "artifact-1",
+      approval_id: "approval-new",
+      status: "pending_approval",
+    });
+    render(<DashboardContent summary={summary} agentActivity={activity} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "상담 코치 상세 보기" }));
+    fireEvent.click(screen.getByRole("button", { name: "바로 실행" }));
+
+    await waitFor(() => expect(runCandidateMock).toHaveBeenCalledWith("candidate-1"));
+
+    expect(await screen.findByText("실행 완료. 승인함에서 검토하세요.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "승인함 이동" })).toHaveAttribute(
+      "href",
+      "/approvals?approvalId=approval-new",
+    );
+  });
+
+  it("shows approval and revision quick actions in the inspector", () => {
+    render(<DashboardContent summary={summary} agentActivity={activity} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "결과지 에디터 상세 보기" }));
+    expect(screen.getByRole("link", { name: "승인함 이동" })).toHaveAttribute(
+      "href",
+      "/approvals?approvalId=approval-1",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "사례학습가 상세 보기" }));
+    expect(screen.getByRole("link", { name: "수정요청 확인" })).toHaveAttribute(
+      "href",
+      "/request-intake?candidateId=candidate-revision",
+    );
   });
 
   it("shows map controls for zoom, reset, and movement", () => {
