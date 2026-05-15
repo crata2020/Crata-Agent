@@ -75,6 +75,9 @@ _CATEGORIES = [
         "task_type": "business_planning",
         "keywords": [
             "제안서",
+            "기획서",
+            "계획서",
+            "사업계획서",
             "프로그램",
             "상품",
             "기획",
@@ -230,7 +233,7 @@ def _semantic_units(text: str) -> list[str]:
     units = [
         unit.strip()
         for unit in re.split(
-            r"(?<=[.!?。！？])\s+|\n+|그리고\s+|또한\s+|또\s+|(?<=하고)\s+(?=(?:상담|전사록|사례|공공기관|제안서|프로그램|유튜브|홍보|블로그|콘텐츠|홈페이지|결과지|검사))",
+            r"(?<=[.!?。！？])\s+|\n+|그리고\s+|또한\s+|또\s+|(?<=하고)\s+(?=(?:상담|전사록|사례|공공기관|제안서|기획서|계획서|사업계획서|프로그램|유튜브|홍보|블로그|콘텐츠|홈페이지|결과지|검사))",
             text,
         )
         if unit.strip()
@@ -294,7 +297,10 @@ def _has_content_marketing_intent(text: str) -> bool:
 
 
 def _has_business_planning_intent(text: str) -> bool:
-    return _keyword_score(text, ["제안서", "프로그램", "상품", "기획", "공공기관", "기업", "연수", "워크숍", "사업"]) >= 2
+    return _keyword_score(
+        text,
+        ["제안서", "기획서", "계획서", "사업계획서", "프로그램", "상품", "기획", "공공기관", "기업", "연수", "워크숍", "사업"],
+    ) >= 2
 
 
 def _has_counseling_learning_intent(text: str) -> bool:

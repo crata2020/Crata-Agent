@@ -125,6 +125,26 @@ def test_create_intake_extracts_all_mixed_candidate_task_types_in_order(app: Fas
     ]
 
 
+def test_create_intake_extracts_short_revision_and_planning_request(app: FastAPI) -> None:
+    client = TestClient(app)
+
+    response = client.post(
+        "/intake",
+        json={
+            "title": "복합 요청",
+            "raw_content": "문구수정하고 기획서 작성해줘.",
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert [task["task_type"] for task in body["candidate_tasks"]] == [
+        "report_phrase_revision",
+        "business_planning",
+    ]
+    assert body["candidate_tasks"][1]["title"] == "사업·프로그램 기획 후보"
+
+
 def test_create_intake_returns_ai_classification_metadata_for_review(app: FastAPI) -> None:
     client = TestClient(app)
 

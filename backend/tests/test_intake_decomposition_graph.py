@@ -24,6 +24,16 @@ def test_intake_decomposition_graph_runs_review_workflow_nodes() -> None:
     ]
 
 
+def test_intake_decomposition_graph_splits_short_revision_and_planning_request() -> None:
+    result = run_intake_decomposition_graph("문구수정하고 기획서 작성해줘.")
+
+    assert [draft.task_type for draft in result.candidate_drafts] == [
+        "report_phrase_revision",
+        "business_planning",
+    ]
+    assert result.candidate_drafts[1].evidence_excerpt == "기획서 작성해줘."
+
+
 def test_intake_decomposition_graph_marks_review_required_for_low_confidence_general_task() -> None:
     result = run_intake_decomposition_graph("다음 회의 전에 다시 검토할 메모를 정리해둔다.")
 
