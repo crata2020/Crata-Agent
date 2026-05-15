@@ -55,4 +55,17 @@ describe("AppShell", () => {
     expect(screen.getByRole("link", { name: "운영 맵" })).toBeInTheDocument();
     expect(window.localStorage.getItem("crata-sidebar-visible")).toBe("true");
   });
+
+  it("filters sidebar navigation with the menu search", () => {
+    render(
+      <AppShell>
+        <div>본문</div>
+      </AppShell>,
+    );
+
+    fireEvent.change(screen.getByLabelText("메뉴 검색"), { target: { value: "메모리" } });
+
+    expect(screen.getByRole("link", { name: "메모리" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "요청 콘솔" })).not.toBeInTheDocument();
+  });
 });
