@@ -2,22 +2,10 @@ import { readFile, readdir } from "fs/promises";
 import path from "path";
 
 import { AppShell } from "@/components/app-shell";
-
-type KnowledgeEntry = {
-  title: string;
-  path: string;
-  description: string;
-  kind: "official" | "source" | "guide";
-};
+import { MemoryBrowser, type MemoryEntry } from "@/components/memory-browser";
 
 const repoRoot = path.resolve(process.cwd(), "..");
 const knowledgeRoot = path.join(repoRoot, "knowledge");
-
-const sectionLabels: Record<KnowledgeEntry["kind"], string> = {
-  official: "공식 지식",
-  source: "원본 자료",
-  guide: "에이전트 가이드",
-};
 
 export default async function MemoryPage() {
   const entries = await loadKnowledgeEntries();
@@ -45,29 +33,7 @@ export default async function MemoryPage() {
         </div>
 
         <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="space-y-5">
-            {(["official", "guide", "source"] as const).map((kind) => (
-              <section key={kind} className="rounded-[14px] border border-white/10 bg-[#111820]/92 p-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <h2 className="text-base font-semibold text-white">{sectionLabels[kind]}</h2>
-                  <span className="rounded-full bg-white/[0.07] px-2 py-1 text-xs font-semibold text-[#AEB9C4]">
-                    {entriesByKind[kind].length}개
-                  </span>
-                </div>
-                <div className="grid gap-3 lg:grid-cols-2">
-                  {entriesByKind[kind].map((entry) => (
-                    <article key={entry.path} className="rounded-[12px] border border-white/10 bg-black/20 p-4">
-                      <p className="text-sm font-semibold text-white">{entry.title}</p>
-                      <p className="mt-2 text-sm leading-6 text-[#C7D2DC]">{entry.description}</p>
-                      <code className="mt-3 block rounded-[8px] bg-white/[0.06] px-3 py-2 text-xs text-[#9FB0BF]">
-                        {entry.path}
-                      </code>
-                    </article>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
+          <MemoryBrowser entries={entries} />
 
           <aside className="rounded-[14px] border border-[#38BDF8]/25 bg-[#0B2535]/38 p-4">
             <h2 className="text-base font-semibold text-white">운영 원칙</h2>
@@ -83,7 +49,7 @@ export default async function MemoryPage() {
   );
 }
 
-async function loadKnowledgeEntries(): Promise<KnowledgeEntry[]> {
+async function loadKnowledgeEntries(): Promise<MemoryEntry[]> {
   const markdownFiles = await listMarkdownFiles(knowledgeRoot);
   const entries = await Promise.all(
     markdownFiles.map(async (filePath) => {
@@ -113,7 +79,7 @@ async function listMarkdownFiles(root: string): Promise<string[]> {
   return files.flat();
 }
 
-function classifyPath(relativePath: string): KnowledgeEntry["kind"] {
+function classifyPath(relativePath: string): MemoryEntry["kind"] {
   if (relativePath.includes("/_sources/")) {
     return "source";
   }
