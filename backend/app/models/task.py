@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import DateTime, ForeignKey, JSON, String, Text
+from sqlalchemy import DateTime, ForeignKey, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -9,6 +9,7 @@ from app.core.database import Base
 
 class Task(Base):
     __tablename__ = "tasks"
+    __table_args__ = (UniqueConstraint("candidate_task_id", name="uq_tasks_candidate_task_id"),)
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=lambda: uuid4().hex)
     candidate_task_id: Mapped[str | None] = mapped_column(
