@@ -6,17 +6,17 @@ import { AgentCard } from "@/components/agent-card";
 import type { Agent } from "@/lib/types";
 
 const conceptGuardian: Agent = {
-  id: "agent-concept-guardian",
-  name: "concept_guardian",
+  id: "concept_guardian",
+  name: "Concept Guardian",
   display_name: "개념수호자",
-  role: "핵심 개념과 용어의 일관성을 검토합니다.",
-  description: "CRATA 문서의 개념 언어를 보호합니다.",
+  role: "공식 지식과 개념 일관성 검토",
+  description: "검사 개념, 유형 정의, 공식 지식 충돌 여부를 검토합니다.",
   status: "idle",
   default_model_provider: "openai",
   default_model_name: "gpt-4.1-mini",
   prompt: "",
   enabled: true,
-  color: "#34699A",
+  color: "#6A5EA8",
 };
 
 describe("AgentCard", () => {
@@ -24,6 +24,6 @@ describe("AgentCard", () => {
     render(<AgentCard agent={conceptGuardian} />);
 
     expect(screen.getByText("개념수호자")).toBeInTheDocument();
-    expect(screen.getByText("핵심 개념과 용어의 일관성을 검토합니다.")).toBeInTheDocument();
+    expect(screen.getByText("공식 지식과 개념 일관성 검토")).toBeInTheDocument();
   });
 });
