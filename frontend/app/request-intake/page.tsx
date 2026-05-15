@@ -1,10 +1,11 @@
 "use client";
 
 import { CheckCircle2, PauseCircle, Pencil, Play, Save, Send, X } from "lucide-react";
+import Link from "next/link";
 import { FormEvent, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
-import { createIntake, runCandidate, updateCandidate } from "@/lib/api";
+import { createIntake, runCandidate, runCandidates, updateCandidate } from "@/lib/api";
 import { agentSeeds } from "@/lib/agent-seeds";
 import {
   detectInputType,
@@ -37,8 +38,10 @@ const candidateStatusLabels: Record<string, string> = {
   working: "진행 중",
   reviewing: "검수 중",
   approved: "승인됨",
+  pending_approval: "승인 대기",
   rejected: "거절됨",
   error: "오류",
+  failed: "실패",
 };
 
 const agentSeedIds = new Set(agentSeeds.map((agent) => agent.id));
@@ -60,6 +63,7 @@ export default function RequestIntakePage() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [runningCandidateId, setRunningCandidateId] = useState<string | null>(null);
+  const [isRunningSelected, setIsRunningSelected] = useState(false);
   const [runApprovals, setRunApprovals] = useState<Record<string, string>>({});
   const [candidateSelections, setCandidateSelections] = useState<Record<string, boolean>>({});
   const [editingCandidateId, setEditingCandidateId] = useState<string | null>(null);
@@ -68,6 +72,13 @@ export default function RequestIntakePage() {
   const detectedInputType = detectInputType(title, rawContent);
   const resolvedInputType = resolveInputType(inputType, title, rawContent);
   const selectedCandidateCount = candidates.filter((candidate) => candidateSelections[candidate.id] !== false).length;
+  const executableCandidates = candidates.filter(
+    (candidate) =>
+      candidateSelections[candidate.id] !== false &&
+      !runApprovals[candidate.id] &&
+      candidate.status === "draft",
+  );
+  const hasApprovalResults = Object.keys(runApprovals).length > 0;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -122,11 +133,54 @@ export default function RequestIntakePage() {
         ...current,
         [candidate.id]: response.approval_id,
       }));
+      setCandidates((current) =>
+        current.map((currentCandidate) =>
+          currentCandidate.id === candidate.id
+            ? { ...currentCandidate, status: response.status }
+            : currentCandidate,
+        ),
+      );
       setMessage(`작업을 실행했습니다. 승인 ID: ${response.approval_id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "작업 실행에 실패했습니다.");
     } finally {
       setRunningCandidateId(null);
+    }
+  }
+
+  async function handleRunSelectedCandidates() {
+    if (editingCandidateId) {
+      setError("수정 중인 후보는 저장하거나 취소한 뒤 실행하세요.");
+      return;
+    }
+
+    const candidateIds = executableCandidates.map((candidate) => candidate.id);
+    if (candidateIds.length === 0) {
+      setError("실행할 후보를 1개 이상 포함하세요.");
+      return;
+    }
+
+    setIsRunningSelected(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const response = await runCandidates(candidateIds);
+      setRunApprovals((current) => ({
+        ...current,
+        ...Object.fromEntries(response.results.map((result) => [result.candidate_id, result.approval_id])),
+      }));
+      setCandidates((current) =>
+        current.map((candidate) => {
+          const result = response.results.find((currentResult) => currentResult.candidate_id === candidate.id);
+          return result ? { ...candidate, status: result.status } : candidate;
+        }),
+      );
+      setMessage(`선택 후보 ${response.results.length}개를 실행했습니다. 승인함에서 검토하세요.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "선택 후보 실행에 실패했습니다.");
+    } finally {
+      setIsRunningSelected(false);
     }
   }
 
@@ -304,6 +358,23 @@ export default function RequestIntakePage() {
                   <span className="rounded-button bg-surfaceAlt px-3 py-2 text-xs font-semibold text-primary">
                     실행 대상 {selectedCandidateCount}개 / 전체 {candidates.length}개
                   </span>
+                  {hasApprovalResults ? (
+                    <Link
+                      href="/approvals"
+                      className="inline-flex h-9 items-center rounded-button border border-primary bg-white px-3 text-xs font-semibold text-primary transition hover:bg-surfaceAlt"
+                    >
+                      승인함으로 이동
+                    </Link>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={handleRunSelectedCandidates}
+                    disabled={executableCandidates.length === 0 || isRunningSelected || Boolean(editingCandidateId)}
+                    className="inline-flex h-9 items-center gap-2 rounded-button bg-analysis px-3 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Play size={14} aria-hidden="true" />
+                    {isRunningSelected ? "일괄 실행 중" : "선택 후보 한 번에 실행"}
+                  </button>
                   <button
                     type="button"
                     onClick={() => setAllCandidateSelections(true)}
@@ -418,7 +489,7 @@ export default function RequestIntakePage() {
                           type="checkbox"
                           aria-label={`${candidate.title} 실행 대상`}
                           checked={isSelected}
-                          disabled={isRunning || hasRun || isEditing}
+                          disabled={isRunning || isRunningSelected || hasRun || isEditing}
                           onChange={(event) =>
                             setCandidateSelections((current) => ({
                               ...current,
@@ -454,7 +525,7 @@ export default function RequestIntakePage() {
                         <button
                           type="button"
                           onClick={() => startEditingCandidate(candidate)}
-                          disabled={isRunning || hasRun}
+                          disabled={isRunning || isRunningSelected || hasRun}
                           className="inline-flex h-10 items-center justify-center gap-2 rounded-button border border-border bg-white px-4 text-sm font-semibold text-[#1F2723] transition hover:bg-surfaceAlt disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           <Pencil size={16} aria-hidden="true" />
@@ -464,7 +535,7 @@ export default function RequestIntakePage() {
                       <button
                         type="button"
                         onClick={() => handleRunCandidate(candidate)}
-                        disabled={!isSelected || isRunning || hasRun || isEditing}
+                        disabled={!isSelected || isRunning || isRunningSelected || hasRun || isEditing}
                         className="inline-flex h-10 items-center justify-center gap-2 rounded-button bg-analysis px-4 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         <Play size={16} aria-hidden="true" />

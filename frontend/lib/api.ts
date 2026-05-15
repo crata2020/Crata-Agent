@@ -25,6 +25,14 @@ export type RunCandidateResponse = {
   status: string;
 };
 
+export type RunCandidateResult = RunCandidateResponse & {
+  candidate_id: string;
+};
+
+export type RunCandidatesResponse = {
+  results: RunCandidateResult[];
+};
+
 function apiUrl(path: string) {
   return `${API_BASE.replace(/\/$/, "")}${path}`;
 }
@@ -65,6 +73,14 @@ export function createIntake(payload: IntakePayload) {
 export function runCandidate(candidateId: string) {
   return requestJson<RunCandidateResponse>(`/tasks/from-candidate/${candidateId}/run`, {
     method: "POST",
+  });
+}
+
+export function runCandidates(candidateIds: string[]) {
+  return requestJson<RunCandidatesResponse>("/tasks/from-candidates/run", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ candidate_ids: candidateIds }),
   });
 }
 

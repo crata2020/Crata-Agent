@@ -5,19 +5,19 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models import CandidateTask, Task
-from app.schemas.workflow import RunTaskResponse
+from app.schemas.workflow import (
+    RunCandidateTaskResult,
+    RunCandidateTasksRequest,
+    RunCandidateTasksResponse,
+    RunTaskResponse,
+)
 from app.services.agent_seed import seed_agents
 from app.services.workflow_runner import run_task_workflow
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
-@router.post(
-    "/from-candidate/{candidate_id}/run",
-    response_model=RunTaskResponse,
-    status_code=status.HTTP_201_CREATED,
-)
-def run_candidate_task(candidate_id: str, db: Session = Depends(get_db)) -> RunTaskResponse:
+def _get_runnable_candidate(candidate_id: str, db: Session) -> CandidateTask:
     candidate = db.get(CandidateTask, candidate_id)
     if candidate is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate task not found")
@@ -26,7 +26,12 @@ def run_candidate_task(candidate_id: str, db: Session = Depends(get_db)) -> RunT
     existing_task = db.scalar(select(Task).where(Task.candidate_task_id == candidate.id))
     if existing_task is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Candidate task already has a task")
-    seed_agents(db)
+
+    return candidate
+
+
+def _execute_candidate_task(candidate_id: str, db: Session) -> RunCandidateTaskResult:
+    candidate = _get_runnable_candidate(candidate_id, db)
 
     task = Task(
         candidate_task_id=candidate.id,
@@ -65,10 +70,44 @@ def run_candidate_task(candidate_id: str, db: Session = Depends(get_db)) -> RunT
         candidate.status = result.status or "pending_approval"
         db.commit()
 
-    return RunTaskResponse(
+    return RunCandidateTaskResult(
+        candidate_id=candidate_id,
         task_id=task_id,
         workflow_run_id=result.workflow_run_id,
         artifact_id=result.artifact_id,
         approval_id=result.approval_id,
         status=result.status,
+    )
+
+
+@router.post(
+    "/from-candidate/{candidate_id}/run",
+    response_model=RunTaskResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def run_candidate_task(candidate_id: str, db: Session = Depends(get_db)) -> RunTaskResponse:
+    seed_agents(db)
+
+    return _execute_candidate_task(candidate_id, db)
+
+
+@router.post(
+    "/from-candidates/run",
+    response_model=RunCandidateTasksResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def run_candidate_tasks(
+    payload: RunCandidateTasksRequest,
+    db: Session = Depends(get_db),
+) -> RunCandidateTasksResponse:
+    for candidate_id in payload.candidate_ids:
+        _get_runnable_candidate(candidate_id, db)
+
+    seed_agents(db)
+
+    return RunCandidateTasksResponse(
+        results=[
+            _execute_candidate_task(candidate_id, db)
+            for candidate_id in payload.candidate_ids
+        ],
     )

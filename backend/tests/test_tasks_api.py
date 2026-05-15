@@ -40,6 +40,44 @@ def test_run_candidate_task_seeds_agents_and_creates_pending_approval(
     assert db_session.get(Agent, "crata_ceo") is not None
 
 
+def test_run_candidate_tasks_runs_multiple_candidates_at_once(
+    app: FastAPI, db_session: Session
+) -> None:
+    client = TestClient(app)
+    intake_response = client.post(
+        "/intake",
+        json={
+            "title": "회의록",
+            "input_type": "meeting_notes",
+            "raw_content": "결과지 문구를 수정하고 상담 사례는 학습 후보로 저장하자.",
+            "source": "manual",
+        },
+    )
+    candidate_ids = [task["id"] for task in intake_response.json()["candidate_tasks"]]
+
+    response = client.post(
+        "/tasks/from-candidates/run",
+        json={"candidate_ids": candidate_ids},
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert [result["status"] for result in body["results"]] == [
+        "pending_approval",
+        "pending_approval",
+    ]
+    assert [result["candidate_id"] for result in body["results"]] == candidate_ids
+    assert all(result["approval_id"] for result in body["results"])
+
+    candidates = [db_session.get(CandidateTask, candidate_id) for candidate_id in candidate_ids]
+    assert [candidate.status for candidate in candidates if candidate is not None] == [
+        "pending_approval",
+        "pending_approval",
+    ]
+    assert len(db_session.scalars(select(Approval)).all()) == 2
+    assert len(db_session.scalars(select(Task)).all()) == 2
+
+
 def test_run_candidate_task_rejects_duplicate_execution(app: FastAPI, db_session: Session) -> None:
     client = TestClient(app)
     intake_response = client.post(

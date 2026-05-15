@@ -91,6 +91,27 @@ describe("api client", () => {
     );
   });
 
+  it("runs multiple candidate tasks in one request", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ results: [{ candidate_id: "candidate-1", approval_id: "approval-1" }] }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const { runCandidates } = await import("@/lib/api");
+
+    await runCandidates(["candidate-1", "candidate-2"]);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8000/tasks/from-candidates/run",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ candidate_ids: ["candidate-1", "candidate-2"] }),
+      }),
+    );
+  });
+
   it("patches a candidate task before execution", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
