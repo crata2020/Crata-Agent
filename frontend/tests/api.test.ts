@@ -189,6 +189,28 @@ describe("api client", () => {
     );
   });
 
+  it("splits a candidate task into separate request parts", async () => {
+    const parts = ["문구수정하고", "기획서 작성해줘."];
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ original_candidate: { id: "candidate-1" }, split_candidates: [] }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const { splitCandidate } = await import("@/lib/api");
+
+    await splitCandidate("candidate-1", parts);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://127.0.0.1:8000/intake/candidates/candidate-1/split",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ parts }),
+      }),
+    );
+  });
+
   it("posts approval decisions with an optional reason", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

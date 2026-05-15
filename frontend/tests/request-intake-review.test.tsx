@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import RequestIntakePage from "@/app/request-intake/page";
-import { createIntake, listCandidateTasks, runCandidate, runCandidates, updateCandidate } from "@/lib/api";
+import { createIntake, listCandidateTasks, runCandidate, runCandidates, splitCandidate, updateCandidate } from "@/lib/api";
 
 const searchParamsState = vi.hoisted(() => ({ value: "" }));
 
@@ -17,6 +17,7 @@ vi.mock("@/lib/api", () => ({
   listCandidateTasks: vi.fn(),
   runCandidate: vi.fn(),
   runCandidates: vi.fn(),
+  splitCandidate: vi.fn(),
   updateCandidate: vi.fn(),
 }));
 
@@ -24,6 +25,7 @@ const createIntakeMock = vi.mocked(createIntake);
 const listCandidateTasksMock = vi.mocked(listCandidateTasks);
 const runCandidateMock = vi.mocked(runCandidate);
 const runCandidatesMock = vi.mocked(runCandidates);
+const splitCandidateMock = vi.mocked(splitCandidate);
 const updateCandidateMock = vi.mocked(updateCandidate);
 
 const candidateTasks = [
@@ -71,6 +73,7 @@ describe("RequestIntakePage candidate review", () => {
     listCandidateTasksMock.mockReset();
     runCandidateMock.mockReset();
     runCandidatesMock.mockReset();
+    splitCandidateMock.mockReset();
     updateCandidateMock.mockReset();
     searchParamsState.value = "";
   });
@@ -320,6 +323,71 @@ describe("RequestIntakePage candidate review", () => {
     expect(screen.getByText("조직행동검사 5페이지 문구 수정")).toBeInTheDocument();
     expect(screen.getByText("상담형 결과지 문장으로 수정합니다.")).toBeInTheDocument();
     expect(screen.getByText("품질검수관")).toBeInTheDocument();
+  });
+
+  it("splits one candidate into reclassified draft candidates", async () => {
+    createIntakeMock.mockResolvedValue({
+      id: "intake-1",
+      title: "회의록",
+      input_type: "meeting_notes",
+      raw_content: "원문",
+      candidate_tasks: [candidateTasks[0]],
+    });
+    splitCandidateMock.mockResolvedValue({
+      original_candidate: {
+        ...candidateTasks[0],
+        status: "split",
+      },
+      split_candidates: [
+        {
+          ...candidateTasks[0],
+          id: "candidate-split-report",
+          evidence_excerpt: "문구수정하고",
+        },
+        {
+          id: "candidate-split-plan",
+          task_type: "business_planning",
+          title: "사업·프로그램 기획 후보",
+          summary: "입력문에서 사업, 제안서, 상품, 프로그램 기획 요청을 발견했습니다.",
+          evidence_excerpt: "기획서 작성해줘.",
+          recommended_agents: ["crata_ceo", "business_designer"],
+          status: "draft",
+          rule_hint_task_type: "business_planning",
+          ai_task_type: "business_planning",
+          classification_source: "rule_assisted_ai",
+          classification_status: "aligned",
+          confidence: 0.8,
+          classification_reason: "기획서 작성 요청이므로 사업 기획 산출물이 필요한 요청으로 판단했습니다.",
+          approval_required: false,
+          rule_hints: ["기획서", "기획"],
+          review_flags: [],
+        },
+      ],
+    });
+
+    render(<RequestIntakePage />);
+
+    fireEvent.change(screen.getByLabelText("원문"), {
+      target: { value: "문구수정하고 기획서 작성해줘." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "작업 후보 추출" }));
+
+    await screen.findByText("작업 후보 검토");
+    fireEvent.click(screen.getByRole("button", { name: "후보 분할" }));
+    fireEvent.change(screen.getByLabelText("분할 항목"), {
+      target: { value: "문구수정하고\n기획서 작성해줘." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "분할 저장" }));
+
+    await waitFor(() =>
+      expect(splitCandidateMock).toHaveBeenCalledWith("candidate-report", [
+        "문구수정하고",
+        "기획서 작성해줘.",
+      ]),
+    );
+    expect(await screen.findByText("후보를 2개로 분할했습니다.")).toBeInTheDocument();
+    expect(screen.getByText("사업·프로그램 기획 후보")).toBeInTheDocument();
+    expect(screen.getByText("실행 대상 2개 / 전체 2개")).toBeInTheDocument();
   });
 
   it("requires at least one selected agent before saving a candidate", async () => {

@@ -256,6 +256,72 @@ def test_update_candidate_task_before_execution(app: FastAPI, db_session: Sessio
     assert candidate.recommended_agents == ["crata_ceo", "report_editor", "quality_inspector"]
 
 
+def test_split_candidate_task_creates_reclassified_draft_candidates(
+    app: FastAPI, db_session: Session
+) -> None:
+    client = TestClient(app)
+    intake_response = client.post(
+        "/intake",
+        json={
+            "title": "복합 후보",
+            "raw_content": "결과지 문구를 수정하자.",
+        },
+    )
+    candidate_id = intake_response.json()["candidate_tasks"][0]["id"]
+
+    response = client.post(
+        f"/intake/candidates/{candidate_id}/split",
+        json={
+            "parts": [
+                "문구수정하고",
+                "기획서 작성해줘.",
+            ],
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["original_candidate"]["id"] == candidate_id
+    assert body["original_candidate"]["status"] == "split"
+    assert [candidate["task_type"] for candidate in body["split_candidates"]] == [
+        "report_phrase_revision",
+        "business_planning",
+    ]
+    assert [candidate["status"] for candidate in body["split_candidates"]] == ["draft", "draft"]
+
+    original_candidate = db_session.get(CandidateTask, candidate_id)
+    assert original_candidate is not None
+    assert original_candidate.status == "split"
+    assert original_candidate.item_metadata["split_part_count"] == 2
+
+    split_candidates = db_session.scalars(
+        select(CandidateTask).where(CandidateTask.status == "draft")
+    ).all()
+    assert len(split_candidates) == 2
+    assert {candidate.item_metadata["origin_candidate_id"] for candidate in split_candidates} == {candidate_id}
+
+
+def test_split_candidate_task_rejects_started_candidates(app: FastAPI) -> None:
+    client = TestClient(app)
+    intake_response = client.post(
+        "/intake",
+        json={
+            "title": "회의록",
+            "raw_content": "결과지 문구를 수정하자.",
+        },
+    )
+    candidate_id = intake_response.json()["candidate_tasks"][0]["id"]
+    run_response = client.post(f"/tasks/from-candidate/{candidate_id}/run")
+
+    response = client.post(
+        f"/intake/candidates/{candidate_id}/split",
+        json={"parts": ["문구수정하고", "기획서 작성해줘."]},
+    )
+
+    assert run_response.status_code == 201
+    assert response.status_code == 409
+
+
 def test_list_candidate_tasks_returns_existing_candidates(app: FastAPI) -> None:
     client = TestClient(app)
     intake_response = client.post(

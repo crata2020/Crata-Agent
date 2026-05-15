@@ -14,6 +14,7 @@ export type CandidateTaskStatus =
   | "planned"
   | "working"
   | "reviewing"
+  | "split"
   | "approved"
   | "rejected"
   | "error";
@@ -68,6 +69,11 @@ export interface IntakeResponse {
   human_review_required?: boolean;
   decomposition_trace?: GraphNodeTrace[];
   candidate_tasks: CandidateTask[];
+}
+
+export interface CandidateSplitResponse {
+  original_candidate: CandidateTask;
+  split_candidates: CandidateTask[];
 }
 
 export interface Approval {

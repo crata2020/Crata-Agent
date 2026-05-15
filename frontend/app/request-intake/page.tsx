@@ -10,6 +10,7 @@ import {
   Play,
   Route,
   Save,
+  Scissors,
   Send,
   Sparkles,
   X,
@@ -19,7 +20,7 @@ import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
-import { createIntake, listCandidateTasks, runCandidate, runCandidates, updateCandidate } from "@/lib/api";
+import { createIntake, listCandidateTasks, runCandidate, runCandidates, splitCandidate, updateCandidate } from "@/lib/api";
 import { agentSeeds } from "@/lib/agent-seeds";
 import {
   detectInputType,
@@ -51,6 +52,7 @@ const candidateStatusLabels: Record<string, string> = {
   planned: "계획됨",
   working: "진행 중",
   reviewing: "검수 중",
+  split: "분할됨",
   approved: "승인됨",
   pending_approval: "승인 대기",
   rejected: "거절됨",
@@ -121,6 +123,9 @@ function RequestIntakeWorkspace() {
   const [editingCandidateId, setEditingCandidateId] = useState<string | null>(null);
   const [savingCandidateId, setSavingCandidateId] = useState<string | null>(null);
   const [candidateEdits, setCandidateEdits] = useState<Record<string, CandidateEdit>>({});
+  const [splittingCandidateId, setSplittingCandidateId] = useState<string | null>(null);
+  const [savingSplitCandidateId, setSavingSplitCandidateId] = useState<string | null>(null);
+  const [candidateSplitDrafts, setCandidateSplitDrafts] = useState<Record<string, string>>({});
   const [isLoadingLinkedCandidate, setIsLoadingLinkedCandidate] = useState(false);
   const [decompositionGraphName, setDecompositionGraphName] = useState<string | null>(null);
   const [decompositionTrace, setDecompositionTrace] = useState<GraphNodeTrace[]>([]);
@@ -163,6 +168,8 @@ function RequestIntakeWorkspace() {
           Object.fromEntries(candidateTasks.map((candidate) => [candidate.id, candidateToEdit(candidate)])),
         );
         setEditingCandidateId(null);
+        setSplittingCandidateId(null);
+        setCandidateSplitDrafts({});
         setRunApprovals({});
         setDecompositionGraphName(null);
         setDecompositionTrace([]);
@@ -228,6 +235,8 @@ function RequestIntakeWorkspace() {
         Object.fromEntries(response.candidate_tasks.map((candidate) => [candidate.id, candidateToEdit(candidate)])),
       );
       setEditingCandidateId(null);
+      setSplittingCandidateId(null);
+      setCandidateSplitDrafts({});
       setMessage(`작업 후보 ${response.candidate_tasks.length}개를 추출했습니다.`);
     } catch (err) {
       setCandidates([]);
@@ -237,6 +246,8 @@ function RequestIntakeWorkspace() {
       setCandidateSelections({});
       setCandidateEdits({});
       setEditingCandidateId(null);
+      setSplittingCandidateId(null);
+      setCandidateSplitDrafts({});
       setError(err instanceof Error ? err.message : "작업 후보 추출에 실패했습니다.");
     } finally {
       setIsSubmitting(false);
@@ -246,6 +257,10 @@ function RequestIntakeWorkspace() {
   async function handleRunCandidate(candidate: CandidateTask) {
     if (editingCandidateId === candidate.id) {
       setError("수정 중인 후보를 저장하거나 취소한 뒤 실행하세요.");
+      return;
+    }
+    if (splittingCandidateId === candidate.id) {
+      setError("분할 중인 후보를 저장하거나 취소한 뒤 실행하세요.");
       return;
     }
     if (candidateSelections[candidate.id] === false) {
@@ -280,6 +295,10 @@ function RequestIntakeWorkspace() {
   async function handleRunSelectedCandidates() {
     if (editingCandidateId) {
       setError("수정 중인 후보를 저장하거나 취소한 뒤 실행하세요.");
+      return;
+    }
+    if (splittingCandidateId) {
+      setError("분할 중인 후보를 저장하거나 취소한 뒤 실행하세요.");
       return;
     }
 
@@ -343,6 +362,7 @@ function RequestIntakeWorkspace() {
   function startEditingCandidate(candidate: CandidateTask) {
     setError("");
     setMessage("");
+    setSplittingCandidateId(null);
     setEditingCandidateId(candidate.id);
     setCandidateEdits((current) => ({
       ...current,
@@ -356,6 +376,77 @@ function RequestIntakeWorkspace() {
       ...current,
       [candidate.id]: candidateToEdit(candidate),
     }));
+  }
+
+  function startSplittingCandidate(candidate: CandidateTask) {
+    setError("");
+    setMessage("");
+    setEditingCandidateId(null);
+    setSplittingCandidateId(candidate.id);
+    setCandidateSplitDrafts((current) => ({
+      ...current,
+      [candidate.id]: current[candidate.id] ?? candidate.evidence_excerpt,
+    }));
+  }
+
+  function cancelSplittingCandidate(candidate: CandidateTask) {
+    setSplittingCandidateId(null);
+    setCandidateSplitDrafts((current) => ({
+      ...current,
+      [candidate.id]: candidate.evidence_excerpt,
+    }));
+  }
+
+  async function saveSplitCandidate(candidate: CandidateTask) {
+    const parts = (candidateSplitDrafts[candidate.id] ?? "")
+      .split(/\r?\n/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    if (parts.length < 2) {
+      setError("분할 항목을 2개 이상 입력하세요.");
+      return;
+    }
+
+    setSavingSplitCandidateId(candidate.id);
+    setError("");
+    setMessage("");
+
+    try {
+      const response = await splitCandidate(candidate.id, parts);
+      setCandidates((current) =>
+        current.flatMap((currentCandidate) =>
+          currentCandidate.id === candidate.id ? response.split_candidates : [currentCandidate],
+        ),
+      );
+      setCandidateSelections((current) => {
+        const next = { ...current };
+        delete next[candidate.id];
+        for (const splitCandidateTask of response.split_candidates) {
+          next[splitCandidateTask.id] = splitCandidateTask.status === "draft";
+        }
+        return next;
+      });
+      setCandidateEdits((current) => {
+        const next = { ...current };
+        delete next[candidate.id];
+        for (const splitCandidateTask of response.split_candidates) {
+          next[splitCandidateTask.id] = candidateToEdit(splitCandidateTask);
+        }
+        return next;
+      });
+      setCandidateSplitDrafts((current) => {
+        const next = { ...current };
+        delete next[candidate.id];
+        return next;
+      });
+      setSplittingCandidateId(null);
+      setMessage(`후보를 ${response.split_candidates.length}개로 분할했습니다.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "후보 분할에 실패했습니다.");
+    } finally {
+      setSavingSplitCandidateId(null);
+    }
   }
 
   async function saveCandidate(candidate: CandidateTask) {
@@ -619,8 +710,10 @@ function RequestIntakeWorkspace() {
                   ? candidateStatusLabels[candidate.status] ?? candidate.status
                   : "보류됨";
                 const isEditing = editingCandidateId === candidate.id;
+                const isSplitting = splittingCandidateId === candidate.id;
                 const edit = candidateEdits[candidate.id] ?? candidateToEdit(candidate);
                 const isSaving = savingCandidateId === candidate.id;
+                const isSavingSplit = savingSplitCandidateId === candidate.id;
                 const isHighlighted = linkedCandidateId === candidate.id;
                 const aiTaskType = candidate.ai_task_type ?? candidate.task_type;
                 const aiTaskTypeLabel = taskTypeLabels[aiTaskType] ?? aiTaskType;
@@ -712,6 +805,23 @@ function RequestIntakeWorkspace() {
                               </div>
                             </fieldset>
                           </div>
+                        ) : isSplitting ? (
+                          <div className="mt-3 grid gap-3">
+                            <label className="block">
+                              <span className="text-xs font-semibold text-[#AAB6C1]">분할 항목</span>
+                              <textarea
+                                value={candidateSplitDrafts[candidate.id] ?? candidate.evidence_excerpt}
+                                onChange={(event) =>
+                                  setCandidateSplitDrafts((current) => ({
+                                    ...current,
+                                    [candidate.id]: event.target.value,
+                                  }))
+                                }
+                                rows={5}
+                                className="mt-1 w-full resize-y rounded-[10px] border border-[#38BDF8]/25 bg-[#07141C] px-3 py-2 text-sm leading-6 text-white outline-none transition focus:border-[#38BDF8]"
+                              />
+                            </label>
+                          </div>
                         ) : (
                           <>
                             <h2 className="mt-3 text-lg font-semibold leading-7 text-white">{candidate.title}</h2>
@@ -725,7 +835,7 @@ function RequestIntakeWorkspace() {
                             type="checkbox"
                             aria-label={`${candidate.title} 실행 대상`}
                             checked={isSelected}
-                            disabled={isRunning || isRunningSelected || hasRun || isEditing}
+                            disabled={isRunning || isRunningSelected || hasRun || isEditing || isSplitting}
                             onChange={(event) =>
                               setCandidateSelections((current) => ({
                                 ...current,
@@ -757,21 +867,53 @@ function RequestIntakeWorkspace() {
                               취소
                             </button>
                           </>
+                        ) : isSplitting ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => saveSplitCandidate(candidate)}
+                              disabled={isSavingSplit}
+                              className="inline-flex h-10 items-center justify-center gap-2 rounded-button bg-[#FF5261] px-4 text-sm font-semibold text-white transition hover:bg-[#FF6976] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <Save size={16} aria-hidden="true" />
+                              {isSavingSplit ? "분할 중" : "분할 저장"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => cancelSplittingCandidate(candidate)}
+                              disabled={isSavingSplit}
+                              className="inline-flex h-10 items-center justify-center gap-2 rounded-button border border-white/10 bg-white/[0.06] px-4 text-sm font-semibold text-[#DDE6EE] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <X size={16} aria-hidden="true" />
+                              취소
+                            </button>
+                          </>
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() => startEditingCandidate(candidate)}
-                            disabled={isRunning || isRunningSelected || hasRun}
-                            className="inline-flex h-10 items-center justify-center gap-2 rounded-button border border-white/10 bg-white/[0.06] px-4 text-sm font-semibold text-[#DDE6EE] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            <Pencil size={16} aria-hidden="true" />
-                            후보 수정
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => startEditingCandidate(candidate)}
+                              disabled={isRunning || isRunningSelected || hasRun}
+                              className="inline-flex h-10 items-center justify-center gap-2 rounded-button border border-white/10 bg-white/[0.06] px-4 text-sm font-semibold text-[#DDE6EE] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <Pencil size={16} aria-hidden="true" />
+                              후보 수정
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => startSplittingCandidate(candidate)}
+                              disabled={isRunning || isRunningSelected || hasRun}
+                              className="inline-flex h-10 items-center justify-center gap-2 rounded-button border border-white/10 bg-white/[0.06] px-4 text-sm font-semibold text-[#DDE6EE] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <Scissors size={16} aria-hidden="true" />
+                              후보 분할
+                            </button>
+                          </>
                         )}
                         <button
                           type="button"
                           onClick={() => handleRunCandidate(candidate)}
-                          disabled={!isSelected || isRunning || isRunningSelected || hasRun || isEditing}
+                          disabled={!isSelected || isRunning || isRunningSelected || hasRun || isEditing || isSplitting}
                           className="inline-flex h-10 items-center justify-center gap-2 rounded-button bg-[#1E88B9] px-4 text-sm font-semibold text-white transition hover:bg-[#2398CE] disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           <Play size={16} aria-hidden="true" />

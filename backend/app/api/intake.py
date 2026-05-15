@@ -4,7 +4,14 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models import CandidateTask, IntakeItem
-from app.schemas.intake import CandidateTaskRead, CandidateTaskUpdate, IntakeCreate, IntakeRead
+from app.schemas.intake import (
+    CandidateTaskRead,
+    CandidateTaskSplit,
+    CandidateTaskSplitRead,
+    CandidateTaskUpdate,
+    IntakeCreate,
+    IntakeRead,
+)
 from app.services.agent_seed import AGENT_IDS
 from app.services.intake_decomposition import detect_input_type
 from app.services.intake_decomposition_graph import GRAPH_NAME, run_intake_decomposition_graph
@@ -43,6 +50,40 @@ def _intake_graph_metadata(intake_item: IntakeItem) -> dict:
     }
 
 
+def _candidate_from_draft(
+    *,
+    intake_item_id: str,
+    draft,
+    metadata_extra: dict | None = None,
+) -> CandidateTask:
+    metadata = {
+        "rule_hint_task_type": draft.rule_hint_task_type,
+        "ai_task_type": draft.ai_task_type,
+        "classification_source": draft.classification_source,
+        "classification_status": draft.classification_status,
+        "confidence": draft.confidence,
+        "classification_reason": draft.classification_reason,
+        "approval_required": draft.approval_required,
+        "rule_hints": draft.rule_hints,
+        "review_flags": draft.review_flags,
+        "origin_graph": GRAPH_NAME,
+        "origin_node": "build_candidates",
+    }
+    if metadata_extra:
+        metadata.update(metadata_extra)
+
+    return CandidateTask(
+        intake_item_id=intake_item_id,
+        task_type=draft.task_type,
+        title=draft.title,
+        summary=draft.summary,
+        evidence_excerpt=draft.evidence_excerpt,
+        recommended_agents=draft.recommended_agents,
+        status="draft",
+        item_metadata=metadata,
+    )
+
+
 @router.post("", response_model=IntakeRead, status_code=status.HTTP_201_CREATED)
 def create_intake(payload: IntakeCreate, db: Session = Depends(get_db)) -> IntakeRead:
     input_type = payload.input_type
@@ -61,28 +102,7 @@ def create_intake(payload: IntakeCreate, db: Session = Depends(get_db)) -> Intak
     db.flush()
 
     candidate_tasks = [
-        CandidateTask(
-            intake_item_id=intake_item.id,
-            task_type=draft.task_type,
-            title=draft.title,
-            summary=draft.summary,
-            evidence_excerpt=draft.evidence_excerpt,
-            recommended_agents=draft.recommended_agents,
-            status="draft",
-            item_metadata={
-                "rule_hint_task_type": draft.rule_hint_task_type,
-                "ai_task_type": draft.ai_task_type,
-                "classification_source": draft.classification_source,
-                "classification_status": draft.classification_status,
-                "confidence": draft.confidence,
-                "classification_reason": draft.classification_reason,
-                "approval_required": draft.approval_required,
-                "rule_hints": draft.rule_hints,
-                "review_flags": draft.review_flags,
-                "origin_graph": GRAPH_NAME,
-                "origin_node": "build_candidates",
-            },
-        )
+        _candidate_from_draft(intake_item_id=intake_item.id, draft=draft)
         for draft in decomposition_result.candidate_drafts
     ]
     db.add_all(candidate_tasks)
@@ -136,3 +156,63 @@ def update_candidate_task(
     db.refresh(candidate)
 
     return _candidate_to_read(candidate)
+
+
+@router.post(
+    "/candidates/{candidate_id}/split",
+    response_model=CandidateTaskSplitRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def split_candidate_task(
+    candidate_id: str,
+    payload: CandidateTaskSplit,
+    db: Session = Depends(get_db),
+) -> CandidateTaskSplitRead:
+    candidate = db.get(CandidateTask, candidate_id)
+    if candidate is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate task not found")
+    if candidate.status != "draft":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Candidate task already started")
+
+    split_candidates: list[CandidateTask] = []
+    for index, part in enumerate(payload.parts, start=1):
+        decomposition_result = run_intake_decomposition_graph(part)
+        for draft in decomposition_result.candidate_drafts:
+            split_candidates.append(
+                _candidate_from_draft(
+                    intake_item_id=candidate.intake_item_id,
+                    draft=draft,
+                    metadata_extra={
+                        "origin_candidate_id": candidate.id,
+                        "origin_action": "split_candidate",
+                        "split_part_index": index,
+                    },
+                )
+            )
+
+    if len(split_candidates) < 2:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Split parts did not produce at least two candidate tasks",
+        )
+
+    original_metadata = dict(candidate.item_metadata or {})
+    original_metadata.update(
+        {
+            "split_part_count": len(split_candidates),
+            "split_parts": payload.parts,
+        }
+    )
+    candidate.status = "split"
+    candidate.item_metadata = original_metadata
+
+    db.add_all(split_candidates)
+    db.commit()
+    db.refresh(candidate)
+    for split_candidate in split_candidates:
+        db.refresh(split_candidate)
+
+    return CandidateTaskSplitRead(
+        original_candidate=_candidate_to_read(candidate),
+        split_candidates=[_candidate_to_read(split_candidate) for split_candidate in split_candidates],
+    )

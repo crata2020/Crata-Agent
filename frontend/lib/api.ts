@@ -2,6 +2,7 @@ import type {
   AgentActivityResponse,
   Approval,
   CandidateTask,
+  CandidateSplitResponse,
   DashboardSummary,
   IntakeResponse,
   WorkflowActivityResponse,
@@ -100,6 +101,14 @@ export function updateCandidate(candidateId: string, payload: CandidateUpdatePay
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+  });
+}
+
+export function splitCandidate(candidateId: string, parts: string[]) {
+  return requestJson<CandidateSplitResponse>(`/intake/candidates/${candidateId}/split`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ parts }),
   });
 }
 

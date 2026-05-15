@@ -67,6 +67,29 @@ class CandidateTaskUpdate(BaseModel):
         return normalized
 
 
+class CandidateTaskSplit(BaseModel):
+    parts: list[str] = Field(min_length=2, max_length=8)
+
+    @field_validator("parts")
+    @classmethod
+    def normalize_parts(cls, value: list[str]) -> list[str]:
+        normalized = []
+        for part in value:
+            stripped = part.strip()
+            if stripped:
+                normalized.append(stripped)
+
+        if len(normalized) < 2:
+            raise ValueError("At least two non-empty split parts are required")
+
+        return normalized
+
+
+class CandidateTaskSplitRead(BaseModel):
+    original_candidate: CandidateTaskRead
+    split_candidates: list[CandidateTaskRead]
+
+
 class IntakeRead(BaseModel):
     id: str
     title: str
