@@ -25,7 +25,7 @@ const navItems = [
   { href: "/approvals", label: "승인함", count: "", icon: ClipboardList },
   { href: "/agents", label: "에이전트", count: "10", icon: Users },
   { href: "/activity", label: "활동 로그", count: "", icon: Activity },
-  { href: "/", label: "스케줄", count: "", icon: Clock3 },
+  { href: "/schedule", label: "스케줄", count: "", icon: Clock3 },
   { href: "/", label: "비용", count: "", icon: DollarSign },
   { href: "/memory", label: "메모리", count: "", icon: Brain },
 ];
