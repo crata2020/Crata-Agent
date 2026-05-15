@@ -20,6 +20,7 @@ describe("AppShell", () => {
     expect(screen.getByRole("link", { name: "요청 콘솔" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "승인함" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "에이전트" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "활동 로그" })).toHaveAttribute("href", "/activity");
     expect(screen.getByRole("link", { name: "메모리" })).toHaveAttribute("href", "/memory");
 
     expect(screen.queryByText("Dashboard")).not.toBeInTheDocument();
