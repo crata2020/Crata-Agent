@@ -131,9 +131,10 @@ describe("RequestIntakePage candidate review", () => {
     fireEvent.change(screen.getByLabelText("후보 요약"), {
       target: { value: "상담형 결과지 문장으로 수정합니다." },
     });
-    fireEvent.change(screen.getByLabelText("추천 에이전트"), {
-      target: { value: "crata_ceo, report_editor, quality_inspector" },
-    });
+    expect(screen.queryByRole("textbox", { name: "추천 에이전트" })).not.toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "CRATA CEO 선택" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "결과지 에디터 선택" })).toBeChecked();
+    fireEvent.click(screen.getByRole("checkbox", { name: "품질검수관 선택" }));
     fireEvent.click(screen.getByRole("button", { name: "후보 저장" }));
 
     await waitFor(() =>
@@ -147,5 +148,31 @@ describe("RequestIntakePage candidate review", () => {
     expect(screen.getByText("조직행동검사 5페이지 문구 수정")).toBeInTheDocument();
     expect(screen.getByText("상담형 결과지 문장으로 수정합니다.")).toBeInTheDocument();
     expect(screen.getByText("quality_inspector")).toBeInTheDocument();
+  });
+
+  it("requires at least one selected agent before saving a candidate", async () => {
+    createIntakeMock.mockResolvedValue({
+      id: "intake-1",
+      title: "회의록",
+      input_type: "meeting_notes",
+      raw_content: "원문",
+      candidate_tasks: candidateTasks,
+    });
+
+    render(<RequestIntakePage />);
+
+    fireEvent.change(screen.getByLabelText("원문"), {
+      target: { value: "조직행동검사 5페이지 문구를 수정하자." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "작업 후보 추출" }));
+
+    await screen.findByText("작업 후보 검토");
+    fireEvent.click(screen.getAllByRole("button", { name: "후보 수정" })[0]);
+    fireEvent.click(screen.getByRole("checkbox", { name: "CRATA CEO 선택" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "결과지 에디터 선택" }));
+    fireEvent.click(screen.getByRole("button", { name: "후보 저장" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("추천 에이전트를 1명 이상 선택하세요.");
+    expect(updateCandidateMock).not.toHaveBeenCalled();
   });
 });

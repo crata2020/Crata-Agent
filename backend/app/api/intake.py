@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models import CandidateTask, IntakeItem
 from app.schemas.intake import CandidateTaskRead, CandidateTaskUpdate, IntakeCreate, IntakeRead
+from app.services.agent_seed import AGENT_IDS
 from app.services.intake_decomposition import decompose_input, detect_input_type
 
 router = APIRouter(prefix="/intake", tags=["intake"])
@@ -76,6 +77,13 @@ def update_candidate_task(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate task not found")
     if candidate.status != "draft":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Candidate task already started")
+
+    unknown_agents = [agent for agent in payload.recommended_agents if agent not in AGENT_IDS]
+    if unknown_agents:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Unknown recommended agents: {', '.join(unknown_agents)}",
+        )
 
     candidate.title = payload.title
     candidate.summary = payload.summary

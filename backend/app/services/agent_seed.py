@@ -14,6 +14,7 @@ def _load_agent_seeds() -> list[dict[str, Any]]:
 
 
 AGENT_SEEDS = _load_agent_seeds()
+AGENT_IDS = {seed["id"] for seed in AGENT_SEEDS}
 
 
 def seed_agents(db: Session) -> None:

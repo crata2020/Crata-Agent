@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { createIntake, runCandidate, updateCandidate } from "@/lib/api";
+import { agentSeeds } from "@/lib/agent-seeds";
 import {
   detectInputType,
   inputTypeLabels,
@@ -19,7 +20,7 @@ const exampleContent =
 type CandidateEdit = {
   title: string;
   summary: string;
-  recommendedAgentsText: string;
+  recommendedAgentIds: string[];
 };
 
 const taskTypeLabels: Record<string, string> = {
@@ -40,16 +41,14 @@ const candidateStatusLabels: Record<string, string> = {
   error: "오류",
 };
 
+const agentSeedIds = new Set(agentSeeds.map((agent) => agent.id));
+
 function candidateToEdit(candidate: CandidateTask): CandidateEdit {
   return {
     title: candidate.title,
     summary: candidate.summary,
-    recommendedAgentsText: candidate.recommended_agents.join(", "),
+    recommendedAgentIds: candidate.recommended_agents.filter((agentId) => agentSeedIds.has(agentId)),
   };
-}
-
-function parseRecommendedAgents(value: string) {
-  return Array.from(new Set(value.split(/[\s,]+/).map((agent) => agent.trim()).filter(Boolean)));
 }
 
 export default function RequestIntakePage() {
@@ -135,10 +134,27 @@ export default function RequestIntakePage() {
     setCandidateEdits((current) => ({
       ...current,
       [candidateId]: {
-        ...(current[candidateId] ?? { title: "", summary: "", recommendedAgentsText: "" }),
+        ...(current[candidateId] ?? { title: "", summary: "", recommendedAgentIds: [] }),
         ...patch,
       },
     }));
+  }
+
+  function toggleRecommendedAgent(candidateId: string, agentId: string, selected: boolean) {
+    setCandidateEdits((current) => {
+      const currentEdit = current[candidateId] ?? { title: "", summary: "", recommendedAgentIds: [] };
+      const recommendedAgentIds = selected
+        ? Array.from(new Set([...currentEdit.recommendedAgentIds, agentId]))
+        : currentEdit.recommendedAgentIds.filter((currentAgentId) => currentAgentId !== agentId);
+
+      return {
+        ...current,
+        [candidateId]: {
+          ...currentEdit,
+          recommendedAgentIds,
+        },
+      };
+    });
   }
 
   function startEditingCandidate(candidate: CandidateTask) {
@@ -163,10 +179,15 @@ export default function RequestIntakePage() {
     const edit = candidateEdits[candidate.id] ?? candidateToEdit(candidate);
     const nextTitle = edit.title.trim();
     const nextSummary = edit.summary.trim();
-    const nextAgents = parseRecommendedAgents(edit.recommendedAgentsText);
+    const nextAgents = edit.recommendedAgentIds;
 
-    if (!nextTitle || !nextSummary || nextAgents.length === 0) {
-      setError("후보 제목, 요약, 추천 에이전트를 모두 입력하세요.");
+    if (!nextTitle || !nextSummary) {
+      setError("후보 제목과 요약을 입력하세요.");
+      return;
+    }
+
+    if (nextAgents.length === 0) {
+      setError("추천 에이전트를 1명 이상 선택하세요.");
       return;
     }
 
@@ -354,16 +375,35 @@ export default function RequestIntakePage() {
                               className="mt-1 w-full resize-y rounded-card border border-border bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-primary"
                             />
                           </label>
-                          <label className="block">
-                            <span className="text-xs font-semibold text-[#5F6B64]">추천 에이전트</span>
-                            <input
-                              value={edit.recommendedAgentsText}
-                              onChange={(event) =>
-                                updateCandidateEdit(candidate.id, { recommendedAgentsText: event.target.value })
-                              }
-                              className="mt-1 h-10 w-full rounded-button border border-border bg-white px-3 text-sm outline-none focus:border-primary"
-                            />
-                          </label>
+                          <fieldset className="rounded-card border border-border bg-surfaceAlt p-3">
+                            <legend className="text-xs font-semibold text-[#5F6B64]">추천 에이전트</legend>
+                            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                              {agentSeeds.map((agent) => {
+                                const checked = edit.recommendedAgentIds.includes(agent.id);
+
+                                return (
+                                  <label
+                                    key={agent.id}
+                                    className="flex min-h-16 items-start gap-2 rounded-button border border-border bg-white p-2 text-xs text-[#1F2723]"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      aria-label={`${agent.display_name} 선택`}
+                                      checked={checked}
+                                      onChange={(event) =>
+                                        toggleRecommendedAgent(candidate.id, agent.id, event.target.checked)
+                                      }
+                                      className="mt-0.5 size-4 shrink-0 accent-primary"
+                                    />
+                                    <span className="min-w-0">
+                                      <span className="block font-semibold">{agent.display_name}</span>
+                                      <span className="mt-0.5 block text-[#5F6B64]">{agent.id}</span>
+                                    </span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </fieldset>
                         </div>
                       ) : (
                         <>
