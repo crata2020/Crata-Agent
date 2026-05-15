@@ -28,19 +28,25 @@ const decisionLabels: Record<ApprovalDecision, string> = {
 export function ApprovalCard({ approval }: ApprovalCardProps) {
   const router = useRouter();
   const [pendingDecision, setPendingDecision] = useState<ApprovalDecision | null>(null);
+  const [decidedStatus, setDecidedStatus] = useState<ApprovalDecision | null>(null);
   const [error, setError] = useState("");
-  const canDecide = approval.status === "pending_approval";
+  const currentStatus = decidedStatus ?? approval.status;
+  const canDecide = approval.status === "pending_approval" && decidedStatus === null;
 
   async function handleDecision(decision: ApprovalDecision) {
+    if (!canDecide || pendingDecision !== null) {
+      return;
+    }
+
     setPendingDecision(decision);
     setError("");
 
     try {
       await decideApproval(approval.id, decision);
+      setDecidedStatus(decision);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "승인 처리에 실패했습니다.");
-    } finally {
       setPendingDecision(null);
     }
   }
@@ -51,7 +57,7 @@ export function ApprovalCard({ approval }: ApprovalCardProps) {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-button bg-surfaceAlt px-2 py-1 text-xs font-semibold text-primary">
-              {statusLabels[approval.status] ?? approval.status}
+              {statusLabels[currentStatus] ?? currentStatus}
             </span>
             <span className="text-xs font-medium text-[#5F6B64]">{approval.affected_area}</span>
           </div>
@@ -91,7 +97,7 @@ export function ApprovalCard({ approval }: ApprovalCardProps) {
           </div>
         ) : (
           <div className="shrink-0 rounded-button border border-border bg-surfaceAlt px-3 py-2 text-sm font-semibold text-[#5F6B64]">
-            최종 상태: {statusLabels[approval.status] ?? approval.status}
+            최종 상태: {statusLabels[currentStatus] ?? currentStatus}
           </div>
         )}
       </div>

@@ -57,4 +57,42 @@ describe("api client", () => {
       cache: "no-store",
     });
   });
+
+  it("runs a candidate task by candidate id", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ task_id: "task-1", approval_id: "approval-1" }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const { runCandidate } = await import("@/lib/api");
+
+    await runCandidate("candidate-1");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8000/tasks/from-candidate/candidate-1/run",
+      { method: "POST" },
+    );
+  });
+
+  it("posts approval decisions with an optional reason", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: "approval-1", status: "rejected" }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const { decideApproval } = await import("@/lib/api");
+
+    await decideApproval("approval-1", "rejected", "근거 부족");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8000/approvals/approval-1/decide",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision: "rejected", reason: "근거 부족" }),
+      }),
+    );
+  });
 });
