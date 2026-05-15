@@ -37,6 +37,39 @@ def test_create_intake_extracts_candidate_tasks(app: FastAPI, db_session: Sessio
     assert len(db_session.scalars(select(CandidateTask)).all()) == 2
 
 
+def test_create_intake_persists_intake_decomposition_graph_trace(
+    app: FastAPI, db_session: Session
+) -> None:
+    client = TestClient(app)
+
+    response = client.post(
+        "/intake",
+        json={
+            "title": "복합 회의록",
+            "raw_content": "결과지 문구는 상담형으로 수정하고 상담 사례는 학습 후보로 저장하자.",
+        },
+    )
+
+    assert response.status_code == 201
+    intake_item = db_session.scalars(select(IntakeItem)).one()
+    graph_metadata = intake_item.item_metadata
+    assert graph_metadata["graph_name"] == "intake_decomposition_graph"
+    assert graph_metadata["human_review_required"] is True
+    assert [node["name"] for node in graph_metadata["node_trace"]] == [
+        "preserve_input",
+        "split_semantic_units",
+        "collect_rule_hints",
+        "judge_with_ai_context",
+        "build_candidates",
+        "prepare_human_review",
+    ]
+
+    candidate = db_session.scalars(select(CandidateTask)).first()
+    assert candidate is not None
+    assert candidate.item_metadata["origin_graph"] == "intake_decomposition_graph"
+    assert candidate.item_metadata["origin_node"] == "build_candidates"
+
+
 def test_create_intake_extracts_all_mixed_candidate_task_types_in_order(app: FastAPI) -> None:
     client = TestClient(app)
 

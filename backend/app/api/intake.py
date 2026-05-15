@@ -6,7 +6,8 @@ from app.core.database import get_db
 from app.models import CandidateTask, IntakeItem
 from app.schemas.intake import CandidateTaskRead, CandidateTaskUpdate, IntakeCreate, IntakeRead
 from app.services.agent_seed import AGENT_IDS
-from app.services.intake_decomposition import decompose_input, detect_input_type
+from app.services.intake_decomposition import detect_input_type
+from app.services.intake_decomposition_graph import GRAPH_NAME, run_intake_decomposition_graph
 
 router = APIRouter(prefix="/intake", tags=["intake"])
 
@@ -39,12 +40,13 @@ def create_intake(payload: IntakeCreate, db: Session = Depends(get_db)) -> Intak
     if not input_type or input_type == "auto":
         input_type = detect_input_type(payload.title, payload.raw_content)
 
+    decomposition_result = run_intake_decomposition_graph(payload.raw_content)
     intake_item = IntakeItem(
         title=payload.title,
         input_type=input_type,
         raw_content=payload.raw_content,
         source=payload.source,
-        item_metadata={},
+        item_metadata=decomposition_result.metadata(),
     )
     db.add(intake_item)
     db.flush()
@@ -68,9 +70,11 @@ def create_intake(payload: IntakeCreate, db: Session = Depends(get_db)) -> Intak
                 "approval_required": draft.approval_required,
                 "rule_hints": draft.rule_hints,
                 "review_flags": draft.review_flags,
+                "origin_graph": GRAPH_NAME,
+                "origin_node": "build_candidates",
             },
         )
-        for draft in decompose_input(payload.raw_content)
+        for draft in decomposition_result.candidate_drafts
     ]
     db.add_all(candidate_tasks)
     db.commit()

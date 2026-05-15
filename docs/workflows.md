@@ -10,13 +10,20 @@
 
 ```text
 입력물 받기
--> 원문 그대로 저장
--> 입력물 종류 판단
--> 요청 후보 추출
--> 비슷한 후보 병합
--> 작업 후보 카드 생성
--> 청하님 선택 대기
+-> preserve_input: 원문 보존 및 공백 정리
+-> split_semantic_units: 문장·문맥 단위 분리
+-> collect_rule_hints: 키워드 기반 분류 힌트 수집
+-> judge_with_ai_context: 문맥 기준 최종 분류 판단
+-> build_candidates: 작업 후보 카드 생성
+-> prepare_human_review: 청하님 검토 대기 상태로 준비
 ```
+
+현재 구현 위치:
+
+- `backend/app/services/intake_decomposition_graph.py`
+- 그래프 이름: `intake_decomposition_graph`
+- 요청 메타데이터 저장값: `graph_name`, `human_review_required`, `node_trace`
+- 후보 메타데이터 저장값: `origin_graph`, `origin_node`
 
 작업 후보 유형:
 
