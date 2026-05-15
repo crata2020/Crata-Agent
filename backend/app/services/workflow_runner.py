@@ -55,7 +55,7 @@ def run_task_workflow(db: Session, task_id: str) -> WorkflowResult:
                 step_name=step_name,
                 agent_id=agent_id,
                 input_summary=task.title,
-                output_summary="completed",
+                output_summary=_step_output_summary(step_name),
                 status="completed",
                 completed_at=_utcnow(),
                 item_metadata=step_metadata,
@@ -126,6 +126,15 @@ def _approval_type(task_type: str) -> str:
         "report_phrase_revision": "report_phrase_change",
         "counseling_case_learning": "learning_candidate",
     }.get(task_type, "general_review")
+
+
+def _step_output_summary(step_name: str) -> str:
+    return {
+        "ceo_routing": "작업 유형과 담당 에이전트 실행 순서를 정했습니다.",
+        "context_retrieval": "공식 지식과 에이전트 작업 가이드를 연결했습니다.",
+        "specialist_draft": "담당 에이전트가 초안을 작성했습니다.",
+        "quality_review": "개념, 톤, 안전성 검수 단계가 완료되었습니다.",
+    }.get(step_name, "단계가 완료되었습니다.")
 
 
 def _build_model_context(*, db: Session, task: Task, knowledge_context: str) -> str:

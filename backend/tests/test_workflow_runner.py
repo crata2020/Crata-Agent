@@ -70,6 +70,12 @@ def test_run_task_workflow_creates_artifact_and_approval(db_session: Session) ->
         ("specialist_draft", "report_editor"),
         ("quality_review", "quality_inspector"),
     ]
+    assert [(step.step_name, step.output_summary) for step in steps] == [
+        ("ceo_routing", "작업 유형과 담당 에이전트 실행 순서를 정했습니다."),
+        ("context_retrieval", "공식 지식과 에이전트 작업 가이드를 연결했습니다."),
+        ("specialist_draft", "담당 에이전트가 초안을 작성했습니다."),
+        ("quality_review", "개념, 톤, 안전성 검수 단계가 완료되었습니다."),
+    ]
     assert task.title in approval.title
 
 
