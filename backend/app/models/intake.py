@@ -27,7 +27,7 @@ class CandidateTask(Base):
     task_type: Mapped[str] = mapped_column(String(64), index=True)
     title: Mapped[str] = mapped_column(String(255))
     summary: Mapped[str] = mapped_column(Text)
-    evidence_excerpt: Mapped[str] = mapped_column(Text)
+    evidence_excerpt: Mapped[str] = mapped_column(Text, default="")
     recommended_agents: Mapped[list] = mapped_column(JSON, default=list)
     status: Mapped[str] = mapped_column(String(64), index=True, default="draft")
     item_metadata: Mapped[dict] = mapped_column("metadata", JSON, default=dict)

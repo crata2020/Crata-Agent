@@ -16,7 +16,7 @@ class Task(Base):
     )
     task_type: Mapped[str] = mapped_column(String(64), index=True)
     title: Mapped[str] = mapped_column(String(255))
-    description: Mapped[str] = mapped_column(Text)
+    description: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(64), index=True, default="draft")
     priority: Mapped[str] = mapped_column(String(64), default="normal")
     assigned_agents: Mapped[list] = mapped_column(JSON, default=list)
