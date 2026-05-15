@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -64,6 +65,15 @@ def create_intake(payload: IntakeCreate, db: Session = Depends(get_db)) -> Intak
         raw_content=intake_item.raw_content,
         candidate_tasks=[_candidate_to_read(candidate_task) for candidate_task in candidate_tasks],
     )
+
+
+@router.get("/candidates", response_model=list[CandidateTaskRead])
+def list_candidate_tasks(db: Session = Depends(get_db)) -> list[CandidateTaskRead]:
+    candidate_tasks = db.scalars(
+        select(CandidateTask).order_by(CandidateTask.updated_at.desc())
+    ).all()
+
+    return [_candidate_to_read(candidate_task) for candidate_task in candidate_tasks]
 
 
 @router.patch("/candidates/{candidate_id}", response_model=CandidateTaskRead)

@@ -2,13 +2,14 @@
 
 import { Check, RotateCcw, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { decideApproval, type ApprovalDecision } from "@/lib/api";
 import type { Approval, ApprovalStatus } from "@/lib/types";
 
 interface ApprovalCardProps {
   approval: Approval;
+  highlighted?: boolean;
 }
 
 const statusLabels: Record<ApprovalStatus, string> = {
@@ -25,8 +26,9 @@ const decisionLabels: Record<ApprovalDecision, string> = {
   revise_requested: "수정요청",
 };
 
-export function ApprovalCard({ approval }: ApprovalCardProps) {
+export function ApprovalCard({ approval, highlighted = false }: ApprovalCardProps) {
   const router = useRouter();
+  const cardRef = useRef<HTMLElement | null>(null);
   const [pendingDecision, setPendingDecision] = useState<ApprovalDecision | null>(null);
   const [decidedStatus, setDecidedStatus] = useState<ApprovalDecision | null>(null);
   const [isRevisionFormOpen, setIsRevisionFormOpen] = useState(false);
@@ -35,6 +37,19 @@ export function ApprovalCard({ approval }: ApprovalCardProps) {
   const [error, setError] = useState("");
   const currentStatus = decidedStatus ?? approval.status;
   const canDecide = approval.status === "pending_approval" && decidedStatus === null;
+
+  useEffect(() => {
+    if (!highlighted) {
+      return;
+    }
+
+    window.setTimeout(() => {
+      cardRef.current?.scrollIntoView?.({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 80);
+  }, [highlighted]);
 
   async function handleDecision(decision: ApprovalDecision, reason = "") {
     if (!canDecide || pendingDecision !== null) {
@@ -81,7 +96,16 @@ export function ApprovalCard({ approval }: ApprovalCardProps) {
   }
 
   return (
-    <article className="rounded-[14px] border border-white/10 bg-[#111820] p-4 text-white shadow-[0_18px_50px_rgba(0,0,0,0.25)]">
+    <article
+      ref={cardRef}
+      id={`approval-${approval.id}`}
+      aria-current={highlighted ? "true" : undefined}
+      className={`rounded-[14px] border p-4 text-white shadow-[0_18px_50px_rgba(0,0,0,0.25)] ${
+        highlighted
+          ? "border-[#F2B84B]/80 bg-[#181408] shadow-[0_0_0_1px_rgba(242,184,75,0.26),0_20px_70px_rgba(242,184,75,0.12)]"
+          : "border-white/10 bg-[#111820]"
+      }`}
+    >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -89,6 +113,11 @@ export function ApprovalCard({ approval }: ApprovalCardProps) {
               {statusLabels[currentStatus] ?? currentStatus}
             </span>
             <span className="text-xs font-medium text-[#AEB9C4]">{approval.affected_area}</span>
+            {highlighted ? (
+              <span className="rounded-full bg-[#302410] px-2 py-1 text-xs font-semibold text-[#FFD37A]">
+                대시보드 선택
+              </span>
+            ) : null}
           </div>
           <h2 className="mt-3 text-base font-semibold text-white">{approval.title}</h2>
           <p className="mt-2 text-sm leading-6 text-[#C7D2DC]">{approval.summary}</p>

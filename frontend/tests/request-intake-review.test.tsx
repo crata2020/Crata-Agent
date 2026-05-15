@@ -3,16 +3,24 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import RequestIntakePage from "@/app/request-intake/page";
-import { createIntake, runCandidate, runCandidates, updateCandidate } from "@/lib/api";
+import { createIntake, listCandidateTasks, runCandidate, runCandidates, updateCandidate } from "@/lib/api";
+
+const searchParamsState = vi.hoisted(() => ({ value: "" }));
+
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(searchParamsState.value),
+}));
 
 vi.mock("@/lib/api", () => ({
   createIntake: vi.fn(),
+  listCandidateTasks: vi.fn(),
   runCandidate: vi.fn(),
   runCandidates: vi.fn(),
   updateCandidate: vi.fn(),
 }));
 
 const createIntakeMock = vi.mocked(createIntake);
+const listCandidateTasksMock = vi.mocked(listCandidateTasks);
 const runCandidateMock = vi.mocked(runCandidate);
 const runCandidatesMock = vi.mocked(runCandidates);
 const updateCandidateMock = vi.mocked(updateCandidate);
@@ -41,9 +49,11 @@ const candidateTasks = [
 describe("RequestIntakePage candidate review", () => {
   beforeEach(() => {
     createIntakeMock.mockReset();
+    listCandidateTasksMock.mockReset();
     runCandidateMock.mockReset();
     runCandidatesMock.mockReset();
     updateCandidateMock.mockReset();
+    searchParamsState.value = "";
   });
 
   it("shows a review workspace for extracted candidates and lets the user hold one", async () => {
@@ -102,6 +112,20 @@ describe("RequestIntakePage candidate review", () => {
 
     await waitFor(() => expect(runCandidateMock).toHaveBeenCalledWith("candidate-report"));
     expect(runCandidateMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("loads and highlights a candidate linked from the dashboard", async () => {
+    searchParamsState.value = "candidateId=candidate-case";
+    listCandidateTasksMock.mockResolvedValue(candidateTasks);
+
+    render(<RequestIntakePage />);
+
+    await waitFor(() => expect(listCandidateTasksMock).toHaveBeenCalledTimes(1));
+
+    expect(await screen.findByText("대시보드에서 선택한 후보를 표시합니다.")).toBeInTheDocument();
+    expect(screen.getByText("상담 사례 학습 후보 항목이 아래 목록에서 강조됩니다.")).toBeInTheDocument();
+    expect(screen.getByText("대시보드 선택")).toBeInTheDocument();
+    expect(screen.getByText("실행 대상 2개 / 전체 2개")).toBeInTheDocument();
   });
 
   it("runs all selected candidates at once and links to the approval inbox", async () => {

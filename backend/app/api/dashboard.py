@@ -160,10 +160,15 @@ def _work_items(
                     summary=approval.summary,
                     task_type=task.task_type,
                     status=approval.status,
-                    href="/approvals",
+                    href=f"/approvals?approvalId={approval.id}",
                 )
             )
         else:
+            task_href = (
+                f"/request-intake?candidateId={task.candidate_task_id}"
+                if task.candidate_task_id
+                else f"/request-intake?taskId={task.id}"
+            )
             items.append(
                 AgentWorkItemRead(
                     id=task.id,
@@ -172,11 +177,16 @@ def _work_items(
                     summary=task.description,
                     task_type=task.task_type,
                     status=task.status,
-                    href="/request-intake",
+                    href=task_href,
                 )
             )
 
     for task in running_tasks:
+        task_href = (
+            f"/request-intake?candidateId={task.candidate_task_id}"
+            if task.candidate_task_id
+            else f"/request-intake?taskId={task.id}"
+        )
         items.append(
             AgentWorkItemRead(
                 id=task.id,
@@ -185,7 +195,7 @@ def _work_items(
                 summary=task.description,
                 task_type=task.task_type,
                 status=task.status,
-                href="/request-intake",
+                href=task_href,
             )
         )
 
@@ -198,7 +208,7 @@ def _work_items(
                 summary=candidate.summary,
                 task_type=candidate.task_type,
                 status=candidate.status,
-                href="/request-intake",
+                href=f"/request-intake?candidateId={candidate.id}",
             )
         )
 

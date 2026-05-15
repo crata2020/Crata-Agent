@@ -15,10 +15,11 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
-import { createIntake, runCandidate, runCandidates, updateCandidate } from "@/lib/api";
+import { createIntake, listCandidateTasks, runCandidate, runCandidates, updateCandidate } from "@/lib/api";
 import { agentSeeds } from "@/lib/agent-seeds";
 import {
   detectInputType,
@@ -68,6 +69,16 @@ function candidateToEdit(candidate: CandidateTask): CandidateEdit {
 }
 
 export default function RequestIntakePage() {
+  return (
+    <Suspense fallback={<RequestIntakeLoading />}>
+      <RequestIntakeWorkspace />
+    </Suspense>
+  );
+}
+
+function RequestIntakeWorkspace() {
+  const searchParams = useSearchParams();
+  const linkedCandidateId = searchParams.get("candidateId");
   const [title, setTitle] = useState("회의록");
   const [inputType, setInputType] = useState<InputTypeMode>("auto");
   const [rawContent, setRawContent] = useState("");
@@ -82,6 +93,7 @@ export default function RequestIntakePage() {
   const [editingCandidateId, setEditingCandidateId] = useState<string | null>(null);
   const [savingCandidateId, setSavingCandidateId] = useState<string | null>(null);
   const [candidateEdits, setCandidateEdits] = useState<Record<string, CandidateEdit>>({});
+  const [isLoadingLinkedCandidate, setIsLoadingLinkedCandidate] = useState(false);
   const agentById = useMemo(() => new Map(agentSeeds.map((agent) => [agent.id, agent])), []);
   const detectedInputType = detectInputType(title, rawContent);
   const resolvedInputType = resolveInputType(inputType, title, rawContent);
@@ -93,6 +105,69 @@ export default function RequestIntakePage() {
       candidate.status === "draft",
   );
   const hasApprovalResults = Object.keys(runApprovals).length > 0;
+  const linkedCandidate = linkedCandidateId
+    ? candidates.find((candidate) => candidate.id === linkedCandidateId)
+    : null;
+
+  useEffect(() => {
+    if (!linkedCandidateId) {
+      return;
+    }
+
+    let isCurrent = true;
+    setIsLoadingLinkedCandidate(true);
+    setError("");
+
+    listCandidateTasks()
+      .then((candidateTasks) => {
+        if (!isCurrent) {
+          return;
+        }
+
+        setCandidates(candidateTasks);
+        setCandidateSelections(
+          Object.fromEntries(candidateTasks.map((candidate) => [candidate.id, candidate.status === "draft"])),
+        );
+        setCandidateEdits(
+          Object.fromEntries(candidateTasks.map((candidate) => [candidate.id, candidateToEdit(candidate)])),
+        );
+        setEditingCandidateId(null);
+        setRunApprovals({});
+        setMessage(
+          candidateTasks.some((candidate) => candidate.id === linkedCandidateId)
+            ? "대시보드에서 선택한 후보를 불러왔습니다."
+            : "후보 목록을 불러왔지만 선택한 후보를 찾지 못했습니다.",
+        );
+      })
+      .catch((err) => {
+        if (!isCurrent) {
+          return;
+        }
+        setError(err instanceof Error ? err.message : "후보 목록을 불러오지 못했습니다.");
+      })
+      .finally(() => {
+        if (isCurrent) {
+          setIsLoadingLinkedCandidate(false);
+        }
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [linkedCandidateId]);
+
+  useEffect(() => {
+    if (!linkedCandidateId || candidates.length === 0) {
+      return;
+    }
+
+    window.setTimeout(() => {
+      document.getElementById(`candidate-${linkedCandidateId}`)?.scrollIntoView?.({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 80);
+  }, [linkedCandidateId, candidates.length]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -311,6 +386,23 @@ export default function RequestIntakePage() {
             </div>
           </header>
 
+          {linkedCandidateId ? (
+            <div className="rounded-[14px] border border-[#38BDF8]/35 bg-[#0B2535]/55 p-4 text-sm text-[#DDE6EE] shadow-[0_18px_50px_rgba(56,189,248,0.08)]">
+              <p className="font-semibold text-[#7DD7FF]">
+                {isLoadingLinkedCandidate
+                  ? "대시보드에서 선택한 후보를 불러오는 중입니다."
+                  : linkedCandidate
+                    ? "대시보드에서 선택한 후보를 표시합니다."
+                    : "선택한 후보를 찾지 못했습니다."}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-[#AEB9C4]">
+                {linkedCandidate
+                  ? `${linkedCandidate.title} 항목이 아래 목록에서 강조됩니다.`
+                  : "후보가 이미 실행·정리되었거나 다른 작업공간에서 삭제되었을 수 있습니다."}
+              </p>
+            </div>
+          ) : null}
+
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_360px]">
             <form onSubmit={handleSubmit} className="rounded-[14px] border border-white/10 bg-[#0E141B]/90 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.28)]">
               <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
@@ -450,12 +542,19 @@ export default function RequestIntakePage() {
                 const isEditing = editingCandidateId === candidate.id;
                 const edit = candidateEdits[candidate.id] ?? candidateToEdit(candidate);
                 const isSaving = savingCandidateId === candidate.id;
+                const isHighlighted = linkedCandidateId === candidate.id;
 
                 return (
                   <article
                     key={candidate.id}
+                    id={`candidate-${candidate.id}`}
+                    aria-current={isHighlighted ? "true" : undefined}
                     className={`rounded-[14px] border p-4 shadow-[0_18px_50px_rgba(0,0,0,0.25)] ${
-                      isSelected ? "border-white/10 bg-[#111820]/92" : "border-white/5 bg-[#0B1016]/75 opacity-80"
+                      isHighlighted
+                        ? "border-[#38BDF8]/70 bg-[#0E1D27]/95 shadow-[0_0_0_1px_rgba(56,189,248,0.28),0_20px_70px_rgba(56,189,248,0.13)]"
+                        : isSelected
+                          ? "border-white/10 bg-[#111820]/92"
+                          : "border-white/5 bg-[#0B1016]/75 opacity-80"
                     }`}
                   >
                     <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -471,6 +570,11 @@ export default function RequestIntakePage() {
                             {isSelected ? <CheckCircle2 size={14} aria-hidden="true" /> : <PauseCircle size={14} aria-hidden="true" />}
                             {statusLabel}
                           </span>
+                          {isHighlighted ? (
+                            <span className="rounded-full bg-[#0B2535] px-2 py-1 text-xs font-semibold text-[#7DD7FF]">
+                              대시보드 선택
+                            </span>
+                          ) : null}
                         </div>
                         {isEditing ? (
                           <div className="mt-3 grid gap-3">
@@ -648,5 +752,18 @@ function FlowStep({
       </div>
       <p className="mt-1 text-xs leading-5 text-[#AEB9C4]">{text}</p>
     </div>
+  );
+}
+
+function RequestIntakeLoading() {
+  return (
+    <AppShell>
+      <section className="min-h-[calc(100vh-2rem)] rounded-[18px] border border-white/10 bg-[#05080B] p-5 text-white shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-[#8EA0AE]">Request Console</p>
+        <div className="mt-5 rounded-[14px] border border-white/10 bg-[#111820] p-6 text-sm text-[#AEB9C4]">
+          요청 콘솔을 불러오는 중입니다.
+        </div>
+      </section>
+    </AppShell>
   );
 }

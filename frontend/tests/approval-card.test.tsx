@@ -49,6 +49,13 @@ describe("ApprovalCard", () => {
     expect(screen.getByText("수정된 문구")).toBeInTheDocument();
   });
 
+  it("marks the card highlighted when opened from the dashboard", () => {
+    render(<ApprovalCard approval={pendingApproval} highlighted />);
+
+    expect(screen.getByText("대시보드 선택")).toBeInTheDocument();
+    expect(screen.getByRole("article")).toHaveAttribute("aria-current", "true");
+  });
+
   it("locks the card after a successful approval decision", async () => {
     decideApprovalMock.mockResolvedValue({ ...pendingApproval, status: "approved" });
 

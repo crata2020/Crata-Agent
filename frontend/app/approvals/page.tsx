@@ -2,9 +2,23 @@ import { ApprovalCard } from "@/components/approval-card";
 import { AppShell } from "@/components/app-shell";
 import { listApprovals } from "@/lib/api";
 
-export default async function ApprovalsPage() {
+type ApprovalsPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function firstParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function ApprovalsPage({ searchParams }: ApprovalsPageProps) {
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const highlightedApprovalId = firstParam(resolvedSearchParams.approvalId);
+
   try {
     const approvals = await listApprovals();
+    const highlightedApproval = highlightedApprovalId
+      ? approvals.find((approval) => approval.id === highlightedApprovalId)
+      : null;
 
     return (
       <AppShell>
@@ -17,6 +31,19 @@ export default async function ApprovalsPage() {
             </p>
           </header>
 
+          {highlightedApprovalId ? (
+            <section className="mt-5 rounded-[14px] border border-[#F2B84B]/35 bg-[#241C0F]/80 p-4 text-sm text-[#DDE6EE]">
+              <p className="font-semibold text-[#FFD37A]">
+                {highlightedApproval ? "대시보드에서 선택한 승인 항목을 표시합니다." : "선택한 승인 항목을 찾지 못했습니다."}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-[#AEB9C4]">
+                {highlightedApproval
+                  ? `${highlightedApproval.title} 항목이 아래 목록에서 강조됩니다.`
+                  : "승인 항목이 이미 처리되었거나 다른 작업공간에서 변경되었을 수 있습니다."}
+              </p>
+            </section>
+          ) : null}
+
           {approvals.length === 0 ? (
             <section className="mt-5 rounded-[14px] border border-white/10 bg-[#111820] p-6 text-sm text-[#AEB9C4]">
               승인대기 항목이 없습니다.
@@ -24,7 +51,11 @@ export default async function ApprovalsPage() {
           ) : (
             <section className="mt-5 space-y-3" aria-label="승인 항목">
               {approvals.map((approval) => (
-                <ApprovalCard key={approval.id} approval={approval} />
+                <ApprovalCard
+                  key={approval.id}
+                  approval={approval}
+                  highlighted={approval.id === highlightedApprovalId}
+                />
               ))}
             </section>
           )}

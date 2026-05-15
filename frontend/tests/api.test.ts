@@ -58,6 +58,22 @@ describe("api client", () => {
     });
   });
 
+  it("requests candidate tasks without server-side caching", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [],
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const { listCandidateTasks } = await import("@/lib/api");
+
+    await listCandidateTasks();
+
+    expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:8000/intake/candidates", {
+      cache: "no-store",
+    });
+  });
+
   it("requests dashboard summary without server-side caching", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

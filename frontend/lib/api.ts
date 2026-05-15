@@ -76,6 +76,10 @@ export function createIntake(payload: IntakePayload) {
   });
 }
 
+export function listCandidateTasks() {
+  return requestJson<CandidateTask[]>("/intake/candidates", { cache: "no-store" });
+}
+
 export function runCandidate(candidateId: string) {
   return requestJson<RunCandidateResponse>(`/tasks/from-candidate/${candidateId}/run`, {
     method: "POST",

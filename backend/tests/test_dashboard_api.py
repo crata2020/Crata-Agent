@@ -47,7 +47,7 @@ def test_agent_activity_includes_draft_candidate_work_items(app: FastAPI) -> Non
     assert work_item["source_type"] == "candidate"
     assert work_item["title"] == "상담 전사록 사례 학습 후보"
     assert work_item["status"] == "draft"
-    assert work_item["href"] == "/request-intake"
+    assert work_item["href"] == f"/request-intake?candidateId={candidate_id}"
 
 
 def test_agent_activity_shows_pending_approval_work(
@@ -89,5 +89,5 @@ def test_agent_activity_shows_pending_approval_work(
     assert agents["report_editor"]["pending_approval_count"] == 1
     assert agents["report_editor"]["work_items"][0]["source_type"] == "approval"
     assert agents["report_editor"]["work_items"][0]["status"] == "pending_approval"
-    assert agents["report_editor"]["work_items"][0]["href"] == "/approvals"
+    assert agents["report_editor"]["work_items"][0]["href"].startswith("/approvals?approvalId=")
     assert agents["quality_inspector"]["activity_status"] == "waiting_approval"

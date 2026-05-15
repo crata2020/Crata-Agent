@@ -58,7 +58,7 @@ describe("dashboard agent flow map", () => {
               summary: "공식 반영 전 결과지 문구 수정 초안을 검토합니다.",
               task_type: "report_phrase_revision",
               status: "pending_approval",
-              href: "/approvals",
+              href: "/approvals?approvalId=approval-1",
             },
           ]
         : agent.id === "counseling_coach"
@@ -70,7 +70,7 @@ describe("dashboard agent flow map", () => {
                 summary: "상담 전사록에서 사례 학습 후보와 관계 패턴을 분리합니다.",
                 task_type: "counseling_case_learning",
                 status: "draft",
-                href: "/request-intake",
+                href: "/request-intake?candidateId=candidate-1",
               },
             ]
           : [],
@@ -117,6 +117,10 @@ describe("dashboard agent flow map", () => {
     expect(screen.getAllByText("상담 코치").length).toBeGreaterThan(1);
     expect(screen.getAllByText("상담 전사록 사례 분리 후보").length).toBeGreaterThan(0);
     expect(screen.getByText("상담 전사록에서 사례 학습 후보와 관계 패턴을 분리합니다.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /상담 전사록 사례 분리 후보/ })).toHaveAttribute(
+      "href",
+      "/request-intake?candidateId=candidate-1",
+    );
     expect(screen.getByRole("link", { name: "후보 보기" })).toHaveAttribute("href", "/request-intake");
     expect(screen.getAllByRole("link", { name: "승인함" }).length).toBeGreaterThan(0);
   });

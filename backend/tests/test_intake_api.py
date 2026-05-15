@@ -135,6 +135,25 @@ def test_update_candidate_task_before_execution(app: FastAPI, db_session: Sessio
     assert candidate.recommended_agents == ["crata_ceo", "report_editor", "quality_inspector"]
 
 
+def test_list_candidate_tasks_returns_existing_candidates(app: FastAPI) -> None:
+    client = TestClient(app)
+    intake_response = client.post(
+        "/intake",
+        json={
+            "title": "회의록",
+            "raw_content": "결과지 문구를 수정하고 상담 사례는 학습 후보로 저장하자.",
+        },
+    )
+    candidate_ids = {task["id"] for task in intake_response.json()["candidate_tasks"]}
+
+    response = client.get("/intake/candidates")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert {task["id"] for task in body} == candidate_ids
+    assert [task["status"] for task in body] == ["draft", "draft"]
+
+
 def test_update_candidate_task_rejects_started_candidates(app: FastAPI) -> None:
     client = TestClient(app)
     intake_response = client.post(
