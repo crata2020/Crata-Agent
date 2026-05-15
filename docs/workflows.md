@@ -101,6 +101,17 @@
 -> 승인대기함
 ```
 
+지식 컨텍스트 우선순위:
+
+```text
+1. knowledge/official/*/MASTER.md
+2. knowledge/agent-guides/agent-operating-guides.md
+3. knowledge/_sources/*.raw.md
+4. 실행 중 입력물과 작업 후보 근거
+```
+
+원본 보존 자료는 근거 확인용이고, 기본 답변 기준은 MASTER 문서다. MASTER와 원본이 다르게 보이면 개념수호자가 공식 지식 수정 후보로 분리하고 청하님 승인을 요청한다.
+
 ## 승인 게이트
 
 공식 지식, 결과지 문구, 재사용 상담 원칙, 학습 후보에 영향을 주는 작업은 반드시 승인 단계에서 멈춘다.
