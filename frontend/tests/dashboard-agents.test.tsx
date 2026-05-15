@@ -48,7 +48,7 @@ describe("dashboard agent flow map", () => {
     expect(screen.getByText("Command Centre")).toBeInTheDocument();
     expect(screen.getByText("운영 맵")).toBeInTheDocument();
     expect(screen.getByText("요청 콘솔")).toBeInTheDocument();
-    expect(screen.getByText("승인함")).toBeInTheDocument();
+    expect(screen.getAllByText("승인함").length).toBeGreaterThan(0);
     expect(screen.getByText("Agent Flow")).toBeInTheDocument();
     expect(screen.getByText("CRATA 직원 작업 맵")).toBeInTheDocument();
   });
@@ -63,6 +63,21 @@ describe("dashboard agent flow map", () => {
     expect(screen.getAllByText("결과지 문구 수정 후보 승인 요청").length).toBeGreaterThan(0);
     expect(screen.getAllByText("승인 대기").length).toBeGreaterThan(0);
     expect(screen.getAllByText("확장 예정").length).toBeGreaterThan(0);
+  });
+
+  it("selects an agent node and marks it as active", () => {
+    render(<DashboardContent summary={summary} agentActivity={activity} />);
+
+    const counselingCoach = screen.getByRole("button", { name: "상담 코치 상세 보기" });
+
+    expect(counselingCoach).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(counselingCoach);
+
+    expect(counselingCoach).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Agent Inspector")).toBeInTheDocument();
+    expect(screen.getAllByText("상담 코치").length).toBeGreaterThan(1);
+    expect(screen.getByRole("link", { name: "후보 보기" })).toHaveAttribute("href", "/request-intake");
+    expect(screen.getAllByRole("link", { name: "승인함" }).length).toBeGreaterThan(0);
   });
 
   it("shows map controls for zoom, reset, and movement", () => {
