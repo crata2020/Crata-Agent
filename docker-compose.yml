@@ -1,14 +1,13 @@
 services:
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: crata-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: crata_ai_office
-      POSTGRES_USER: crata
-      POSTGRES_PASSWORD: crata_local_password
+      POSTGRES_DB: ${POSTGRES_DB:-crata_ai_office}
+      POSTGRES_USER: ${POSTGRES_USER:-crata}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-crata_local_password}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - crata_postgres_data:/var/lib/postgresql/data
     healthcheck:

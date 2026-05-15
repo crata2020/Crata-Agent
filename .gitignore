@@ -12,8 +12,8 @@ node_modules/
 coverage/
 
 # Env
-.env
-.env.local
+.env*
+!.env.example
 
 # OS
 .DS_Store
