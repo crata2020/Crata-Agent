@@ -48,6 +48,10 @@ describe("ApprovalCard", () => {
   it("renders reviewer note and decision buttons for pending approvals", () => {
     render(<ApprovalCard approval={pendingApproval} />);
 
+    expect(screen.getByText("검토 메모")).toBeInTheDocument();
+    expect(screen.getByText("변경 후 내용")).toBeInTheDocument();
+    expect(screen.queryByText("Reviewer Note")).not.toBeInTheDocument();
+    expect(screen.queryByText("After Content")).not.toBeInTheDocument();
     expect(screen.getByText("공식 반영 전 톤을 확인하세요.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "승인" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "거절" })).toBeEnabled();

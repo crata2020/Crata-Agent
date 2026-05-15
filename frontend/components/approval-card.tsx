@@ -172,11 +172,11 @@ export function ApprovalCard({ approval, highlighted = false }: ApprovalCardProp
 
       <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
         <section className="rounded-[10px] border border-white/10 bg-black/20 p-3">
-          <h3 className="text-xs font-semibold uppercase tracking-normal text-[#AEB9C4]">Reviewer Note</h3>
+          <h3 className="text-xs font-semibold tracking-normal text-[#AEB9C4]">검토 메모</h3>
           <p className="mt-2 text-sm leading-6 text-[#E8EEF2]">{approval.reviewer_note || "검토 메모가 없습니다."}</p>
         </section>
         <section className="rounded-[10px] border border-white/10 bg-[#0A111B] p-3 text-white">
-          <h3 className="text-xs font-semibold uppercase tracking-normal text-[#CBD5E1]">After Content</h3>
+          <h3 className="text-xs font-semibold tracking-normal text-[#CBD5E1]">변경 후 내용</h3>
           <pre className="mt-2 max-h-56 overflow-auto whitespace-pre-wrap text-xs leading-5">
             <code>{approval.after_content}</code>
           </pre>
