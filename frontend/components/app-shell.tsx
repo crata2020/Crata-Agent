@@ -65,7 +65,7 @@ export function AppShell({ children }: AppShellProps) {
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-lg font-bold tracking-[-0.02em] text-white">CRATA Office</p>
-                <p className="mt-0.5 text-sm text-[#8F98A3]">Command Centre</p>
+                <p className="mt-0.5 text-sm text-[#8F98A3]">운영 센터</p>
               </div>
               <button
                 type="button"
@@ -86,7 +86,7 @@ export function AppShell({ children }: AppShellProps) {
           </div>
 
           <nav className="flex-1 overflow-y-auto px-4 py-5">
-            <p className="px-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#666F7A]">Workspace</p>
+            <p className="px-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#666F7A]">작업공간</p>
             <div className="mt-3 space-y-1">
               {navItems.map((item, index) => {
                 const Icon = item.icon;
@@ -116,7 +116,7 @@ export function AppShell({ children }: AppShellProps) {
           </nav>
 
           <div className="border-t border-white/10 p-5">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#666F7A]">Runtime</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#666F7A]">실행 상태</p>
             <div className="mt-4 space-y-4">
               <UsageBar label="로컬 모델" value="Healthy" percent={82} tone="#36D47F" />
               <UsageBar label="승인 큐" value="Active" percent={46} tone="#F2B84B" />

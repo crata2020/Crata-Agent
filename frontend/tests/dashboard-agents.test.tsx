@@ -177,7 +177,8 @@ describe("dashboard agent flow map", () => {
     render(<DashboardContent summary={summary} agentActivity={activity} />);
 
     expect(screen.getByText("CRATA Office")).toBeInTheDocument();
-    expect(screen.getByText("Command Centre")).toBeInTheDocument();
+    expect(screen.getByText("운영 센터")).toBeInTheDocument();
+    expect(screen.queryByText("Command Centre")).not.toBeInTheDocument();
     expect(screen.getByText("운영 맵")).toBeInTheDocument();
     expect(screen.getByText("요청 콘솔")).toBeInTheDocument();
     expect(screen.getAllByText("승인함").length).toBeGreaterThan(0);

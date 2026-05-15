@@ -24,11 +24,17 @@ describe("AppShell", () => {
     expect(screen.getByRole("link", { name: "스케줄" })).toHaveAttribute("href", "/schedule");
     expect(screen.getByRole("link", { name: "비용" })).toHaveAttribute("href", "/costs");
     expect(screen.getByRole("link", { name: "메모리" })).toHaveAttribute("href", "/memory");
+    expect(screen.getByText("운영 센터")).toBeInTheDocument();
+    expect(screen.getByText("작업공간")).toBeInTheDocument();
+    expect(screen.getByText("실행 상태")).toBeInTheDocument();
 
     expect(screen.queryByText("Dashboard")).not.toBeInTheDocument();
     expect(screen.queryByText("Request Console")).not.toBeInTheDocument();
     expect(screen.queryByText("Approval Inbox")).not.toBeInTheDocument();
     expect(screen.queryByText("Agents")).not.toBeInTheDocument();
+    expect(screen.queryByText("Command Centre")).not.toBeInTheDocument();
+    expect(screen.queryByText("Workspace")).not.toBeInTheDocument();
+    expect(screen.queryByText("Runtime")).not.toBeInTheDocument();
   });
 
   it("can hide and reopen the left sidebar", () => {
