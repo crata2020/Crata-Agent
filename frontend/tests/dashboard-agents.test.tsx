@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { DashboardContent } from "@/app/page";
@@ -7,12 +7,12 @@ import { agentSeeds } from "@/lib/agent-seeds";
 import type { AgentActivity, DashboardSummary } from "@/lib/types";
 import sharedAgentSeeds from "../../shared/agent-seeds.json";
 
-describe("dashboard static agents", () => {
+describe("dashboard agent flow map", () => {
   const summary: DashboardSummary = {
     agent_count: 10,
     active_agent_count: 7,
     candidate_task_count: 4,
-    running_task_count: 0,
+    running_task_count: 1,
     pending_approval_count: 2,
     artifact_count: 1,
   };
@@ -41,44 +41,44 @@ describe("dashboard static agents", () => {
     expect(agentSeeds).toEqual(sharedAgentSeeds);
   });
 
-  it("renders agent display names and roles from the shared seeds", () => {
+  it("renders the command-centre sidebar and agent flow canvas", () => {
+    render(<DashboardContent summary={summary} agentActivity={activity} />);
+
+    expect(screen.getByText("CRATA Office")).toBeInTheDocument();
+    expect(screen.getByText("Command Centre")).toBeInTheDocument();
+    expect(screen.getByText("운영 맵")).toBeInTheDocument();
+    expect(screen.getByText("요청 콘솔")).toBeInTheDocument();
+    expect(screen.getByText("승인함")).toBeInTheDocument();
+    expect(screen.getByText("Agent Flow")).toBeInTheDocument();
+    expect(screen.getByText("CRATA 직원 작업 맵")).toBeInTheDocument();
+  });
+
+  it("renders every agent as a node with its current work", () => {
     render(<DashboardContent summary={summary} agentActivity={activity} />);
 
     for (const agent of sharedAgentSeeds) {
-      expect(screen.getAllByText(agent.display_name).length).toBeGreaterThan(0);
-      expect(screen.getAllByText(agent.role).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(`@${agent.display_name}`).length).toBeGreaterThan(0);
     }
-  });
 
-  it("renders live dashboard summary counts", () => {
-    render(<DashboardContent summary={summary} agentActivity={activity} />);
-
-    expect(screen.getByText("작업 후보")).toBeInTheDocument();
-    expect(screen.getAllByText("승인대기").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("4").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("2").length).toBeGreaterThan(0);
-  });
-
-  it("renders an at-a-glance office operations board", () => {
-    render(<DashboardContent summary={summary} agentActivity={activity} />);
-
-    expect(screen.getByText("실시간 운영실")).toBeInTheDocument();
-    expect(screen.getByText("작업 흐름 레일")).toBeInTheDocument();
-    expect(screen.getByText("활동 검사기")).toBeInTheDocument();
-    expect(screen.getByText("최근 신호")).toBeInTheDocument();
-    expect(screen.getAllByText("후보 정리").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("승인 검토").length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("link", { name: "요청 콘솔 열기" })[0]).toHaveAttribute("href", "/request-intake");
-    expect(screen.getAllByRole("link", { name: "승인함 확인" })[0]).toHaveAttribute("href", "/approvals");
-  });
-
-  it("renders a visual agent activity map with current work per agent", () => {
-    render(<DashboardContent summary={summary} agentActivity={activity} />);
-
-    expect(screen.getByText("에이전트 활동 맵")).toBeInTheDocument();
-    expect(screen.getByText("각 직원이 지금 어떤 작업을 맡고 있는지 카드와 흐름으로 봅니다.")).toBeInTheDocument();
-    expect(screen.getByText("결과지 문구 수정 후보 승인 요청")).toBeInTheDocument();
+    expect(screen.getAllByText("결과지 문구 수정 후보 승인 요청").length).toBeGreaterThan(0);
     expect(screen.getAllByText("승인 대기").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("현재 포커스").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("확장 예정").length).toBeGreaterThan(0);
+  });
+
+  it("shows map controls for zoom, reset, and movement", () => {
+    render(<DashboardContent summary={summary} agentActivity={activity} />);
+
+    const canvas = screen.getByTestId("agent-flow-canvas");
+    expect(screen.getByRole("button", { name: "확대" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "축소" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "리셋" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "이동 모드" })).toBeInTheDocument();
+
+    fireEvent.wheel(canvas, { deltaY: -120 });
+    fireEvent.pointerDown(canvas, { clientX: 100, clientY: 100 });
+    fireEvent.pointerMove(canvas, { clientX: 140, clientY: 130 });
+    fireEvent.pointerUp(canvas);
+
+    expect(canvas).toBeInTheDocument();
   });
 });

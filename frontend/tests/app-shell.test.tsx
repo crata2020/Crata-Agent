@@ -12,7 +12,7 @@ describe("AppShell", () => {
       </AppShell>,
     );
 
-    expect(screen.getByRole("link", { name: "운영 대시보드" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "운영 맵" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "요청 콘솔" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "승인함" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "에이전트" })).toBeInTheDocument();
