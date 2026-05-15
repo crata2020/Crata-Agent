@@ -6,22 +6,22 @@ import type { PointerEvent, ReactNode, WheelEvent } from "react";
 
 import type { AgentActivity, AgentActivityStatus, DashboardSummary } from "@/lib/types";
 
-const WORLD_WIDTH = 1660;
+const WORLD_WIDTH = 1780;
 const WORLD_HEIGHT = 840;
 const NODE_WIDTH = 316;
-const NODE_HEIGHT = 150;
+const NODE_HEIGHT = 142;
 
 const nodePositions: Record<string, { x: number; y: number }> = {
-  crata_ceo: { x: 670, y: 70 },
-  concept_guardian: { x: 190, y: 285 },
-  report_editor: { x: 520, y: 285 },
-  counseling_coach: { x: 850, y: 285 },
-  quality_inspector: { x: 1180, y: 285 },
-  operations_secretary: { x: 90, y: 555 },
-  case_learner: { x: 420, y: 555 },
+  crata_ceo: { x: 650, y: 70 },
+  concept_guardian: { x: 140, y: 285 },
+  report_editor: { x: 480, y: 285 },
+  counseling_coach: { x: 820, y: 285 },
+  quality_inspector: { x: 1160, y: 285 },
+  operations_secretary: { x: 70, y: 555 },
+  case_learner: { x: 410, y: 555 },
   relationship_analyst: { x: 750, y: 555 },
-  business_designer: { x: 1080, y: 555 },
-  content_strategist: { x: 1360, y: 555 },
+  business_designer: { x: 1090, y: 555 },
+  content_strategist: { x: 1410, y: 555 },
 };
 
 const edges = [
@@ -83,7 +83,7 @@ interface AgentFlowCanvasProps {
 }
 
 export function AgentFlowCanvas({ agents, summary }: AgentFlowCanvasProps) {
-  const [view, setView] = useState({ x: 34, y: 46, scale: 0.66 });
+  const [view, setView] = useState({ x: 24, y: 48, scale: 0.61 });
   const dragRef = useRef<{ active: boolean; x: number; y: number }>({ active: false, x: 0, y: 0 });
   const activityById = useMemo(() => new Map(agents.map((agent) => [agent.id, agent])), [agents]);
   const leadAgent = agents.find((agent) => agent.activity_status !== "idle" && agent.activity_status !== "planned") ?? agents[0];
@@ -172,7 +172,7 @@ export function AgentFlowCanvas({ agents, summary }: AgentFlowCanvasProps) {
         <CanvasButton label="축소" onClick={() => updateScale(view.scale - 0.1)}>
           <Minus size={18} />
         </CanvasButton>
-        <CanvasButton label="리셋" onClick={() => setView({ x: 34, y: 46, scale: 0.66 })}>
+        <CanvasButton label="리셋" onClick={() => setView({ x: 24, y: 48, scale: 0.61 })}>
           <RotateCcw size={16} />
         </CanvasButton>
         <CanvasButton label="이동 모드">
@@ -200,8 +200,8 @@ export function AgentFlowCanvas({ agents, summary }: AgentFlowCanvasProps) {
         >
           <svg className="pointer-events-none absolute inset-0" width={WORLD_WIDTH} height={WORLD_HEIGHT} aria-hidden="true">
             <defs>
-              <marker id="agent-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
-                <path d="M0,0 L8,3 L0,6 Z" fill="#2C3640" />
+              <marker id="agent-arrow" markerWidth="9" markerHeight="8" refX="7" refY="3" orient="auto">
+                <path d="M0,0 L7,3 L0,6 Z" fill="#34404A" />
               </marker>
             </defs>
             {edges.map(([source, target]) => {
@@ -252,7 +252,7 @@ function AgentNode({ agent, x, y }: { agent: AgentActivity; x: number; y: number
 
   return (
     <article
-      className="absolute rounded-[10px] border bg-[#111820]/96 p-4 text-white shadow-[0_18px_42px_rgba(0,0,0,0.38)]"
+      className="absolute rounded-[10px] border bg-[#111820]/96 p-3.5 text-white shadow-[0_18px_42px_rgba(0,0,0,0.38)]"
       style={{
         left: x,
         top: y,
@@ -284,10 +284,10 @@ function AgentNode({ agent, x, y }: { agent: AgentActivity; x: number; y: number
           </p>
         </div>
       </div>
-      <p className="mt-3 line-clamp-2 min-h-[38px] text-[13px] font-medium leading-5 text-[#DDE6EE]">
+      <p className="mt-2 line-clamp-2 min-h-[24px] text-[13px] font-medium leading-5 text-[#DDE6EE]">
         {agent.current_focus}
       </p>
-      <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] font-semibold">
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-semibold">
         <span className="rounded-full bg-[#2A1820] px-2 py-1 text-[#FF6B7A]">{agent.workload_count} tasks</span>
         <span className="rounded-full bg-white/[0.07] px-2 py-1 text-[#B1BDC8]">{agent.candidate_count} 후보</span>
         {agent.pending_approval_count > 0 ? (
@@ -334,9 +334,9 @@ function CanvasButton({
 
 function edgePath(from: { x: number; y: number }, to: { x: number; y: number }) {
   const startX = from.x + NODE_WIDTH / 2;
-  const startY = from.y + NODE_HEIGHT;
+  const startY = from.y + NODE_HEIGHT + 8;
   const endX = to.x + NODE_WIDTH / 2;
-  const endY = to.y;
+  const endY = to.y - 10;
   const midY = startY + (endY - startY) * 0.54;
 
   return `M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY}`;
