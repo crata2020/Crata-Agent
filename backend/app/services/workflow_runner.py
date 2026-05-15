@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from app.models import Approval, Artifact, Task, WorkflowRun, WorkflowStep
+from app.services.knowledge_context import load_task_knowledge_context
 from app.services.model_gateway import ModelGateway
 
 
@@ -33,12 +34,21 @@ def run_task_workflow(db: Session, task_id: str) -> WorkflowResult:
     db.add(run)
     db.flush()
 
+    knowledge_context = load_task_knowledge_context(
+        task_type=task.task_type,
+        assigned_agents=task.assigned_agents,
+    )
+
     for step_name, agent_id in (
         ("ceo_routing", "crata_ceo"),
         ("context_retrieval", "concept_guardian"),
         ("specialist_draft", _primary_agent(task.task_type)),
         ("quality_review", "quality_inspector"),
     ):
+        step_metadata = {}
+        if step_name == "context_retrieval":
+            step_metadata = {"knowledge_references": knowledge_context.references}
+
         db.add(
             WorkflowStep(
                 workflow_run_id=run.id,
@@ -48,14 +58,14 @@ def run_task_workflow(db: Session, task_id: str) -> WorkflowResult:
                 output_summary="completed",
                 status="completed",
                 completed_at=_utcnow(),
-                item_metadata={},
+                item_metadata=step_metadata,
             )
         )
 
     draft = ModelGateway().draft(
         task_title=task.title,
         task_type=task.task_type,
-        context=task.description,
+        context=_build_model_context(task=task, knowledge_context=knowledge_context.text),
     )
     artifact = Artifact(
         task_id=task.id,
@@ -64,7 +74,10 @@ def run_task_workflow(db: Session, task_id: str) -> WorkflowResult:
         title=f"{task.title} 초안",
         content=draft,
         status="pending_approval",
-        item_metadata={"generated_by": "workflow_runner"},
+        item_metadata={
+            "generated_by": "workflow_runner",
+            "knowledge_references": knowledge_context.references,
+        },
     )
     db.add(artifact)
     db.flush()
@@ -113,6 +126,17 @@ def _approval_type(task_type: str) -> str:
         "report_phrase_revision": "report_phrase_change",
         "counseling_case_learning": "learning_candidate",
     }.get(task_type, "general_review")
+
+
+def _build_model_context(*, task: Task, knowledge_context: str) -> str:
+    return (
+        "# 사용자 작업\n\n"
+        f"제목: {task.title}\n"
+        f"작업 유형: {task.task_type}\n"
+        f"설명: {task.description}\n"
+        f"배정 에이전트: {', '.join(task.assigned_agents or [])}\n\n"
+        f"{knowledge_context}"
+    )
 
 
 def _utcnow() -> datetime:
