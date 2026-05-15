@@ -15,4 +15,14 @@ describe("AgentsPage", () => {
       expect(screen.getAllByText(agent.display_name).length).toBeGreaterThan(0);
     }
   });
+
+  it("shows each agent operating guide summary", () => {
+    render(<AgentsPage />);
+
+    expect(screen.getByText("전문 작업 절차")).toBeInTheDocument();
+    expect(screen.getByText("사업설계자 절차")).toBeInTheDocument();
+    expect(screen.getByText("대상, 문제, 목적, 성과, 예산, 일정, 검사 활용 방식을 먼저 질문합니다.")).toBeInTheDocument();
+    expect(screen.getByText("콘텐츠전략가 절차")).toBeInTheDocument();
+    expect(screen.getByText("채널, 타깃, 메시지, 전환 목표, 금지 표현을 먼저 확인합니다.")).toBeInTheDocument();
+  });
 });

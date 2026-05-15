@@ -22,7 +22,7 @@ interface StatusPillProps {
 export function StatusPill({ status }: StatusPillProps) {
   return (
     <span
-      className="inline-flex h-6 items-center rounded-button px-2 text-xs font-semibold"
+      className="inline-flex h-6 shrink-0 items-center whitespace-nowrap rounded-button px-2 text-xs font-semibold"
       style={{
         backgroundColor: statusColors[status],
         color: darkTextStatuses.has(status) ? "#1F2723" : "#FFFFFF",

@@ -10,4 +10,10 @@ describe("StatusPill", () => {
 
     expect(screen.getByText("작업중")).toBeInTheDocument();
   });
+
+  it("keeps short Korean labels on one line", () => {
+    render(<StatusPill status="idle" />);
+
+    expect(screen.getByText("대기")).toHaveClass("whitespace-nowrap");
+  });
 });
