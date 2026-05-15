@@ -1,6 +1,12 @@
-import type { Approval, CandidateTask, DashboardSummary, IntakeResponse } from "@/lib/types";
+import type {
+  AgentActivityResponse,
+  Approval,
+  CandidateTask,
+  DashboardSummary,
+  IntakeResponse,
+} from "@/lib/types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://127.0.0.1:8000";
 
 type IntakePayload = {
   title: string;
@@ -98,6 +104,10 @@ export function listApprovals() {
 
 export function getDashboardSummary() {
   return requestJson<DashboardSummary>("/dashboard/summary", { cache: "no-store" });
+}
+
+export function getAgentActivity() {
+  return requestJson<AgentActivityResponse>("/dashboard/agent-activity", { cache: "no-store" });
 }
 
 export function decideApproval(id: string, decision: ApprovalDecision, reason = "") {

@@ -19,9 +19,15 @@ AGENT_IDS = {seed["id"] for seed in AGENT_SEEDS}
 
 def seed_agents(db: Session) -> None:
     for seed in AGENT_SEEDS:
-        if db.get(Agent, seed["id"]) is not None:
+        existing_agent = db.get(Agent, seed["id"])
+        if existing_agent is None:
+            db.add(Agent(**seed, prompt=""))
             continue
 
-        db.add(Agent(**seed, prompt=""))
+        if existing_agent.name != seed["name"]:
+            continue
+
+        for field in ("display_name", "role", "description", "status", "enabled", "color"):
+            setattr(existing_agent, field, seed[field])
 
     db.commit()

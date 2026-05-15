@@ -29,7 +29,7 @@ describe("api client", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:8000/intake",
+      "http://127.0.0.1:8000/intake",
       expect.objectContaining({
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -53,7 +53,7 @@ describe("api client", () => {
 
     await listApprovals();
 
-    expect(fetchMock).toHaveBeenCalledWith("http://localhost:8000/approvals", {
+    expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:8000/approvals", {
       cache: "no-store",
     });
   });
@@ -69,7 +69,23 @@ describe("api client", () => {
 
     await getDashboardSummary();
 
-    expect(fetchMock).toHaveBeenCalledWith("http://localhost:8000/dashboard/summary", {
+    expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:8000/dashboard/summary", {
+      cache: "no-store",
+    });
+  });
+
+  it("requests agent activity without server-side caching", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ agents: [] }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const { getAgentActivity } = await import("@/lib/api");
+
+    await getAgentActivity();
+
+    expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:8000/dashboard/agent-activity", {
       cache: "no-store",
     });
   });
@@ -86,7 +102,7 @@ describe("api client", () => {
     await runCandidate("candidate-1");
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:8000/tasks/from-candidate/candidate-1/run",
+      "http://127.0.0.1:8000/tasks/from-candidate/candidate-1/run",
       { method: "POST" },
     );
   });
@@ -103,7 +119,7 @@ describe("api client", () => {
     await runCandidates(["candidate-1", "candidate-2"]);
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:8000/tasks/from-candidates/run",
+      "http://127.0.0.1:8000/tasks/from-candidates/run",
       expect.objectContaining({
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -128,7 +144,7 @@ describe("api client", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:8000/intake/candidates/candidate-1",
+      "http://127.0.0.1:8000/intake/candidates/candidate-1",
       expect.objectContaining({
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -153,7 +169,7 @@ describe("api client", () => {
     await decideApproval("approval-1", "rejected", "근거 부족");
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:8000/approvals/approval-1/decide",
+      "http://127.0.0.1:8000/approvals/approval-1/decide",
       expect.objectContaining({
         method: "POST",
         headers: { "Content-Type": "application/json" },

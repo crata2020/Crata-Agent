@@ -54,3 +54,28 @@ def test_seed_agents_preserves_existing_agent(db_session: Session) -> None:
     assert crata_ceo.display_name == "Custom Display"
     assert crata_ceo.role == "Custom Role"
     assert len(db_session.scalars(select(Agent)).all()) == len(AGENT_SEEDS)
+
+
+def test_seed_agents_refreshes_seed_managed_agents(db_session: Session) -> None:
+    stale_agent = Agent(
+        id="report_editor",
+        name="Report Editor",
+        display_name="깨진 이름",
+        role="깨진 역할",
+        description="깨진 설명",
+        status="idle",
+        enabled=True,
+        color="#000000",
+    )
+    db_session.add(stale_agent)
+    db_session.commit()
+
+    seed_agents(db_session)
+
+    report_editor = db_session.get(Agent, "report_editor")
+    report_editor_seed = _seed_by_id("report_editor")
+
+    assert report_editor is not None
+    assert report_editor.display_name == report_editor_seed["display_name"]
+    assert report_editor.role == report_editor_seed["role"]
+    assert report_editor.color == report_editor_seed["color"]

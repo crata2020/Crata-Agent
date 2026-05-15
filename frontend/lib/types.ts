@@ -75,3 +75,25 @@ export interface DashboardSummary {
   pending_approval_count: number;
   artifact_count: number;
 }
+
+export type AgentActivityStatus = "working" | "waiting_approval" | "queued" | "idle" | "planned";
+
+export interface AgentActivity {
+  id: string;
+  display_name: string;
+  role: string;
+  color: string;
+  enabled: boolean;
+  status: AgentStatus | string;
+  activity_status: AgentActivityStatus;
+  current_focus: string;
+  current_task_title: string | null;
+  current_task_type: string | null;
+  workload_count: number;
+  pending_approval_count: number;
+  candidate_count: number;
+}
+
+export interface AgentActivityResponse {
+  agents: AgentActivity[];
+}

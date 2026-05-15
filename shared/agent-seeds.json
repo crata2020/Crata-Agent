@@ -13,7 +13,7 @@
     "id": "concept_guardian",
     "name": "Concept Guardian",
     "display_name": "개념수호자",
-    "role": "공식 지식과 개념 일관성 검토",
+    "role": "공식 지식과 개념 일관성 검수",
     "description": "검사 개념, 유형 정의, 공식 지식 충돌 여부를 검토합니다.",
     "status": "idle",
     "enabled": true,
@@ -64,7 +64,7 @@
     "name": "Quality Inspector",
     "display_name": "품질검수관",
     "role": "안전성, 톤, 승인 준비 상태 검수",
-    "description": "낙인적 표현, 위험 표현, 공식 반영 가능 여부를 검수합니다.",
+    "description": "낙인 표현, 위험 표현, 공식 반영 가능 여부를 검수합니다.",
     "status": "idle",
     "enabled": true,
     "color": "#B83A3A"

@@ -13,7 +13,17 @@ class CandidateTaskDraft:
 _CATEGORIES = [
     {
         "task_type": "report_phrase_revision",
-        "keywords": ["결과지", "문구", "페이지", "수정", "검사 문구", "표현"],
+        "keywords": [
+            "결과지",
+            "문구",
+            "페이지",
+            "수정",
+            "검사 문구",
+            "표현",
+            "寃곌낵吏",
+            "臾멸뎄",
+            "?섏젙",
+        ],
         "title": "결과지 문구 수정 후보",
         "summary": "입력물에서 검사 결과지 문구 수정 요청을 발견했습니다.",
         "recommended_agents": [
@@ -25,7 +35,19 @@ _CATEGORIES = [
     },
     {
         "task_type": "counseling_case_learning",
-        "keywords": ["상담", "전사록", "사례", "학습", "유형", "관계"],
+        "keywords": [
+            "상담",
+            "전사록",
+            "사례",
+            "학습",
+            "유형",
+            "관계",
+            "?곷떞",
+            "?꾩궗濡",
+            "?щ?",
+            "?숈뒿",
+            "愿怨",
+        ],
         "title": "상담 사례 학습 후보",
         "summary": "입력물에서 상담 사례 저장 또는 학습 후보 요청을 발견했습니다.",
         "recommended_agents": [
@@ -37,14 +59,36 @@ _CATEGORIES = [
     },
     {
         "task_type": "business_planning",
-        "keywords": ["제안서", "프로그램", "상품", "기획", "공공기관", "기업", "연수"],
+        "keywords": [
+            "제안서",
+            "프로그램",
+            "상품",
+            "기획",
+            "공공기관",
+            "기업",
+            "연수",
+            "?쒖븞",
+            "?꾨줈洹몃옩",
+            "?곹뭹",
+        ],
         "title": "사업·프로그램 기획 후보",
         "summary": "입력물에서 사업, 제안서, 상품, 프로그램 기획 요청을 발견했습니다.",
         "recommended_agents": ["crata_ceo", "business_designer"],
     },
     {
         "task_type": "content_marketing",
-        "keywords": ["유튜브", "홍보", "블로그", "콘텐츠", "홈페이지", "마케팅"],
+        "keywords": [
+            "유튜브",
+            "홍보",
+            "블로그",
+            "콘텐츠",
+            "홈페이지",
+            "마케팅",
+            "?좏뒠",
+            "?띾낫",
+            "釉붾줈洹",
+            "肄섑뀗",
+        ],
         "title": "콘텐츠·홍보 작업 후보",
         "summary": "입력물에서 콘텐츠, 홍보, 유튜브 관련 요청을 발견했습니다.",
         "recommended_agents": ["crata_ceo", "content_strategist"],
@@ -58,14 +102,15 @@ def detect_input_type(title: str, raw_content: str) -> str:
     transcript_score = _keyword_score(
         text,
         [
-            "상담자:",
-            "내담자:",
-            "상담사:",
-            "담당자:",
-            "전사록",
-            "축어록",
-            "발화",
+            "상담자",
+            "내담자",
             "상담 기록",
+            "전사록",
+            "발화",
+            "축어록",
+            "?곷떞",
+            "?대떞",
+            "?꾩궗濡",
         ],
     )
     meeting_score = _keyword_score(
@@ -79,10 +124,11 @@ def detect_input_type(title: str, raw_content: str) -> str:
             "참석자",
             "액션아이템",
             "action item",
+            "?뚯쓽",
         ],
     )
 
-    if transcript_score >= 2 or "전사록" in text or ("상담자:" in text and "내담자:" in text):
+    if transcript_score >= 2 or "전사록" in text or ("상담자" in text and "내담자" in text):
         return "transcript"
 
     if meeting_score >= 1:

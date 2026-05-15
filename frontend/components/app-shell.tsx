@@ -16,7 +16,7 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   return (
     <div className="min-h-screen bg-background text-[#1F2723]">
-      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col lg:flex-row">
+      <div className="mx-auto flex min-h-screen w-full max-w-[1480px] flex-col lg:flex-row">
         <aside className="border-b border-border bg-surface px-4 py-4 lg:w-64 lg:border-b-0 lg:border-r lg:px-5 lg:py-6">
           <div className="flex items-center gap-2 text-sm font-semibold text-primary">
             <span className="flex size-8 items-center justify-center rounded-button bg-surfaceAlt">
