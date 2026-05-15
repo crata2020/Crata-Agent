@@ -212,6 +212,29 @@ def test_create_intake_uses_ai_context_to_override_keyword_hints(app: FastAPI) -
     assert "문구 자체를 수정하는 요청이 아니라" in candidate["classification_reason"]
 
 
+def test_create_intake_decomposes_mixed_meeting_requests(app: FastAPI) -> None:
+    client = TestClient(app)
+
+    response = client.post(
+        "/intake",
+        json={
+            "title": "운영 회의록",
+            "input_type": "auto",
+            "raw_content": "결과지 문구를 수정하고 공공기관 프로그램 제안서를 기획하고 유튜브 홍보 콘텐츠도 만들자.",
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    task_types = {candidate["task_type"] for candidate in body["candidate_tasks"]}
+    assert body["input_type"] == "meeting_notes"
+    assert task_types == {
+        "report_phrase_revision",
+        "business_planning",
+        "content_marketing",
+    }
+
+
 def test_create_intake_resolves_auto_input_type_from_content(app: FastAPI, db_session: Session) -> None:
     client = TestClient(app)
 
