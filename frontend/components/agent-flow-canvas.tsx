@@ -199,25 +199,25 @@ export function AgentFlowCanvas({ agents, summary }: AgentFlowCanvasProps) {
           }}
         >
           <svg className="pointer-events-none absolute inset-0" width={WORLD_WIDTH} height={WORLD_HEIGHT} aria-hidden="true">
-            <defs>
-              <marker id="agent-arrow" markerWidth="9" markerHeight="8" refX="7" refY="3" orient="auto">
-                <path d="M0,0 L7,3 L0,6 Z" fill="#34404A" />
-              </marker>
-            </defs>
             {edges.map(([source, target]) => {
               const from = nodePositions[source];
               const to = nodePositions[target];
               const targetAgent = activityById.get(target);
+              const meta = statusMeta[targetAgent?.activity_status ?? "idle"];
+              const isMuted = targetAgent?.activity_status === "idle" || targetAgent?.activity_status === "planned";
+
               return (
-                <path
-                  key={`${source}-${target}`}
-                  d={edgePath(from, to)}
-                  fill="none"
-                  stroke={statusMeta[targetAgent?.activity_status ?? "idle"].stroke}
-                  strokeOpacity={targetAgent?.activity_status === "idle" || targetAgent?.activity_status === "planned" ? 0.25 : 0.62}
-                  strokeWidth={2}
-                  markerEnd="url(#agent-arrow)"
-                />
+                <g key={`${source}-${target}`}>
+                  <path
+                    d={edgePath(from, to)}
+                    fill="none"
+                    stroke={meta.stroke}
+                    strokeLinecap="round"
+                    strokeOpacity={isMuted ? 0.25 : 0.62}
+                    strokeWidth={2}
+                  />
+                  <path d={arrowHeadPath(to)} fill={meta.stroke} fillOpacity={isMuted ? 0.32 : 0.72} />
+                </g>
               );
             })}
           </svg>
@@ -336,8 +336,16 @@ function edgePath(from: { x: number; y: number }, to: { x: number; y: number }) 
   const startX = from.x + NODE_WIDTH / 2;
   const startY = from.y + NODE_HEIGHT + 8;
   const endX = to.x + NODE_WIDTH / 2;
-  const endY = to.y - 10;
+  const endY = to.y - 26;
   const midY = startY + (endY - startY) * 0.54;
 
   return `M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY}`;
+}
+
+function arrowHeadPath(to: { x: number; y: number }) {
+  const centerX = to.x + NODE_WIDTH / 2;
+  const tipY = to.y - 10;
+  const baseY = tipY - 14;
+
+  return `M ${centerX} ${tipY} L ${centerX - 7} ${baseY} L ${centerX + 7} ${baseY} Z`;
 }
