@@ -75,7 +75,7 @@ def run_task_workflow(db: Session, task_id: str) -> WorkflowResult:
         approval_type=_approval_type(task.task_type),
         status="pending_approval",
         title=f"{task.title} 승인 요청",
-        summary="에이전트 작업 결과가 승인대기 상태입니다.",
+        summary="에이전트 작업 결과가 승인 대기 상태입니다.",
         before_content="",
         after_content=draft,
         affected_area=task.task_type,

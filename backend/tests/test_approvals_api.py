@@ -71,7 +71,7 @@ def test_revise_request_creates_revision_candidate_task(
 
     response = client.post(
         f"/approvals/{approval_id}/decide",
-        json={"decision": "revise_requested", "reason": "문장을 더 상담형으로 낮춰 주세요."},
+        json={"decision": "revise_requested", "reason": "문장을 더 상담형으로 바꿔 주세요."},
     )
 
     assert response.status_code == 200
@@ -80,7 +80,7 @@ def test_revise_request_creates_revision_candidate_task(
     assert body["revision_candidate_task"]["id"]
     assert body["revision_candidate_task"]["status"] == "draft"
     assert body["revision_candidate_task"]["task_type"] == "report_phrase_revision"
-    assert "문장을 더 상담형으로 낮춰 주세요." in body["revision_candidate_task"]["summary"]
+    assert "문장을 더 상담형으로 바꿔 주세요." in body["revision_candidate_task"]["summary"]
 
     original_candidate = db_session.get(CandidateTask, candidate_id)
     revision_candidate = db_session.get(CandidateTask, body["revision_candidate_task"]["id"])
@@ -91,7 +91,7 @@ def test_revise_request_creates_revision_candidate_task(
     assert revision_candidate.intake_item_id == original_candidate.intake_item_id
     assert revision_candidate.recommended_agents == original_candidate.recommended_agents
     assert revision_candidate.item_metadata["source_approval_id"] == approval_id
-    assert revision_candidate.item_metadata["revision_reason"] == "문장을 더 상담형으로 낮춰 주세요."
+    assert revision_candidate.item_metadata["revision_reason"] == "문장을 더 상담형으로 바꿔 주세요."
 
 
 def test_revise_request_requires_reason(app: FastAPI) -> None:

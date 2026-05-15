@@ -4,7 +4,7 @@ import type { AgentStatus } from "@/lib/types";
 const statusLabels: Record<AgentStatus, string> = {
   idle: "대기",
   working: "작업중",
-  reviewing: "검토중",
+  reviewing: "검수중",
   waiting_for_approval: "승인대기",
   approved: "승인됨",
   rejected: "거절됨",

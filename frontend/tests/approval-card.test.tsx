@@ -92,8 +92,8 @@ describe("ApprovalCard", () => {
         id: "candidate-revision-1",
         task_type: "report_phrase_revision",
         title: "조직행동검사 5페이지 문구 수정 재작업 후보",
-        summary: "수정 사유: 문장을 더 상담형으로 낮춰 주세요.",
-        evidence_excerpt: "문장을 더 상담형으로 낮춰 주세요.",
+        summary: "수정 사유: 문장을 더 상담형으로 바꿔 주세요.",
+        evidence_excerpt: "문장을 더 상담형으로 바꿔 주세요.",
         recommended_agents: ["crata_ceo", "report_editor"],
         status: "draft",
       },
@@ -105,7 +105,7 @@ describe("ApprovalCard", () => {
     expect(screen.getByLabelText("수정 사유")).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("수정 사유"), {
-      target: { value: "문장을 더 상담형으로 낮춰 주세요." },
+      target: { value: "문장을 더 상담형으로 바꿔 주세요." },
     });
     fireEvent.click(screen.getByRole("button", { name: "수정요청 확정" }));
 
@@ -114,7 +114,7 @@ describe("ApprovalCard", () => {
     expect(decideApprovalMock).toHaveBeenCalledWith(
       "approval-1",
       "revise_requested",
-      "문장을 더 상담형으로 낮춰 주세요.",
+      "문장을 더 상담형으로 바꿔 주세요.",
     );
     expect(screen.getByText("최종 상태: 수정요청")).toBeInTheDocument();
     expect(screen.getByText("재작업 후보가 생성되었습니다.")).toBeInTheDocument();

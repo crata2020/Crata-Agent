@@ -25,7 +25,7 @@ def test_agent_activity_shows_pending_approval_work(
         json={
             "title": "결과지 문구 수정 회의록",
             "input_type": "meeting_notes",
-            "raw_content": "결과지 문구는 부드럽게 수정하고 공식 반영 전 승인 대기로 올린다.",
+            "raw_content": "결과지 문구를 부드럽게 수정하고 공식 반영 전 승인 대기로 올린다.",
             "source": "manual",
         },
     )

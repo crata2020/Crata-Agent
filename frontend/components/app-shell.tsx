@@ -46,7 +46,7 @@ export function AppShell({ children }: AppShellProps) {
 
             <div className="mt-5 flex h-12 items-center gap-3 rounded-[10px] border border-white/10 bg-white/[0.06] px-4 text-[#7D8792]">
               <Search size={17} aria-hidden="true" />
-              <span className="text-sm">Search...</span>
+              <span className="text-sm">검색...</span>
               <span className="ml-auto rounded-[6px] bg-white/10 px-2 py-1 text-[11px] font-semibold">⌘K</span>
             </div>
           </div>
@@ -65,7 +65,7 @@ export function AppShell({ children }: AppShellProps) {
                     className={
                       selected
                         ? "flex items-center gap-3 rounded-[10px] bg-[#351D23] px-4 py-3 text-sm font-semibold text-[#FF5F6D]"
-                        : "flex items-center gap-3 rounded-[10px] px-4 py-3 text-sm font-semibold text-[#8D949E] transition hover:bg-white/[0.06] hover:text-white"
+                        : "flex items-center gap-3 rounded-[10px] px-4 py-3 text-sm font-semibold text-[#A2ABB5] transition hover:bg-white/[0.06] hover:text-white"
                     }
                   >
                     <Icon size={18} aria-hidden="true" />

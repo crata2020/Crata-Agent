@@ -32,7 +32,7 @@ const candidateTasks = [
     task_type: "counseling_case_learning",
     title: "상담 사례 학습 후보",
     summary: "상담 사례 학습 요청입니다.",
-    evidence_excerpt: "A유형 B유형 상담 사례는 학습 후보로 저장하자.",
+    evidence_excerpt: "A유형 B유형 상담 전사록은 학습 후보로 저장하자.",
     recommended_agents: ["case_learner", "relationship_analyst"],
     status: "draft",
   },
@@ -58,7 +58,7 @@ describe("RequestIntakePage candidate review", () => {
     render(<RequestIntakePage />);
 
     fireEvent.change(screen.getByLabelText("원문"), {
-      target: { value: "조직행동검사 5페이지 문구를 수정하고 상담 사례는 학습 후보로 저장하자." },
+      target: { value: "조직행동검사 5페이지 문구를 수정하고 상담 사례를 학습 후보로 저장하자." },
     });
     fireEvent.click(screen.getByRole("button", { name: "작업 후보 추출" }));
 
@@ -92,7 +92,7 @@ describe("RequestIntakePage candidate review", () => {
     render(<RequestIntakePage />);
 
     fireEvent.change(screen.getByLabelText("원문"), {
-      target: { value: "조직행동검사 5페이지 문구를 수정하고 상담 사례는 학습 후보로 저장하자." },
+      target: { value: "조직행동검사 5페이지 문구를 수정하고 상담 사례를 학습 후보로 저장하자." },
     });
     fireEvent.click(screen.getByRole("button", { name: "작업 후보 추출" }));
 
@@ -128,7 +128,7 @@ describe("RequestIntakePage candidate review", () => {
     render(<RequestIntakePage />);
 
     fireEvent.change(screen.getByLabelText("원문"), {
-      target: { value: "조직행동검사 5페이지 문구를 수정하고 상담 사례는 학습 후보로 저장하자." },
+      target: { value: "조직행동검사 5페이지 문구를 수정하고 상담 사례를 학습 후보로 저장하자." },
     });
     fireEvent.click(screen.getByRole("button", { name: "작업 후보 추출" }));
 
@@ -188,7 +188,7 @@ describe("RequestIntakePage candidate review", () => {
     expect(await screen.findByText("후보를 저장했습니다.")).toBeInTheDocument();
     expect(screen.getByText("조직행동검사 5페이지 문구 수정")).toBeInTheDocument();
     expect(screen.getByText("상담형 결과지 문장으로 수정합니다.")).toBeInTheDocument();
-    expect(screen.getByText("quality_inspector")).toBeInTheDocument();
+    expect(screen.getByText("품질검수관")).toBeInTheDocument();
   });
 
   it("requires at least one selected agent before saving a candidate", async () => {

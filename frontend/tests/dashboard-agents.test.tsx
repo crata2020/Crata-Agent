@@ -57,7 +57,7 @@ describe("dashboard agent flow map", () => {
     render(<DashboardContent summary={summary} agentActivity={activity} />);
 
     for (const agent of sharedAgentSeeds) {
-      expect(screen.getAllByText(`@${agent.display_name}`).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(agent.display_name).length).toBeGreaterThan(0);
     }
 
     expect(screen.getAllByText("결과지 문구 수정 후보 승인 요청").length).toBeGreaterThan(0);

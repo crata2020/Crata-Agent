@@ -81,17 +81,17 @@ export function ApprovalCard({ approval }: ApprovalCardProps) {
   }
 
   return (
-    <article className="rounded-card border border-border bg-surface p-4 shadow-sm">
+    <article className="rounded-[14px] border border-white/10 bg-[#111820] p-4 text-white shadow-[0_18px_50px_rgba(0,0,0,0.25)]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-button bg-surfaceAlt px-2 py-1 text-xs font-semibold text-primary">
+            <span className="rounded-button bg-[#302410] px-2 py-1 text-xs font-semibold text-[#FFD37A]">
               {statusLabels[currentStatus] ?? currentStatus}
             </span>
-            <span className="text-xs font-medium text-[#5F6B64]">{approval.affected_area}</span>
+            <span className="text-xs font-medium text-[#AEB9C4]">{approval.affected_area}</span>
           </div>
-          <h2 className="mt-3 text-base font-semibold text-[#1F2723]">{approval.title}</h2>
-          <p className="mt-2 text-sm leading-6 text-[#5F6B64]">{approval.summary}</p>
+          <h2 className="mt-3 text-base font-semibold text-white">{approval.title}</h2>
+          <p className="mt-2 text-sm leading-6 text-[#C7D2DC]">{approval.summary}</p>
         </div>
 
         {canDecide ? (
@@ -100,7 +100,7 @@ export function ApprovalCard({ approval }: ApprovalCardProps) {
               type="button"
               onClick={() => handleDecision("approved")}
               disabled={pendingDecision !== null}
-              className="inline-flex h-9 items-center gap-1.5 rounded-button bg-success px-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-9 items-center gap-1.5 rounded-button bg-[#2F7D4E] px-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Check size={16} aria-hidden="true" />
               {decisionLabels.approved}
@@ -109,7 +109,7 @@ export function ApprovalCard({ approval }: ApprovalCardProps) {
               type="button"
               onClick={() => handleDecision("rejected")}
               disabled={pendingDecision !== null}
-              className="inline-flex h-9 items-center gap-1.5 rounded-button bg-danger px-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-9 items-center gap-1.5 rounded-button bg-[#B83A3A] px-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <X size={16} aria-hidden="true" />
               {decisionLabels.rejected}
@@ -118,25 +118,25 @@ export function ApprovalCard({ approval }: ApprovalCardProps) {
               type="button"
               onClick={openRevisionForm}
               disabled={pendingDecision !== null}
-              className="inline-flex h-9 items-center gap-1.5 rounded-button border border-border bg-surface px-3 text-sm font-semibold text-[#1F2723] transition hover:bg-surfaceAlt disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-9 items-center gap-1.5 rounded-button border border-white/10 bg-white/[0.06] px-3 text-sm font-semibold text-[#DDE6EE] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <RotateCcw size={16} aria-hidden="true" />
               {decisionLabels.revise_requested}
             </button>
           </div>
         ) : (
-          <div className="shrink-0 rounded-button border border-border bg-surfaceAlt px-3 py-2 text-sm font-semibold text-[#5F6B64]">
+          <div className="shrink-0 rounded-button border border-white/10 bg-white/[0.06] px-3 py-2 text-sm font-semibold text-[#AEB9C4]">
             최종 상태: {statusLabels[currentStatus] ?? currentStatus}
           </div>
         )}
       </div>
 
       <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-        <section className="rounded-card border border-border bg-surfaceAlt p-3">
-          <h3 className="text-xs font-semibold uppercase tracking-normal text-[#5F6B64]">Reviewer Note</h3>
-          <p className="mt-2 text-sm leading-6 text-[#1F2723]">{approval.reviewer_note || "검토 메모가 없습니다."}</p>
+        <section className="rounded-[10px] border border-white/10 bg-black/20 p-3">
+          <h3 className="text-xs font-semibold uppercase tracking-normal text-[#AEB9C4]">Reviewer Note</h3>
+          <p className="mt-2 text-sm leading-6 text-[#E8EEF2]">{approval.reviewer_note || "검토 메모가 없습니다."}</p>
         </section>
-        <section className="rounded-card border border-border bg-[#0F172A] p-3 text-white">
+        <section className="rounded-[10px] border border-white/10 bg-[#0A111B] p-3 text-white">
           <h3 className="text-xs font-semibold uppercase tracking-normal text-[#CBD5E1]">After Content</h3>
           <pre className="mt-2 max-h-56 overflow-auto whitespace-pre-wrap text-xs leading-5">
             <code>{approval.after_content}</code>
@@ -145,15 +145,15 @@ export function ApprovalCard({ approval }: ApprovalCardProps) {
       </div>
 
       {isRevisionFormOpen && canDecide ? (
-        <section className="mt-4 rounded-card border border-approval/40 bg-[#FFF8EC] p-3">
+        <section className="mt-4 rounded-[10px] border border-[#F2B84B]/40 bg-[#241C0F] p-3">
           <label className="block">
-            <span className="text-xs font-semibold text-[#7A5A2E]">수정 사유</span>
+            <span className="text-xs font-semibold text-[#FFD37A]">수정 사유</span>
             <textarea
               value={revisionReason}
               onChange={(event) => setRevisionReason(event.target.value)}
               rows={3}
               placeholder="어떤 부분을 어떻게 다시 작업해야 하는지 적어주세요."
-              className="mt-1 w-full resize-y rounded-card border border-border bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-primary"
+              className="mt-1 w-full resize-y rounded-[10px] border border-white/10 bg-[#101820] px-3 py-2 text-sm leading-6 text-white outline-none focus:border-[#38BDF8]"
             />
           </label>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -161,7 +161,7 @@ export function ApprovalCard({ approval }: ApprovalCardProps) {
               type="button"
               onClick={submitRevisionRequest}
               disabled={pendingDecision !== null}
-              className="inline-flex h-9 items-center gap-1.5 rounded-button bg-primary px-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-9 items-center gap-1.5 rounded-button bg-[#FF5261] px-3 text-sm font-semibold text-white transition hover:bg-[#FF6976] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <RotateCcw size={16} aria-hidden="true" />
               수정요청 확정
@@ -170,7 +170,7 @@ export function ApprovalCard({ approval }: ApprovalCardProps) {
               type="button"
               onClick={cancelRevisionForm}
               disabled={pendingDecision !== null}
-              className="inline-flex h-9 items-center rounded-button border border-border bg-white px-3 text-sm font-semibold text-[#1F2723] transition hover:bg-surfaceAlt disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-9 items-center rounded-button border border-white/10 bg-white/[0.06] px-3 text-sm font-semibold text-[#DDE6EE] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
             >
               취소
             </button>
@@ -179,15 +179,15 @@ export function ApprovalCard({ approval }: ApprovalCardProps) {
       ) : null}
 
       {revisionCandidate ? (
-        <section className="mt-4 rounded-card border border-primary/30 bg-surfaceAlt p-3">
-          <p className="text-sm font-semibold text-primary">재작업 후보가 생성되었습니다.</p>
-          <p className="mt-2 text-sm font-semibold text-[#1F2723]">{revisionCandidate.title}</p>
-          <p className="mt-1 text-xs leading-5 text-[#5F6B64]">{revisionCandidate.summary}</p>
+        <section className="mt-4 rounded-[10px] border border-[#38BDF8]/35 bg-[#0B2535]/45 p-3">
+          <p className="text-sm font-semibold text-[#7DD7FF]">재작업 후보가 생성되었습니다.</p>
+          <p className="mt-2 text-sm font-semibold text-white">{revisionCandidate.title}</p>
+          <p className="mt-1 text-xs leading-5 text-[#AEB9C4]">{revisionCandidate.summary}</p>
         </section>
       ) : null}
 
       {error ? (
-        <p role="alert" className="mt-3 rounded-button border border-danger/30 bg-red-50 px-3 py-2 text-sm text-danger">
+        <p role="alert" className="mt-3 rounded-button border border-[#FF6B7A]/30 bg-[#2A1217] px-3 py-2 text-sm text-[#FF6B7A]">
           {error}
         </p>
       ) : null}

@@ -10,7 +10,7 @@ def test_create_intake_extracts_candidate_tasks(app: FastAPI, db_session: Sessio
     client = TestClient(app)
     raw_content = (
         "이번 검사 결과지 3페이지 문구를 더 부드럽게 수정하자. "
-        "그리고 이 상담 사례는 관계 유형 학습 후보로 저장하자."
+        "그리고 상담 사례는 관계 유형 학습 후보로 저장하자."
     )
 
     response = client.post(
@@ -62,10 +62,10 @@ def test_create_intake_extracts_all_mixed_candidate_task_types_in_order(app: Fas
         "content_marketing",
     ]
     assert [task["summary"] for task in body["candidate_tasks"]] == [
-        "입력물에서 검사 결과지 문구 수정 요청을 발견했습니다.",
-        "입력물에서 상담 사례 저장 또는 학습 후보 요청을 발견했습니다.",
-        "입력물에서 사업, 제안서, 상품, 프로그램 기획 요청을 발견했습니다.",
-        "입력물에서 콘텐츠, 홍보, 유튜브 관련 요청을 발견했습니다.",
+        "입력문에서 검사 결과지 문구 수정 요청을 발견했습니다.",
+        "입력문에서 상담 사례 저장 또는 학습 후보 요청을 발견했습니다.",
+        "입력문에서 사업, 제안서, 상품, 프로그램 기획 요청을 발견했습니다.",
+        "입력문에서 콘텐츠, 홍보, 유튜브 관련 요청을 발견했습니다.",
     ]
 
 
@@ -95,7 +95,7 @@ def test_create_intake_resolves_auto_input_type_from_title(app: FastAPI) -> None
         json={
             "title": "5월 운영 회의록",
             "input_type": "auto",
-            "raw_content": "결정사항: 조직행동검사 결과지 문구를 수정하고 제안서 기획도 진행한다.",
+            "raw_content": "결정사항: 조직행동검사 결과지 문구를 수정하고 제안서 기획을 진행한다.",
         },
     )
 
@@ -191,7 +191,7 @@ def test_create_intake_falls_back_to_general_task_for_unmatched_text(app: FastAP
         "/intake",
         json={
             "title": "일반 메모",
-            "raw_content": "다음 회의 전에 내부 검토가 필요한 메모를 정리해두자.",
+            "raw_content": "다음 회의 전에 다시 검토가 필요한 메모를 정리해둔다.",
         },
     )
 

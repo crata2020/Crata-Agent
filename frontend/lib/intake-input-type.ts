@@ -9,17 +9,26 @@ export type ResolvedInputType = Exclude<keyof typeof inputTypeLabels, "auto">;
 export type InputTypeMode = keyof typeof inputTypeLabels;
 
 const transcriptSignals = [
-  "상담자:",
-  "내담자:",
-  "상담사:",
-  "담당자:",
+  "상담자",
+  "내담자",
+  "상담",
   "전사록",
   "축어록",
   "발화",
   "상담 기록",
+  "상담내용",
 ];
 
-const meetingSignals = ["회의록", "회의", "안건", "결정사항", "논의", "참석자", "액션아이템", "action item"];
+const meetingSignals = [
+  "회의록",
+  "회의",
+  "안건",
+  "결정사항",
+  "논의",
+  "참석자",
+  "액션아이템",
+  "action item",
+];
 
 function keywordScore(text: string, keywords: string[]) {
   const normalizedText = text.toLocaleLowerCase();
@@ -34,7 +43,7 @@ export function detectInputType(title: string, rawContent: string): ResolvedInpu
   if (
     transcriptScore >= 2 ||
     text.includes("전사록") ||
-    (text.includes("상담자:") && text.includes("내담자:"))
+    (text.includes("상담자") && text.includes("내담자"))
   ) {
     return "transcript";
   }
