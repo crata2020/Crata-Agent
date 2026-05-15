@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { statusColors } from "./design-tokens";
+import { statusColors } from "@/lib/design-tokens";
 import type { Agent, Approval, DashboardSummary } from "./types";
 
 describe("frontend shared tokens and API types", () => {
