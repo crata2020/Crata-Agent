@@ -143,7 +143,7 @@ function WorkflowStepCard({ step }: { step: WorkflowStepActivity }) {
           {statusLabels[step.status] ?? step.status}
         </span>
       </div>
-      <p className="mt-3 text-sm leading-6 text-[#C7D2DC]">{step.output_summary || step.input_summary}</p>
+      <p className="mt-3 text-sm leading-6 text-[#C7D2DC]">{stepDisplaySummary(step)}</p>
       <p className="mt-3 text-xs text-[#7D8792]">
         {formatDateTime(step.completed_at ?? step.started_at)}
       </p>
@@ -168,6 +168,17 @@ function ActivityStat({
       <p className={`mt-2 text-2xl font-semibold ${valueClass}`}>{value}</p>
     </div>
   );
+}
+
+function stepDisplaySummary(step: WorkflowStepActivity) {
+  const output = step.output_summary.trim();
+  const normalizedOutput = output.toLowerCase();
+
+  if (!output || normalizedOutput === step.status.toLowerCase() || normalizedOutput in statusLabels) {
+    return step.input_summary || `${statusLabels[step.status] ?? step.status} 상태입니다.`;
+  }
+
+  return output;
 }
 
 function formatDateTime(value: string) {

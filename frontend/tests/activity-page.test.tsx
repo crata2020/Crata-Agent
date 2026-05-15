@@ -24,7 +24,7 @@ describe("ActivityContent", () => {
             step_name: "ceo_routing",
             agent_id: "crata_ceo",
             input_summary: "작업 흐름을 배정합니다.",
-            output_summary: "결과지 에디터와 품질검수관을 연결했습니다.",
+            output_summary: "completed",
             status: "completed",
             started_at: "2026-05-16T03:10:00Z",
             completed_at: "2026-05-16T03:10:03Z",
@@ -51,5 +51,7 @@ describe("ActivityContent", () => {
     expect(screen.getByText("전문가 초안")).toBeInTheDocument();
     expect(screen.getByText("CRATA CEO")).toBeInTheDocument();
     expect(screen.getByText("결과지 에디터")).toBeInTheDocument();
+    expect(screen.getByText("작업 흐름을 배정합니다.")).toBeInTheDocument();
+    expect(screen.queryByText("completed")).not.toBeInTheDocument();
   });
 });
