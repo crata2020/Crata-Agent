@@ -60,6 +60,12 @@ def test_create_intake_extracts_all_mixed_candidate_task_types_in_order(app: Fas
         "business_planning",
         "content_marketing",
     ]
+    assert [task["summary"] for task in body["candidate_tasks"]] == [
+        "입력물에서 검사 결과지 문구 수정 요청을 발견했습니다.",
+        "입력물에서 상담 사례 저장 또는 학습 후보 요청을 발견했습니다.",
+        "입력물에서 사업, 제안서, 상품, 프로그램 기획 요청을 발견했습니다.",
+        "입력물에서 콘텐츠, 홍보, 유튜브 관련 요청을 발견했습니다.",
+    ]
 
 
 def test_create_intake_falls_back_to_general_task_for_unmatched_text(app: FastAPI) -> None:

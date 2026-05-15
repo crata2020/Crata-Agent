@@ -15,7 +15,7 @@ _CATEGORIES = [
         "task_type": "report_phrase_revision",
         "keywords": ["결과지", "문구", "페이지", "수정", "검사 문구", "표현"],
         "title": "결과지 문구 수정 후보",
-        "summary": "입력문에서 검사 결과지 문구 수정 요청을 발견했습니다.",
+        "summary": "입력물에서 검사 결과지 문구 수정 요청을 발견했습니다.",
         "recommended_agents": [
             "crata_ceo",
             "concept_guardian",
@@ -27,7 +27,7 @@ _CATEGORIES = [
         "task_type": "counseling_case_learning",
         "keywords": ["상담", "전사록", "사례", "학습", "유형", "관계"],
         "title": "상담 사례 학습 후보",
-        "summary": "입력문에서 상담 사례 저장 또는 학습 후보 요청을 발견했습니다.",
+        "summary": "입력물에서 상담 사례 저장 또는 학습 후보 요청을 발견했습니다.",
         "recommended_agents": [
             "crata_ceo",
             "case_learner",
@@ -39,14 +39,14 @@ _CATEGORIES = [
         "task_type": "business_planning",
         "keywords": ["제안서", "프로그램", "상품", "기획", "공공기관", "기업", "연수"],
         "title": "사업·프로그램 기획 후보",
-        "summary": "입력문에서 제안서, 상품, 프로그램 기획 요청을 발견했습니다.",
+        "summary": "입력물에서 사업, 제안서, 상품, 프로그램 기획 요청을 발견했습니다.",
         "recommended_agents": ["crata_ceo", "business_designer"],
     },
     {
         "task_type": "content_marketing",
         "keywords": ["유튜브", "홍보", "블로그", "콘텐츠", "홈페이지", "마케팅"],
         "title": "콘텐츠·홍보 작업 후보",
-        "summary": "입력문에서 콘텐츠, 홍보, 유튜브 관련 요청을 발견했습니다.",
+        "summary": "입력물에서 콘텐츠, 홍보, 유튜브 관련 요청을 발견했습니다.",
         "recommended_agents": ["crata_ceo", "content_strategist"],
     },
 ]
