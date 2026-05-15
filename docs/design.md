@@ -105,6 +105,100 @@ OpenAI API, 로컬 모델 옵션, DB 상태, Git/Markdown 내보내기 경로, �
 - 비교 화면과 승인 화면은 장식보다 가독성을 우선한다.
 - 에이전트 카드는 개성을 줄 수 있지만, 텍스트와 조작 요소는 명확하고 작게 유지한다.
 
+## 디자인 토큰
+
+### 기본 색상
+
+CRATA의 기본 화면은 신뢰감 있는 뉴트럴 배경과 딥그린 중심으로 잡는다. 승인, 분석, 위험 상태는 별도 색으로 분리해 한 가지 색만 반복되는 느낌을 피한다.
+
+```text
+app.background        #F6F7F4
+app.surface           #FFFFFF
+app.surfaceAlt        #EEF2EE
+app.border            #D8DED8
+text.primary          #1F2723
+text.secondary        #5F6B64
+text.muted            #8A948E
+brand.primary         #1F6B57
+brand.primaryHover    #195846
+brand.soft            #DCEBE5
+accent.analysis       #34699A
+accent.approval       #C9852B
+accent.knowledge      #6A5EA8
+danger.primary        #B83A3A
+danger.soft           #F4DADA
+success.primary       #2F7D4E
+success.soft          #DDF0E5
+```
+
+### 에이전트 상태 색상
+
+```text
+idle                  #9AA3A0
+working               #1F6B57
+reviewing             #34699A
+waiting_for_approval  #C9852B
+approved              #2F7D4E
+rejected              #B83A3A
+error                 #9F2F2F
+disabled              #B8C0BB
+planned               #6A5EA8
+```
+
+### 에이전트별 포인트 색상
+
+각 에이전트 카드는 전체 배경을 강하게 칠하지 않고, 좌측 라인·상태 점·작은 배지에만 포인트 색상을 사용한다.
+
+```text
+CRATA CEO             #1F6B57
+개념수호자            #6A5EA8
+결과지 에디터         #34699A
+상담 코치             #2F7D4E
+사례학습가            #C9852B
+관계분석가            #4B7F83
+품질검수관            #B83A3A
+사업설계자            #7A5A2E
+콘텐츠전략가          #B35C3E
+운영비서              #5F6B64
+```
+
+### 타이포그래피
+
+```text
+font.sans             Pretendard, Inter, system-ui, sans-serif
+font.mono             JetBrains Mono, Consolas, monospace
+heading.weight        700
+body.weight           400
+button.weight         600
+letter.spacing        0
+```
+
+화면 제목은 크게 쓰되, 카드와 패널 안의 제목은 작고 촘촘하게 유지한다. 버튼 안 텍스트가 줄바꿈 없이 넘치지 않게 최소 너비와 반응형 처리를 둔다.
+
+### 레이아웃과 형태
+
+```text
+radius.card           8px
+radius.button         6px
+radius.input          6px
+shadow.panel          0 8px 24px rgba(31, 39, 35, 0.08)
+spacing.pageX         24px
+spacing.sectionY      20px
+spacing.card          16px
+```
+
+카드는 개별 항목, 승인 항목, 에이전트 항목에만 사용한다. 페이지 전체 섹션을 카드처럼 겹겹이 감싸지 않는다.
+
+### 컴포넌트 원칙
+
+- 주요 버튼은 딥그린 배경과 흰색 텍스트를 사용한다.
+- 보조 버튼은 흰색 배경, 회색 테두리, 진한 텍스트를 사용한다.
+- 승인대기 액션은 앰버를 사용하되, 승인 버튼 자체는 성공색을 사용한다.
+- 삭제, 거부, 위험 표현은 레드 계열을 사용한다.
+- 아이콘은 가능한 경우 `lucide-react`를 사용한다.
+- 익숙한 기능은 텍스트보다 아이콘+툴팁을 우선한다.
+- 승인 Diff 화면은 색보다 구조와 전/후 비교 가독성을 우선한다.
+
 ## 안전 규칙
 
 - 상담·검사 결과물은 진단적, 낙인적, 단정적, 비난적으로 들리는 표현을 피한다.
