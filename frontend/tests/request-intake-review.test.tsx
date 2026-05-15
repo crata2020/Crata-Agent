@@ -8,6 +8,7 @@ import { createIntake, listCandidateTasks, runCandidate, runCandidates, updateCa
 const searchParamsState = vi.hoisted(() => ({ value: "" }));
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/request-intake",
   useSearchParams: () => new URLSearchParams(searchParamsState.value),
 }));
 
