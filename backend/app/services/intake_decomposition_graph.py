@@ -8,6 +8,7 @@ from app.services.intake_decomposition import (
     CandidateTaskDraft,
     _ai_judgment,
     _confidence,
+    _clarifying_questions,
     _general_task,
     _review_flags,
     _rule_hint,
@@ -205,6 +206,7 @@ def _build_candidates(state: IntakeDecompositionState) -> IntakeDecompositionSta
                 approval_required=category["approval_required"],
                 rule_hints=judgment["rule_hints"],
                 review_flags=_review_flags(classification_status, confidence),
+                clarifying_questions=_clarifying_questions(ai_task_type),
             ),
         )
 

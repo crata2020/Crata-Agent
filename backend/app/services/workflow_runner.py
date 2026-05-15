@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
-from app.models import Approval, Artifact, Task, WorkflowRun, WorkflowStep
+from app.models import Approval, Artifact, CandidateTask, Task, WorkflowRun, WorkflowStep
 from app.services.knowledge_context import load_task_knowledge_context
 from app.services.model_gateway import ModelGateway
 
@@ -65,7 +65,7 @@ def run_task_workflow(db: Session, task_id: str) -> WorkflowResult:
     draft = ModelGateway().draft(
         task_title=task.title,
         task_type=task.task_type,
-        context=_build_model_context(task=task, knowledge_context=knowledge_context.text),
+        context=_build_model_context(db=db, task=task, knowledge_context=knowledge_context.text),
     )
     artifact = Artifact(
         task_id=task.id,
@@ -128,15 +128,40 @@ def _approval_type(task_type: str) -> str:
     }.get(task_type, "general_review")
 
 
-def _build_model_context(*, task: Task, knowledge_context: str) -> str:
+def _build_model_context(*, db: Session, task: Task, knowledge_context: str) -> str:
+    clarifying_questions = _candidate_clarifying_questions(db, task)
+    question_context = ""
+    if clarifying_questions:
+        formatted_questions = "\n".join(
+            f"{index}. {question}"
+            for index, question in enumerate(clarifying_questions, start=1)
+        )
+        question_context = f"\n# 먼저 확인할 질문\n\n{formatted_questions}\n"
+
     return (
         "# 사용자 작업\n\n"
         f"제목: {task.title}\n"
         f"작업 유형: {task.task_type}\n"
         f"설명: {task.description}\n"
         f"배정 에이전트: {', '.join(task.assigned_agents or [])}\n\n"
+        f"{question_context}"
         f"{knowledge_context}"
     )
+
+
+def _candidate_clarifying_questions(db: Session, task: Task) -> list[str]:
+    if not task.candidate_task_id:
+        return []
+
+    candidate = db.get(CandidateTask, task.candidate_task_id)
+    if candidate is None:
+        return []
+
+    questions = (candidate.item_metadata or {}).get("clarifying_questions", [])
+    if not isinstance(questions, list):
+        return []
+
+    return [question for question in questions if isinstance(question, str) and question.strip()]
 
 
 def _utcnow() -> datetime:

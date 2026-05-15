@@ -37,6 +37,11 @@ def test_approval_inbox_lists_pending_items(app: FastAPI) -> None:
     assert body[0]["id"]
     assert body[0]["task_id"]
     assert body[0]["artifact_id"]
+    assert body[0]["knowledge_references"] == [
+        "knowledge/official/personal-behavior-motivation/MASTER.md",
+        "knowledge/official/group-behavior/MASTER.md",
+        "knowledge/agent-guides/agent-operating-guides.md",
+    ]
 
 
 def test_approve_item_changes_status(app: FastAPI, db_session: Session) -> None:
@@ -150,7 +155,7 @@ def test_dashboard_summary_counts_after_one_run(app: FastAPI) -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["agent_count"] == 10
-    assert body["active_agent_count"] == 7
+    assert body["active_agent_count"] == 9
     assert body["candidate_task_count"] >= 1
     assert body["running_task_count"] == 0
     assert body["pending_approval_count"] == 1

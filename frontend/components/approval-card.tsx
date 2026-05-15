@@ -26,6 +26,16 @@ const decisionLabels: Record<ApprovalDecision, string> = {
   revise_requested: "수정요청",
 };
 
+const knowledgeReferenceLabels: Record<string, string> = {
+  "knowledge/official/personal-behavior-motivation/MASTER.md": "개인행동 동기검사 MASTER",
+  "knowledge/official/group-behavior/MASTER.md": "집단행동검사 MASTER",
+  "knowledge/agent-guides/agent-operating-guides.md": "에이전트 작업 가이드",
+};
+
+function knowledgeReferenceLabel(reference: string) {
+  return knowledgeReferenceLabels[reference] ?? reference;
+}
+
 export function ApprovalCard({ approval, highlighted = false }: ApprovalCardProps) {
   const router = useRouter();
   const cardRef = useRef<HTMLElement | null>(null);
@@ -172,6 +182,23 @@ export function ApprovalCard({ approval, highlighted = false }: ApprovalCardProp
           </pre>
         </section>
       </div>
+
+      {approval.knowledge_references?.length ? (
+        <section className="mt-4 rounded-[10px] border border-[#38BDF8]/25 bg-[#07141C] p-3">
+          <h3 className="text-xs font-semibold uppercase tracking-normal text-[#7DD7FF]">참조 지식</h3>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {approval.knowledge_references.map((reference) => (
+              <span
+                key={reference}
+                title={reference}
+                className="rounded-button border border-[#38BDF8]/25 bg-[#092234] px-2.5 py-1 text-xs font-semibold text-[#DDE6EE]"
+              >
+                {knowledgeReferenceLabel(reference)}
+              </span>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {isRevisionFormOpen && canDecide ? (
         <section className="mt-4 rounded-[10px] border border-[#F2B84B]/40 bg-[#241C0F] p-3">

@@ -38,6 +38,7 @@ def _candidate_to_read(candidate_task: CandidateTask) -> CandidateTaskRead:
         approval_required=metadata.get("approval_required", False),
         rule_hints=metadata.get("rule_hints", []),
         review_flags=metadata.get("review_flags", []),
+        clarifying_questions=metadata.get("clarifying_questions", []),
     )
 
 
@@ -66,6 +67,7 @@ def _candidate_from_draft(
         "approval_required": draft.approval_required,
         "rule_hints": draft.rule_hints,
         "review_flags": draft.review_flags,
+        "clarifying_questions": draft.clarifying_questions,
         "origin_graph": GRAPH_NAME,
         "origin_node": "build_candidates",
     }

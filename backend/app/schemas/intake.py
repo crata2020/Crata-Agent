@@ -32,6 +32,7 @@ class CandidateTaskRead(BaseModel):
     approval_required: bool
     rule_hints: list[str]
     review_flags: list[str]
+    clarifying_questions: list[str] = Field(default_factory=list)
 
 
 class GraphNodeTraceRead(BaseModel):

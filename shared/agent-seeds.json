@@ -74,9 +74,9 @@
     "name": "Business Designer",
     "display_name": "사업설계자",
     "role": "제안서, 상품, 프로그램 기획",
-    "description": "2차 확장 예정 에이전트입니다.",
-    "status": "planned",
-    "enabled": false,
+    "description": "대상, 문제, 목적, 성과, 예산, 일정, 검사 활용 방식을 확인한 뒤 제안서와 프로그램 기획 초안을 만듭니다.",
+    "status": "idle",
+    "enabled": true,
     "color": "#7A5A2E"
   },
   {
@@ -84,9 +84,9 @@
     "name": "Content Strategist",
     "display_name": "콘텐츠전략가",
     "role": "홍보, 유튜브, 블로그, 홈페이지 문구",
-    "description": "2차 확장 예정 에이전트입니다.",
-    "status": "planned",
-    "enabled": false,
+    "description": "채널, 타깃, 메시지, 전환 목표, 금지 표현을 확인한 뒤 콘텐츠와 홍보 전략 초안을 만듭니다.",
+    "status": "idle",
+    "enabled": true,
     "color": "#B35C3E"
   },
   {

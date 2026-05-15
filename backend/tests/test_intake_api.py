@@ -145,6 +145,28 @@ def test_create_intake_extracts_short_revision_and_planning_request(app: FastAPI
     assert body["candidate_tasks"][1]["title"] == "사업·프로그램 기획 후보"
 
 
+def test_create_intake_returns_clarifying_questions_for_business_planning(app: FastAPI) -> None:
+    client = TestClient(app)
+
+    response = client.post(
+        "/intake",
+        json={
+            "title": "기획 요청",
+            "raw_content": "공공기관 연수 프로그램 제안서를 기획해줘.",
+        },
+    )
+
+    assert response.status_code == 201
+    candidate = response.json()["candidate_tasks"][0]
+    assert candidate["task_type"] == "business_planning"
+    assert candidate["clarifying_questions"][:4] == [
+        "대상 기관 또는 고객은 누구인가요?",
+        "해결하려는 문제나 개선하고 싶은 장면은 무엇인가요?",
+        "이번 제안서의 목적과 기대 성과는 무엇인가요?",
+        "예산, 일정, 운영 형태의 제한은 무엇인가요?",
+    ]
+
+
 def test_create_intake_returns_ai_classification_metadata_for_review(app: FastAPI) -> None:
     client = TestClient(app)
 

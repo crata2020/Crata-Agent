@@ -150,6 +150,50 @@ describe("RequestIntakePage candidate review", () => {
     expect(screen.getByText(/문구 자체를 수정하는 요청이 아니라/)).toBeInTheDocument();
   });
 
+  it("shows clarifying questions before running a planning candidate", async () => {
+    createIntakeMock.mockResolvedValue({
+      id: "intake-1",
+      title: "기획 요청",
+      input_type: "memo",
+      raw_content: "원문",
+      candidate_tasks: [
+        {
+          id: "candidate-plan",
+          task_type: "business_planning",
+          title: "사업·프로그램 기획 후보",
+          summary: "공공기관 연수 프로그램 제안서 기획 요청입니다.",
+          evidence_excerpt: "공공기관 연수 프로그램 제안서를 기획해줘.",
+          recommended_agents: ["crata_ceo", "business_designer"],
+          status: "draft",
+          rule_hint_task_type: "business_planning",
+          ai_task_type: "business_planning",
+          classification_source: "rule_assisted_ai",
+          classification_status: "aligned",
+          confidence: 0.86,
+          classification_reason: "사업 기획 산출물이 필요한 요청으로 판단했습니다.",
+          approval_required: false,
+          rule_hints: ["공공기관", "연수", "프로그램", "제안서"],
+          review_flags: [],
+          clarifying_questions: [
+            "대상 기관 또는 고객은 누구인가요?",
+            "해결하려는 문제나 개선하고 싶은 장면은 무엇인가요?",
+          ],
+        },
+      ],
+    });
+
+    render(<RequestIntakePage />);
+
+    fireEvent.change(screen.getByLabelText("원문"), {
+      target: { value: "공공기관 연수 프로그램 제안서를 기획해줘." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "작업 후보 추출" }));
+
+    expect(await screen.findByText("먼저 확인할 질문")).toBeInTheDocument();
+    expect(screen.getByText("대상 기관 또는 고객은 누구인가요?")).toBeInTheDocument();
+    expect(screen.getByText("해결하려는 문제나 개선하고 싶은 장면은 무엇인가요?")).toBeInTheDocument();
+  });
+
   it("shows the intake decomposition graph trace after candidate extraction", async () => {
     createIntakeMock.mockResolvedValue({
       id: "intake-1",

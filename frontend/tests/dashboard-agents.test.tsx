@@ -20,7 +20,7 @@ const runCandidateMock = vi.mocked(runCandidate);
 describe("dashboard agent flow map", () => {
   const summary: DashboardSummary = {
     agent_count: 10,
-    active_agent_count: 7,
+    active_agent_count: 9,
     candidate_task_count: 4,
     running_task_count: 1,
     pending_approval_count: 2,
@@ -194,7 +194,7 @@ describe("dashboard agent flow map", () => {
 
     expect(screen.getAllByText("결과지 문구 수정 후보 승인 요청").length).toBeGreaterThan(0);
     expect(screen.getAllByText("승인 대기").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("확장 예정").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("확장 예정").length).toBe(1);
   });
 
   it("selects an agent node and marks it as active", () => {

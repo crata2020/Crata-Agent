@@ -52,6 +52,7 @@ export interface CandidateTask {
   approval_required?: boolean;
   rule_hints?: string[];
   review_flags?: string[];
+  clarifying_questions?: string[];
 }
 
 export interface GraphNodeTrace {
@@ -88,6 +89,7 @@ export interface Approval {
   after_content: string;
   affected_area: string;
   reviewer_note: string;
+  knowledge_references?: string[];
   revision_candidate_task?: CandidateTask | null;
 }
 

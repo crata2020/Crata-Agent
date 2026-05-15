@@ -15,9 +15,12 @@ def test_seed_agents_creates_crata_office_agents(db_session: Session) -> None:
     agents = db_session.scalars(select(Agent)).all()
     concept_guardian = db_session.get(Agent, "concept_guardian")
     business_designer = db_session.get(Agent, "business_designer")
+    content_strategist = db_session.get(Agent, "content_strategist")
+    operations_secretary = db_session.get(Agent, "operations_secretary")
 
     concept_guardian_seed = _seed_by_id("concept_guardian")
     business_designer_seed = _seed_by_id("business_designer")
+    content_strategist_seed = _seed_by_id("content_strategist")
 
     assert len(agents) == len(AGENT_SEEDS)
     assert concept_guardian is not None
@@ -25,6 +28,16 @@ def test_seed_agents_creates_crata_office_agents(db_session: Session) -> None:
     assert business_designer is not None
     assert business_designer.status == business_designer_seed["status"]
     assert business_designer.enabled == business_designer_seed["enabled"]
+    assert business_designer.status == "idle"
+    assert business_designer.enabled is True
+    assert content_strategist is not None
+    assert content_strategist.status == content_strategist_seed["status"]
+    assert content_strategist.enabled == content_strategist_seed["enabled"]
+    assert content_strategist.status == "idle"
+    assert content_strategist.enabled is True
+    assert operations_secretary is not None
+    assert operations_secretary.status == "planned"
+    assert operations_secretary.enabled is False
 
 
 def test_seed_agents_is_idempotent(db_session: Session) -> None:

@@ -130,6 +130,8 @@ def _revision_candidate_for(item: Approval, db: Session) -> CandidateTask | None
 
 def _read(item: Approval, db: Session) -> ApprovalRead:
     revision_candidate = _revision_candidate_for(item, db)
+    artifact = db.get(Artifact, item.artifact_id)
+    artifact_metadata = artifact.item_metadata if artifact is not None else {}
     return ApprovalRead(
         id=item.id,
         task_id=item.task_id,
@@ -142,6 +144,7 @@ def _read(item: Approval, db: Session) -> ApprovalRead:
         after_content=item.after_content,
         affected_area=item.affected_area,
         reviewer_note=item.reviewer_note,
+        knowledge_references=artifact_metadata.get("knowledge_references", []),
         revision_candidate_task=_candidate_to_read(revision_candidate)
         if revision_candidate is not None
         else None,

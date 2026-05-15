@@ -15,6 +15,7 @@ class ApprovalRead(BaseModel):
     after_content: str
     affected_area: str
     reviewer_note: str
+    knowledge_references: list[str] = Field(default_factory=list)
     revision_candidate_task: CandidateTaskRead | None = None
 
 

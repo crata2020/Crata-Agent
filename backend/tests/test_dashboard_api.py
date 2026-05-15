@@ -16,6 +16,17 @@ def test_agent_activity_returns_seeded_agents(app: FastAPI) -> None:
     assert all("work_items" in agent for agent in body["agents"])
 
 
+def test_dashboard_summary_seeds_agents_before_counting(app: FastAPI) -> None:
+    client = TestClient(app)
+
+    response = client.get("/dashboard/summary")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["agent_count"] == 10
+    assert body["active_agent_count"] == 9
+
+
 def test_agent_activity_includes_draft_candidate_work_items(app: FastAPI) -> None:
     client = TestClient(app)
     intake_response = client.post(

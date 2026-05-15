@@ -32,6 +32,11 @@ const pendingApproval: Approval = {
   after_content: "수정된 문구",
   affected_area: "조직행동검사 5페이지",
   reviewer_note: "공식 반영 전 톤을 확인하세요.",
+  knowledge_references: [
+    "knowledge/official/personal-behavior-motivation/MASTER.md",
+    "knowledge/official/group-behavior/MASTER.md",
+    "knowledge/agent-guides/agent-operating-guides.md",
+  ],
 };
 
 describe("ApprovalCard", () => {
@@ -47,6 +52,15 @@ describe("ApprovalCard", () => {
     expect(screen.getByRole("button", { name: "승인" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "거절" })).toBeEnabled();
     expect(screen.getByText("수정된 문구")).toBeInTheDocument();
+  });
+
+  it("shows referenced knowledge files for approval traceability", () => {
+    render(<ApprovalCard approval={pendingApproval} />);
+
+    expect(screen.getByText("참조 지식")).toBeInTheDocument();
+    expect(screen.getByText("개인행동 동기검사 MASTER")).toBeInTheDocument();
+    expect(screen.getByText("집단행동검사 MASTER")).toBeInTheDocument();
+    expect(screen.getByText("에이전트 작업 가이드")).toBeInTheDocument();
   });
 
   it("marks the card highlighted when opened from the dashboard", () => {

@@ -116,3 +116,56 @@ def test_run_task_workflow_passes_knowledge_context_to_model(
         "knowledge/official/group-behavior/MASTER.md",
         "knowledge/agent-guides/agent-operating-guides.md",
     ]
+
+
+def test_run_task_workflow_passes_candidate_clarifying_questions_to_model(
+    db_session: Session, monkeypatch
+) -> None:
+    captured_context = {}
+
+    def capture_draft(self, *, task_title: str, task_type: str, context: str) -> str:
+        captured_context["value"] = context
+        return "# 사업 기획 초안"
+
+    monkeypatch.setattr("app.services.model_gateway.ModelGateway.draft", capture_draft)
+    seed_agents(db_session)
+    intake_item = IntakeItem(
+        title="기획 요청",
+        input_type="memo",
+        raw_content="공공기관 연수 프로그램 제안서를 기획해줘.",
+    )
+    db_session.add(intake_item)
+    db_session.flush()
+    candidate_task = CandidateTask(
+        intake_item_id=intake_item.id,
+        task_type="business_planning",
+        title="사업·프로그램 기획 후보",
+        summary="공공기관 연수 프로그램 제안서 기획 요청입니다.",
+        evidence_excerpt="공공기관 연수 프로그램 제안서를 기획해줘.",
+        recommended_agents=["crata_ceo", "business_designer"],
+        item_metadata={
+            "clarifying_questions": [
+                "대상 기관 또는 고객은 누구인가요?",
+                "예산, 일정, 운영 형태의 제한은 무엇인가요?",
+            ]
+        },
+    )
+    db_session.add(candidate_task)
+    db_session.flush()
+    task = Task(
+        candidate_task_id=candidate_task.id,
+        task_type=candidate_task.task_type,
+        title=candidate_task.title,
+        description=candidate_task.summary,
+        status="running",
+        assigned_agents=candidate_task.recommended_agents,
+    )
+    db_session.add(task)
+    db_session.commit()
+
+    result = run_task_workflow(db_session, task.id)
+
+    assert result.status == "pending_approval"
+    assert "먼저 확인할 질문" in captured_context["value"]
+    assert "대상 기관 또는 고객은 누구인가요?" in captured_context["value"]
+    assert "예산, 일정, 운영 형태의 제한은 무엇인가요?" in captured_context["value"]

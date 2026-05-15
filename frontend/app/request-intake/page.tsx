@@ -967,6 +967,19 @@ function RequestIntakeWorkspace() {
                           </div>
                         ) : null}
                       </div>
+                      {(candidate.clarifying_questions ?? []).length > 0 ? (
+                        <div className="rounded-[10px] border border-[#F2B84B]/25 bg-[#1F1708]/42 p-3 lg:col-span-2">
+                          <h3 className="text-xs font-semibold text-[#FFD37A]">먼저 확인할 질문</h3>
+                          <ol className="mt-2 grid gap-1.5 text-sm leading-6 text-[#F3E6C7] md:grid-cols-2">
+                            {candidate.clarifying_questions?.map((question, index) => (
+                              <li key={question} className="flex gap-2">
+                                <span className="text-xs font-semibold text-[#F2B84B]">{index + 1}.</span>
+                                <span>{question}</span>
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      ) : null}
                       <div className="rounded-[10px] border border-white/10 bg-black/20 p-3">
                         <h3 className="text-xs font-semibold text-[#9BA8B4]">근거 발췌</h3>
                         <p className="mt-2 text-sm leading-6 text-[#E3EAF0]">{candidate.evidence_excerpt}</p>

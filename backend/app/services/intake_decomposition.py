@@ -18,6 +18,7 @@ class CandidateTaskDraft:
     approval_required: bool
     rule_hints: list[str]
     review_flags: list[str]
+    clarifying_questions: list[str]
 
 
 _CATEGORIES = [
@@ -200,6 +201,7 @@ def decompose_input(raw_content: str) -> list[CandidateTaskDraft]:
                 approval_required=category["approval_required"],
                 rule_hints=rule_hints,
                 review_flags=_review_flags(classification_status, confidence),
+                clarifying_questions=_clarifying_questions(ai_task_type),
             ),
         )
 
@@ -226,6 +228,11 @@ def _general_task(text: str) -> CandidateTaskDraft:
         approval_required=False,
         rule_hints=[],
         review_flags=["분류 검토 필요"],
+        clarifying_questions=[
+            "이 작업의 최종 산출물은 무엇인가요?",
+            "반드시 반영해야 할 기준이나 금지할 표현이 있나요?",
+            "완료 후 어디에 저장하거나 누구에게 보고해야 하나요?",
+        ],
     )
 
 
@@ -342,6 +349,37 @@ def _review_flags(classification_status: str, confidence: float) -> list[str]:
     if confidence < 0.7:
         flags.append("신뢰도 낮음")
     return flags
+
+
+def _clarifying_questions(task_type: str) -> list[str]:
+    questions_by_type = {
+        "report_phrase_revision": [
+            "어느 검사와 몇 페이지 또는 어느 문구를 수정하나요?",
+            "대상 독자는 성인, 청소년, 아동, 부모, 조직 중 누구인가요?",
+            "기존 문구에서 가장 바꾸고 싶은 톤이나 문제 표현은 무엇인가요?",
+            "공식 개념상 반드시 유지해야 할 핵심 표현이 있나요?",
+        ],
+        "counseling_case_learning": [
+            "상담 원문에서 개인정보를 제거했나요?",
+            "사용자 유형, 상대 유형, 관계 맥락은 무엇인가요?",
+            "이번 사례에서 관찰할 핵심 감정과 행동은 무엇인가요?",
+            "공식 지식 반영 후보인지, 사례 보관용인지 구분이 필요한가요?",
+        ],
+        "business_planning": [
+            "대상 기관 또는 고객은 누구인가요?",
+            "해결하려는 문제나 개선하고 싶은 장면은 무엇인가요?",
+            "이번 제안서의 목적과 기대 성과는 무엇인가요?",
+            "예산, 일정, 운영 형태의 제한은 무엇인가요?",
+            "CRATA 검사 중 어떤 검사를 어떤 단계에 넣고 싶나요?",
+        ],
+        "content_marketing": [
+            "사용할 채널은 유튜브, 블로그, 홈페이지, SNS 중 무엇인가요?",
+            "핵심 타깃은 누구이고 어떤 문제를 느끼고 있나요?",
+            "콘텐츠를 본 사람이 다음에 어떤 행동을 하길 원하나요?",
+            "반드시 피해야 할 표현이나 과장된 약속이 있나요?",
+        ],
+    }
+    return questions_by_type.get(task_type, [])
 
 
 def _matched_keywords(text: str, keywords: list[str]) -> list[str]:

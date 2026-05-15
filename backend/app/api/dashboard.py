@@ -20,6 +20,8 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 @router.get("/summary", response_model=DashboardSummary)
 def get_dashboard_summary(db: Session = Depends(get_db)) -> DashboardSummary:
+    seed_agents(db)
+
     return DashboardSummary(
         agent_count=_count(db, select(func.count()).select_from(Agent)),
         active_agent_count=_count(
