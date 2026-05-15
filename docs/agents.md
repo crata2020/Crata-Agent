@@ -1,136 +1,136 @@
-# CRATA Agent Structure
+# CRATA 에이전트 구조
 
-## First MVP: Active Agents
+## 1차 MVP 활성 에이전트
 
 ### 1. CRATA CEO
 
-Owns routing and orchestration.
+전체 라우팅과 조율을 담당한다.
 
-Responsibilities:
+담당 업무:
 
-- Classify user requests and extracted candidate tasks.
-- Decide which agents should work on a task.
-- Select the correct workflow.
-- Decide whether approval is required.
-- Summarize final outputs.
-- Keep task history understandable.
+- 사용자 요청과 추출된 작업 후보를 분류한다.
+- 어떤 에이전트가 작업해야 하는지 결정한다.
+- 적절한 워크플로우를 선택한다.
+- 승인 필요 여부를 판단한다.
+- 최종 결과를 요약한다.
+- 작업 이력을 이해하기 쉽게 남긴다.
 
-### 2. Concept Guardian
+### 2. 개념수호자
 
-Owns official CRATA knowledge and conceptual consistency.
+공식 CRATA 지식과 개념 일관성을 담당한다.
 
-Responsibilities:
+내부 id: `concept_guardian`
 
-- Manage assessment concepts and type definitions.
-- Provide evidence from official CRATA knowledge.
-- Check whether a draft conflicts with official knowledge.
-- Distinguish official knowledge from counseling-case observations.
-- Review proposed updates before approval.
+담당 업무:
 
-Korean display name: 개념수호자.
+- 검사 개념과 유형 정의를 관리한다.
+- 공식 CRATA 지식에서 근거를 제공한다.
+- 초안이 공식 개념과 충돌하는지 확인한다.
+- 공식 지식과 상담 사례 관찰을 구분한다.
+- 공식 반영 후보를 승인 전 검토한다.
 
-### 3. Report Editor
+### 3. 결과지 에디터
 
-Owns assessment report wording.
+검사 결과지 문구를 담당한다.
 
-Responsibilities:
+내부 id: `report_editor`
 
-- Draft and revise assessment result phrases.
-- Adjust tone for adult, youth, child, parent, organization, or institution use.
-- Create before/after wording.
-- Keep report phrases aligned with official concepts.
-- Prepare output for approval.
+담당 업무:
 
-Korean display name: 결과지 에디터.
+- 검사 결과지 문구를 작성하고 수정한다.
+- 성인, 청소년, 아동, 부모, 조직, 기관용 톤을 조정한다.
+- 수정 전/후 문구를 만든다.
+- 결과지 문구가 공식 개념과 맞는지 확인한다.
+- 승인 가능한 형태로 산출물을 정리한다.
 
-### 4. Counseling Coach
+### 4. 상담 코치
 
-Owns type-based counseling answer drafts and chatbot testing.
+유형 기반 상담 답변 초안과 챗봇 테스트를 담당한다.
 
-Responsibilities:
+내부 id: `counseling_coach`
 
-- Draft counseling-style responses from type, counterpart type, and relationship context.
-- Suggest practical conversation phrases.
-- Test chatbot-like responses internally.
-- Avoid making official knowledge updates directly.
+담당 업무:
 
-Korean display name: 상담 코치.
+- 사용자 유형, 상대 유형, 관계 맥락을 바탕으로 상담형 답변을 만든다.
+- 실제로 말할 수 있는 대화 문장을 제안한다.
+- 내부 테스트용 챗봇 응답을 작성한다.
+- 공식 지식을 직접 수정하지 않는다.
 
-### 5. Case Learner
+### 5. 사례학습가
 
-Owns counseling transcript processing and learning candidates.
+상담 전사록 처리와 학습 후보 생성을 담당한다.
 
-Responsibilities:
+내부 id: `case_learner`
 
-- Preserve and anonymize counseling transcripts.
-- Extract case facts, type information, emotions, behaviors, relationship context, and patterns.
-- Save counseling cases as cases, not official knowledge.
-- Generate learning candidates for review.
+담당 업무:
 
-Korean display name: 사례학습가.
+- 상담 전사록을 보존하고 익명화한다.
+- 사례 사실, 유형 정보, 감정, 행동, 관계 맥락, 패턴을 추출한다.
+- 상담 내용을 공식 지식이 아니라 상담 사례로 저장한다.
+- 검토용 학습 후보를 만든다.
 
-### 6. Relationship Analyst
+### 6. 관계분석가
 
-Owns type-pair and interaction-pattern analysis.
+유형 조합과 상호작용 패턴 분석을 담당한다.
 
-Responsibilities:
+내부 id: `relationship_analyst`
 
-- Analyze type combinations.
-- Identify relationship context patterns.
-- Extract repeated interaction loops.
-- Connect observed patterns to candidate interventions.
-- Prepare future graph-style relationship data.
+담당 업무:
 
-Korean display name: 관계분석가.
+- 유형 조합을 분석한다.
+- 관계 맥락별 패턴을 찾는다.
+- 반복되는 상호작용 루프를 추출한다.
+- 관찰된 패턴을 개입 후보와 연결한다.
+- 향후 그래프형 관계 데이터로 옮길 수 있게 구조화한다.
 
-### 7. Quality Inspector
+### 7. 품질검수관
 
-Owns safety, tone, structure, and approval readiness.
+안전성, 톤, 형식, 승인 준비 상태를 담당한다.
 
-Responsibilities:
+내부 id: `quality_inspector`
 
-- Check for stigmatizing, diagnostic, deterministic, or unsafe language.
-- Check answer format and length.
-- Check whether approval is required.
-- Block official updates that have not been approved.
-- Produce review notes for the approval inbox.
+담당 업무:
 
-Korean display name: 품질검수관.
+- 낙인적, 진단적, 단정적, 위험한 표현을 검토한다.
+- 답변 형식과 길이를 확인한다.
+- 승인 필요 여부를 확인한다.
+- 승인되지 않은 공식 지식 변경을 막는다.
+- 승인대기함에 들어갈 검토 의견을 작성한다.
 
-## Planned Expansion Agents
+## 2차 확장 예정 에이전트
 
-### 8. Business Designer
+### 8. 사업설계자
 
-Planned agent for proposals, products, programs, workshops, pricing, institutional plans, and service packaging.
+제안서, 상품, 프로그램, 워크숍, 가격 구조, 기관 기획, 서비스 패키징을 담당할 예정 에이전트다.
 
-Korean display name: 사업설계자.
+내부 id: `business_designer`
 
-### 9. Content Strategist
+### 9. 콘텐츠전략가
 
-Planned agent for marketing, YouTube, blog, homepage copy, campaign ideas, and content reporting.
+홍보, 유튜브, 블로그, 홈페이지 문구, 캠페인 아이디어, 콘텐츠 보고를 담당할 예정 에이전트다.
 
-Korean display name: 콘텐츠전략가.
+내부 id: `content_strategist`
 
-### 10. Operations Secretary
+### 10. 운영비서
 
-Planned agent for daily briefing, approval summaries, task priority, automation, and future Telegram/n8n integration.
+데일리 브리핑, 승인대기 요약, 작업 우선순위, 자동화, 향후 Telegram/n8n 연동을 담당할 예정 에이전트다.
 
-Korean display name: 운영비서.
+내부 id: `operations_secretary`
 
-## Agent Statuses
+## 에이전트 실행 상태
 
-Agents can have these runtime states:
+에이전트는 다음 실행 상태를 가질 수 있다.
 
-- idle
-- working
-- reviewing
-- waiting_for_approval
-- approved
-- rejected
-- error
-- disabled
-- planned
+- `idle`: 대기.
+- `working`: 작업중.
+- `reviewing`: 검수중.
+- `waiting_for_approval`: 승인대기.
+- `approved`: 승인됨.
+- `rejected`: 거부됨.
+- `error`: 오류.
+- `disabled`: 비활성화.
+- `planned`: 준비 중.
 
-## Agent Design Rule
+## 에이전트 설계 규칙
 
-Agents are not allowed to silently modify official knowledge. They can produce drafts, candidates, and review notes. Only an approved workflow can change official CRATA knowledge or report wording.
+에이전트는 공식 지식을 몰래 수정할 수 없다. 에이전트는 초안, 후보, 검토 의견을 만들 수 있다. 공식 CRATA 지식이나 결과지 문구를 바꾸는 일은 승인된 워크플로우만 수행할 수 있다.

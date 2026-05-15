@@ -1,43 +1,43 @@
-# CRATA AI Office Design Spec
+# CRATA AI Office 디자인 스펙
 
-Date: 2026-05-15
+작성일: 2026-05-15
 
-## Decision Summary
+## 결정 요약
 
-Build a local internal web app named CRATA AI Office.
+CRATA AI Office라는 로컬 내부 웹앱을 만든다.
 
-The first version is for Cheongha's personal use only. It will be a local operating center for managing CRATA AI agents, decomposing mixed inputs into actionable tasks, running selected tasks through LangGraph workflows, reviewing outputs, and saving approved results.
+1차 버전은 청하님 혼자 사용하는 운영센터다. 주요 목적은 CRATA 에이전트를 관리하고, 여러 의도가 섞인 입력물을 작업 후보로 분해하고, 선택된 작업을 LangGraph 워크플로우로 실행하고, 결과를 검토·승인·저장하는 것이다.
 
-## Reference Material
+## 참고 자료
 
 - Connect AI GitHub: https://github.com/wonseokjung/connect-ai
-- Reference video: https://www.youtube.com/watch?v=jpd7gYchCbQ
+- 참고 영상: https://www.youtube.com/watch?v=jpd7gYchCbQ
 
-Adopt from Connect AI:
+Connect AI에서 참고할 요소:
 
-- AI employee/team metaphor.
-- Agent dashboard.
-- Agent-specific workspaces.
-- Approval queue.
-- Session and artifact history.
-- Local-first knowledge and settings mindset.
+- AI 직원 팀 은유.
+- 에이전트 대시보드.
+- 에이전트별 작업 공간.
+- 승인 큐.
+- 세션과 산출물 이력.
+- 로컬 우선 지식·설정 관리.
 
-Adapt for CRATA:
+CRATA에 맞게 바꿀 요소:
 
-- Stronger approval gates.
-- Clear separation between official knowledge and AI candidates.
-- Professional counseling/assessment tone.
-- Less playful UI for core knowledge and approval screens.
+- 더 강한 승인 게이트.
+- 공식 지식과 AI 후보의 명확한 분리.
+- 상담·검사에 맞는 전문적 문체.
+- 핵심 지식·승인 화면에서는 과한 게임 느낌을 줄인다.
 
-## Product Scope
+## 제품 범위
 
-First MVP includes:
+1차 MVP 포함:
 
-- Local Next.js web app on `http://localhost:3005`.
-- FastAPI backend on `http://localhost:8000`.
+- `http://localhost:3005`에서 실행되는 로컬 Next.js 웹앱.
+- `http://localhost:8000`에서 실행되는 FastAPI 백엔드.
 - PostgreSQL + pgvector.
-- OpenAI API as default model provider.
-- Future model slots for Ollama and LM Studio.
+- 기본 모델 제공자로 OpenAI API 사용.
+- 향후 Ollama와 LM Studio를 붙일 수 있는 모델 슬롯.
 - Dashboard.
 - Request Intake.
 - Workflow Timeline.
@@ -47,105 +47,105 @@ First MVP includes:
 - Sessions / Artifacts.
 - Sandbox.
 - Settings.
-- Design and system documents.
+- 디자인 및 시스템 문서.
 
-First MVP excludes:
+1차 MVP 제외:
 
-- Public customer chatbot.
-- Login and multi-user permissions.
-- Payment.
-- Mobile app.
+- 외부 고객용 상담 챗봇.
+- 로그인과 다중 사용자 권한.
+- 결제.
+- 모바일 앱.
 - Neo4j.
-- n8n automation.
+- n8n 자동화.
 - Telegram.
 - Google Drive.
 - YouTube API.
-- Full PDF/DOCX parser.
-- Production deployment.
+- 고도화된 PDF/DOCX 파서.
+- 운영 배포 서버.
 
-## Core User Flow
+## 핵심 사용자 흐름
 
 ```text
-Cheongha enters meeting notes, transcript, memo, or direct request
--> system preserves raw input
--> input decomposition extracts candidate task cards
--> Cheongha reviews candidates
--> selected candidates become executable tasks
--> CEO routes task to agents
--> agents draft and review
--> approval gate stops risky changes
--> Cheongha approves, rejects, or requests revision
--> system saves artifact, logs, and approved knowledge if applicable
+청하님이 회의록, 전사록, 메모, 직접 요청을 입력
+-> 시스템이 원문을 보존
+-> 입력물 분해가 작업 후보 카드를 추출
+-> 청하님이 후보를 검토
+-> 선택된 후보가 실행 작업으로 전환
+-> CEO가 작업을 에이전트에게 라우팅
+-> 에이전트가 초안과 검토 의견 생성
+-> 위험하거나 공식 반영이 필요한 항목은 승인 게이트에서 멈춤
+-> 청하님이 승인, 거부, 수정 요청 중 하나를 선택
+-> 시스템이 산출물, 로그, 승인된 지식을 저장
 ```
 
-## Screens
+## 화면
 
 ### Dashboard
 
-Shows the AI office status board, active tasks, approval summary, recent artifacts, and system health.
+AI 사무실 상태판, 활성 작업, 승인 요약, 최근 산출물, 시스템 상태를 보여준다.
 
 ### Request Intake
 
-Accepts direct requests, meeting notes, counseling transcripts, memos, and files. It creates candidate task cards rather than executing everything automatically.
+직접 요청, 회의록, 상담 전사록, 메모, 파일을 받는다. 모든 내용을 바로 실행하지 않고 작업 후보 카드로 만든다.
 
-Candidate task card actions:
+작업 후보 카드 액션:
 
-- run
-- edit then run
-- hold
-- delete
-- split
-- merge
+- `run`: 실행.
+- `edit_then_run`: 수정 후 실행.
+- `hold`: 보류.
+- `delete`: 삭제.
+- `split`: 분할.
+- `merge`: 병합.
 
 ### Workflow Timeline
 
-Shows workflow progress and current step for each running or paused task.
+실행 중이거나 승인대기 중인 작업의 현재 단계를 보여준다.
 
 ### Agents / Agent Workbench
 
-Shows active and planned agents, role, prompt, model, status, recent work, memory, and tools.
+활성 에이전트와 준비 중인 에이전트, 역할, 프롬프트, 모델, 상태, 최근 작업, 메모리, 도구를 보여준다.
 
 ### Approval Inbox / Diff Viewer
 
-Shows pending approval items with before/after content, affected area, evidence, reviewer notes, and approve/reject/revise actions.
+승인 대기 항목을 수정 전/후 내용, 영향 영역, 근거, 검토 의견, 승인/거부/수정 요청 액션과 함께 보여준다.
 
 ### Knowledge Center
 
-Shows official knowledge, candidate knowledge, counseling cases, report phrases, and saved artifacts.
+공식 지식, 후보 지식, 상담 사례, 결과지 문구, 저장된 산출물을 보여준다.
 
 ### Sessions / Artifacts
 
-Shows LangGraph runs, generated outputs, logs, and reports.
+LangGraph 실행, 생성 결과물, 로그, 보고서를 보여준다.
 
 ### Sandbox
 
-Allows testing an agent without saving output as official knowledge or a candidate.
+에이전트 결과를 공식 지식이나 후보로 저장하지 않고 테스트할 수 있다.
 
 ### Settings
 
-Manages OpenAI API, future local model settings, database status, Git/Markdown export path, and defaults.
+OpenAI API, 향후 로컬 모델 설정, DB 상태, Git/Markdown 내보내기 경로, 기본값을 관리한다.
 
-## Agents
+## 에이전트
 
-Active MVP agents:
+1차 활성 에이전트:
 
 1. CRATA CEO
-2. Concept Guardian / 개념수호자
-3. Report Editor / 결과지 에디터
-4. Counseling Coach / 상담 코치
-5. Case Learner / 사례학습가
-6. Relationship Analyst / 관계분석가
-7. Quality Inspector / 품질검수관
+2. 개념수호자
+3. 결과지 에디터
+4. 상담 코치
+5. 사례학습가
+6. 관계분석가
+7. 품질검수관
 
-Planned expansion agents:
+2차 확장 예정 에이전트:
 
-8. Business Designer / 사업설계자
-9. Content Strategist / 콘텐츠전략가
-10. Operations Secretary / 운영비서
+8. 사업설계자
+9. 콘텐츠전략가
+10. 운영비서
 
-The UI should show all ten agents. The first seven are active; the last three are marked as planned or preparation status.
+UI에는 10개 에이전트를 모두 보여준다. 앞의 7개는 활성 상태, 뒤의 3개는 준비 중 상태로 표시한다.
 
-## Workflows
+## 워크플로우
 
 ### 입력물 분해 그래프
 
@@ -159,7 +159,7 @@ The UI should show all ten agents. The first seven are active; the last three ar
 -> 청하님 선택 대기
 ```
 
-This workflow only creates candidate tasks.
+이 워크플로우는 작업 후보만 만든다.
 
 ### 에이전트 작업 실행 그래프
 
@@ -174,57 +174,57 @@ This workflow only creates candidate tasks.
 -> 결과물/로그 저장
 ```
 
-This workflow executes selected tasks and stops at approval when needed.
+이 워크플로우는 선택된 작업을 실행하고, 승인이 필요한 경우 승인대기에서 멈춘다.
 
-## Data Model
+## 데이터 모델
 
-Initial database tables:
+초기 DB 테이블:
 
-- agents
-- intake_items
-- candidate_tasks
-- tasks
-- workflow_runs
-- workflow_steps
-- approvals
-- artifacts
-- knowledge_items
-- documents
-- embeddings
-- settings
+- `agents`
+- `intake_items`
+- `candidate_tasks`
+- `tasks`
+- `workflow_runs`
+- `workflow_steps`
+- `approvals`
+- `artifacts`
+- `knowledge_items`
+- `documents`
+- `embeddings`
+- `settings`
 
-Core statuses:
+핵심 상태값:
 
-- draft
-- pending_approval
-- approved
-- rejected
-- archived
-- running
-- failed
+- `draft`
+- `pending_approval`
+- `approved`
+- `rejected`
+- `archived`
+- `running`
+- `failed`
 
-Mandatory separation:
+반드시 지킬 분리 원칙:
 
 ```text
-Raw input
-!= candidate task
-!= executable task
-!= AI artifact
-!= approved official knowledge
+원문 입력물
+!= 작업 후보
+!= 실행 작업
+!= AI 산출물
+!= 승인된 공식 지식
 ```
 
-## Architecture
+## 기술 아키텍처
 
 ```text
-Next.js frontend
--> FastAPI backend
--> LangGraph workflows
--> AI model gateway
+Next.js 프론트엔드
+-> FastAPI 백엔드
+-> LangGraph 워크플로우
+-> AI 모델 게이트웨이
 -> PostgreSQL + pgvector
--> optional Git/Markdown export
+-> 선택적 Git/Markdown 내보내기
 ```
 
-Ports:
+포트:
 
 ```text
 frontend: http://localhost:3005
@@ -232,34 +232,34 @@ backend:  http://localhost:8000
 postgres: localhost:5432
 ```
 
-Docker services:
+Docker 서비스:
 
-- frontend
-- backend
-- postgres-pgvector
+- `frontend`
+- `backend`
+- `postgres-pgvector`
 
-Neo4j is not in the first MVP. PostgreSQL metadata fields should preserve enough structure to migrate relationship data later if needed.
+Neo4j는 1차 MVP에 포함하지 않는다. 대신 PostgreSQL의 `metadata` 필드에 관계 분석으로 확장 가능한 구조를 남겨둔다.
 
-## Safety and Approval Rules
+## 안전 및 승인 규칙
 
-- Preserve raw inputs before AI processing.
-- Mark AI outputs as draft or candidate until reviewed.
-- Do not let counseling cases automatically update official CRATA knowledge.
-- Require approval for official knowledge, report phrases, reusable counseling rules, and learning candidates.
-- Avoid diagnostic, stigmatizing, deterministic, or shaming counseling language.
-- Keep all generated outputs traceable to task, workflow, agent, artifact, and approval records.
+- AI 처리 전에 원문을 보존한다.
+- AI 산출물은 검토 전까지 초안 또는 후보로 표시한다.
+- 상담 사례가 자동으로 공식 CRATA 지식을 바꾸지 않게 한다.
+- 공식 지식, 결과지 문구, 재사용 상담 원칙, 학습 후보는 승인 절차를 거친다.
+- 진단적, 낙인적, 단정적, 비난적으로 들리는 상담 표현을 피한다.
+- 모든 생성 결과는 작업, 워크플로우, 에이전트, 산출물, 승인 기록까지 추적 가능해야 한다.
 
-## Success Criteria
+## 성공 기준
 
-The MVP is successful when this works end to end:
+MVP는 아래 흐름이 끝까지 작동하면 성공이다.
 
 ```text
-Paste meeting notes or transcript
--> system extracts multiple candidate tasks
--> user selects one
--> LangGraph routes and runs the task
--> agents produce draft and review notes
--> approval inbox shows result
--> user approves or rejects
--> system saves history and artifact
+회의록이나 전사록 붙여넣기
+-> 시스템이 여러 작업 후보 추출
+-> 사용자가 하나 선택
+-> LangGraph가 작업을 라우팅하고 실행
+-> 에이전트가 초안과 검토 의견 생성
+-> 승인대기함에 결과 표시
+-> 사용자가 승인 또는 거부
+-> 시스템이 이력과 산출물 저장
 ```

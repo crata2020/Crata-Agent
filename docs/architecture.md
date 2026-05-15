@@ -1,17 +1,17 @@
-# CRATA AI Office Architecture
+# CRATA AI Office 기술 아키텍처
 
-## Stack
+## 기술 스택
 
 ```text
-Next.js frontend
--> FastAPI backend
--> LangGraph workflows
--> AI model gateway
+Next.js 프론트엔드
+-> FastAPI 백엔드
+-> LangGraph 워크플로우
+-> AI 모델 게이트웨이
 -> PostgreSQL + pgvector
--> optional Git/Markdown export
+-> 선택적 Git/Markdown 내보내기
 ```
 
-## Local Ports
+## 로컬 포트
 
 ```text
 frontend: http://localhost:3005
@@ -19,101 +19,101 @@ backend:  http://localhost:8000
 postgres: localhost:5432
 ```
 
-## Frontend
+## 프론트엔드
 
-Use Next.js for the local web app UI.
+로컬 웹앱 UI는 Next.js로 만든다.
 
-Responsibilities:
+담당 화면:
 
-- Dashboard
-- Request Intake
-- Workflow Timeline
-- Agents / Agent Workbench
-- Approval Inbox / Diff Viewer
-- Knowledge Center
-- Sessions / Artifacts
-- Sandbox
-- Settings
+- Dashboard.
+- Request Intake.
+- Workflow Timeline.
+- Agents / Agent Workbench.
+- Approval Inbox / Diff Viewer.
+- Knowledge Center.
+- Sessions / Artifacts.
+- Sandbox.
+- Settings.
 
-The frontend should communicate with the backend through HTTP APIs and use SSE or polling for workflow progress.
+프론트엔드는 HTTP API로 백엔드와 통신한다. 워크플로우 진행 상태는 SSE 또는 polling으로 표시한다.
 
-## Backend
+## 백엔드
 
-Use FastAPI for the AI and workflow backend.
+AI와 워크플로우 처리는 FastAPI가 담당한다.
 
-Responsibilities:
+담당 업무:
 
-- Persist raw intake items.
-- Run input decomposition.
-- Create candidate task cards.
-- Convert selected candidates into executable tasks.
-- Run LangGraph workflows.
-- Call the model gateway.
-- Save artifacts, workflow logs, and approval records.
-- Serve dashboard and settings data.
+- 원문 입력물 저장.
+- 입력물 분해 실행.
+- 작업 후보 카드 생성.
+- 선택된 후보를 실행 작업으로 전환.
+- LangGraph 워크플로우 실행.
+- 모델 게이트웨이 호출.
+- 산출물, 워크플로우 로그, 승인 기록 저장.
+- 대시보드와 설정 데이터 제공.
 
 ## LangGraph
 
-Use LangGraph to control workflow order and approval stops.
+LangGraph는 작업 순서와 승인 중단 지점을 통제한다.
 
-Initial workflows:
+초기 워크플로우:
 
 - 입력물 분해 그래프.
 - 에이전트 작업 실행 그래프.
 
-LangGraph should checkpoint workflow state so approval pauses and failures can be resumed or inspected.
+LangGraph는 워크플로우 상태를 체크포인트로 저장해야 한다. 그래야 승인대기 후 이어서 실행하거나, 실패한 실행을 점검할 수 있다.
 
-## AI Model Gateway
+## AI 모델 게이트웨이
 
-Default provider:
+기본 제공자:
 
 - OpenAI API.
 
-Future providers:
+향후 제공자:
 
 - Ollama.
 - LM Studio.
 
-Each agent should eventually be able to use a different model provider and model name.
+에이전트별로 서로 다른 모델 제공자와 모델명을 사용할 수 있게 설계한다.
 
-## Database
+## 데이터베이스
 
-Use PostgreSQL with pgvector.
+PostgreSQL과 pgvector를 사용한다.
 
-Responsibilities:
+담당 업무:
 
-- App data.
-- Workflow state.
-- Agent run logs.
-- Artifacts.
-- Approval records.
-- Semantic search embeddings.
+- 앱 운영 데이터.
+- 워크플로우 상태.
+- 에이전트 실행 로그.
+- 산출물.
+- 승인 기록.
+- 의미 검색 임베딩.
 
-## Git/Markdown Export
+## Git/Markdown 내보내기
 
-Use Git/Markdown for human-readable official knowledge and approved history exports.
+Git/Markdown은 사람이 읽을 수 있는 공식 지식과 승인된 변경 이력을 남기기 위해 사용한다.
 
-Initial export areas:
+초기 내보내기 대상:
 
-- approved official knowledge
-- approved report phrase changes
-- approval history
-- design and system documents
+- 승인된 공식 지식.
+- 승인된 결과지 문구 변경.
+- 승인 이력.
+- 디자인 및 시스템 문서.
 
-Do not export sensitive raw transcripts by default.
+민감한 원문 전사록은 기본적으로 내보내지 않는다.
 
 ## Docker
 
-Target final local startup:
+최종 로컬 실행 목표:
 
 ```text
 docker compose up
 ```
 
-Expected services:
+예상 서비스:
 
-- frontend
-- backend
-- postgres-pgvector
+- `frontend`
+- `backend`
+- `postgres-pgvector`
 
-Neo4j is intentionally excluded from the MVP. It can be added later if type-pair relationship analysis becomes a core product layer.
+Neo4j는 1차 MVP에서 제외한다. 유형 조합과 관계 패턴 분석이 핵심 상품층으로 커지면 나중에 추가할 수 있다.

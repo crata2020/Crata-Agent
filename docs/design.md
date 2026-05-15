@@ -1,119 +1,119 @@
-# CRATA AI Office Design
+# CRATA AI Office 디자인 문서
 
-## Product Direction
+## 제품 방향
 
-CRATA AI Office is a local web app for Cheongha's internal use. It is an operating center for managing CRATA AI agents, not a public customer-facing service in the first version.
+CRATA AI Office는 청하님 혼자 사용하는 로컬 웹앱이다. 1차 버전은 외부 고객용 서비스가 아니라, CRATA 에이전트를 관리하고 실행 결과를 검수하는 내부 운영센터다.
 
-The first product goal is to make this loop work:
+첫 번째 목표는 아래 흐름이 실제로 작동하게 만드는 것이다.
 
 ```text
-Meeting notes, counseling transcripts, memos, or direct requests
--> extract candidate tasks
--> choose what to run
--> route work to agents
--> review and approve outputs
--> save the result and history
+회의록, 상담 전사록, 메모, 직접 요청 입력
+-> 작업 후보 추출
+-> 실행할 작업 선택
+-> 에이전트에게 작업 배정
+-> 결과 검토 및 승인
+-> 결과물과 이력 저장
 ```
 
-## UX Direction
+## UX 방향
 
-The interface should feel like a professional AI office: practical dashboard first, visual agent presence second.
+화면은 전문적인 AI 사무실처럼 느껴져야 한다. 실무 대시보드가 중심이고, 에이전트가 직원처럼 일하는 느낌은 보조적으로 사용한다.
 
-Use a mixed style:
+권장 비율은 다음과 같다.
 
-- 70% operational dashboard: queues, approvals, logs, statuses, artifacts.
-- 30% AI office: agents shown as employees with states such as idle, working, reviewing, waiting for approval, and error.
+- 70% 운영 대시보드: 작업 큐, 승인대기, 실행 로그, 상태, 산출물.
+- 30% AI 사무실: 에이전트를 직원처럼 보여주고 대기, 작업중, 검수중, 승인대기, 오류 상태를 표현.
 
-The office metaphor should help the user understand who is working on what. It should not make CRATA feel like a game or reduce trust in counseling and assessment knowledge.
+사무실 은유는 “누가 어떤 일을 하고 있는지” 이해하기 쉽게 만들기 위한 장치다. 상담·검사 지식의 신뢰감을 떨어뜨릴 정도로 게임처럼 보여서는 안 된다.
 
-## Main Screens
+## 주요 화면
 
 ### Dashboard
 
-The first screen shows:
+첫 화면이다. 다음 정보를 보여준다.
 
-- AI Office status board.
-- Today's task queue.
-- Approval summary.
-- Recent artifacts.
-- System health.
+- AI Office 상태판.
+- 오늘의 작업 큐.
+- 승인 대기 요약.
+- 최근 산출물.
+- 시스템 상태.
 
 ### Request Intake
 
-The central input screen. It accepts:
+가장 중요한 입력 화면이다. 다음 입력을 받는다.
 
-- Direct requests.
-- Meeting notes.
-- Counseling transcripts.
-- Memos.
-- Uploaded files.
+- 직접 요청.
+- 회의록.
+- 상담 전사록.
+- 메모.
+- 업로드 파일.
 
-It preserves the original input, extracts multiple candidate tasks, and waits for Cheongha to choose which tasks to run.
+원문을 먼저 저장한 뒤, 여러 개의 작업 후보를 추출하고, 청하님이 실행할 작업을 선택할 때까지 기다린다.
 
 ### Workflow Timeline
 
-Shows where a selected task is in the process:
+선택된 작업이 현재 어느 단계에 있는지 보여준다.
 
 ```text
-CEO routing
--> context retrieval
--> specialist draft
--> concept and quality review
--> approval pending
--> saved
+CEO 라우팅
+-> 관련 지식 검색
+-> 담당 에이전트 초안 작성
+-> 개념 및 품질 검수
+-> 승인대기
+-> 저장
 ```
 
 ### Agents / Agent Workbench
 
-Shows active and planned agents, their roles, prompts, assigned model, recent work, memory, tools, and enabled state.
+활성 에이전트와 준비 중인 에이전트를 보여준다. 각 에이전트의 역할, 프롬프트, 배정 모델, 최근 작업, 메모리, 도구, 활성화 상태를 관리한다.
 
 ### Approval Inbox / Diff Viewer
 
-Shows pending approval items with clear before/after comparison, affected knowledge area, evidence, and approve/reject actions.
+승인 대기 항목을 보여준다. 수정 전/후 비교, 영향을 받는 지식 영역, 근거, 승인/거부 액션을 명확하게 제공한다.
 
 ### Knowledge Center
 
-Lets the user browse official CRATA knowledge, candidate knowledge, counseling cases, report phrases, and saved artifacts.
+공식 CRATA 지식, 후보 지식, 상담 사례, 결과지 문구, 저장된 산출물을 탐색하는 화면이다.
 
 ### Sessions / Artifacts
 
-Stores and displays LangGraph runs, agent outputs, reports, generated drafts, and execution logs.
+LangGraph 실행 기록, 에이전트 산출물, 보고서, 초안, 실행 로그를 저장하고 보여준다.
 
 ### Sandbox
 
-Allows testing an agent response without saving it as an official artifact or candidate knowledge.
+에이전트 답변을 공식 산출물이나 후보 지식으로 저장하지 않고 테스트하는 화면이다.
 
 ### Settings
 
-Manages OpenAI API, local model options, database status, Git/Markdown export paths, and default agent settings.
+OpenAI API, 로컬 모델 옵션, DB 상태, Git/Markdown 내보내기 경로, 기본 에이전트 설정을 관리한다.
 
-## Core Design Principles
+## 핵심 디자인 원칙
 
-- Preserve raw inputs before any AI processing.
-- Separate official knowledge from AI-extracted candidates.
-- Do not let counseling cases automatically become official CRATA knowledge.
-- Require approval before changing official knowledge, report phrases, or reusable counseling rules.
-- Make every output traceable to a task, agent, workflow run, and approval record.
-- Keep visual design professional, calm, and trustworthy.
-- Use the office metaphor only where it improves understanding of agent work.
+- AI 처리 전에 원문을 반드시 보존한다.
+- 공식 지식과 AI가 추출한 후보를 분리한다.
+- 상담 사례가 자동으로 공식 CRATA 지식이 되지 않게 한다.
+- 공식 지식, 결과지 문구, 재사용 상담 원칙을 바꾸기 전에는 반드시 승인 절차를 거친다.
+- 모든 결과물은 작업, 에이전트, 워크플로우 실행, 승인 기록까지 추적 가능해야 한다.
+- 시각 디자인은 전문적이고 차분하며 신뢰감이 있어야 한다.
+- 사무실 은유는 에이전트 업무 이해에 도움이 되는 범위에서만 사용한다.
 
-## Visual Style
+## 시각 스타일
 
-- Professional operations dashboard with a restrained AI office layer.
-- Clear status colors for idle, working, reviewing, approval pending, approved, rejected, and error.
-- No heavy game UI for core counseling or assessment screens.
-- Diff views and approval screens should prioritize readability over decoration.
-- Agent cards can be visually distinctive, but text and controls must remain clear and compact.
+- 전문 운영센터에 절제된 AI 사무실 레이어를 더한다.
+- 상태 색상은 대기, 작업중, 검수중, 승인대기, 승인됨, 거부됨, 오류를 명확히 구분한다.
+- 상담·검사 핵심 화면에는 과한 게임 UI를 쓰지 않는다.
+- 비교 화면과 승인 화면은 장식보다 가독성을 우선한다.
+- 에이전트 카드는 개성을 줄 수 있지만, 텍스트와 조작 요소는 명확하고 작게 유지한다.
 
-## Safety Rules
+## 안전 규칙
 
-- Counseling and assessment outputs must avoid diagnostic, stigmatizing, deterministic, or shaming language.
-- AI-generated claims must be marked as draft or candidate until reviewed.
-- Official CRATA knowledge updates must pass concept review and user approval.
-- User-provided transcripts and notes must remain traceable to raw input records.
-- Sensitive data should not be exported to Git/Markdown unless explicitly approved.
+- 상담·검사 결과물은 진단적, 낙인적, 단정적, 비난적으로 들리는 표현을 피한다.
+- AI 생성 내용은 검토 전까지 초안 또는 후보로 표시한다.
+- 공식 CRATA 지식 변경은 개념 검토와 사용자 승인을 통과해야 한다.
+- 사용자가 제공한 전사록과 메모는 원문 기록까지 추적 가능해야 한다.
+- 민감 정보는 명시적 승인 없이는 Git/Markdown으로 내보내지 않는다.
 
-## References
+## 참고 자료
 
 - Connect AI GitHub: https://github.com/wonseokjung/connect-ai
-- Reference video: https://www.youtube.com/watch?v=jpd7gYchCbQ
+- 참고 영상: https://www.youtube.com/watch?v=jpd7gYchCbQ

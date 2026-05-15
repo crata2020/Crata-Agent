@@ -1,12 +1,12 @@
-# CRATA LangGraph Workflows
+# CRATA LangGraph 워크플로우
 
-## Workflow 1: 입력물 분해 그래프
+## 워크플로우 1: 입력물 분해 그래프
 
-Purpose: turn long or mixed input into candidate task cards.
+목적: 길거나 여러 의도가 섞인 입력물을 작업 후보 카드로 나눈다.
 
-This workflow handles meeting notes, counseling transcripts, memos, pasted text, and uploaded files. It does not execute the extracted tasks. It only creates candidate tasks for Cheongha to review.
+이 워크플로우는 회의록, 상담 전사록, 메모, 붙여넣은 텍스트, 업로드 파일을 처리한다. 추출된 작업을 바로 실행하지 않는다. 청하님이 검토할 수 있는 작업 후보만 만든다.
 
-Steps:
+흐름:
 
 ```text
 입력물 받기
@@ -18,33 +18,39 @@ Steps:
 -> 청하님 선택 대기
 ```
 
-Candidate task types:
+작업 후보 유형:
 
-- report_phrase_revision
-- counseling_case_learning
-- official_knowledge_candidate
-- relationship_pattern_analysis
-- business_planning
-- content_marketing
-- operations_task
-- general_agent_task
+- `report_phrase_revision`: 결과지 문구 수정.
+- `counseling_case_learning`: 상담 사례 학습.
+- `official_knowledge_candidate`: 공식 지식 반영 후보.
+- `relationship_pattern_analysis`: 유형 조합·관계 패턴 분석.
+- `business_planning`: 사업·제안서·프로그램 기획.
+- `content_marketing`: 콘텐츠·홍보·유튜브 관련 작업.
+- `operations_task`: 운영·브리핑·자동화 작업.
+- `general_agent_task`: 일반 에이전트 작업.
 
-Candidate task actions:
+작업 후보 액션:
 
-- run
-- edit_then_run
-- hold
-- delete
-- split
-- merge
+- `run`: 실행.
+- `edit_then_run`: 수정 후 실행.
+- `hold`: 보류.
+- `delete`: 삭제.
+- `split`: 분할.
+- `merge`: 병합.
 
-Key rule: an input item is not a task. A candidate task is not an executed task. Only user-selected candidate tasks become executable tasks.
+핵심 규칙:
 
-## Workflow 2: 에이전트 작업 실행 그래프
+```text
+입력물은 작업이 아니다.
+작업 후보는 실행된 작업이 아니다.
+청하님이 선택한 작업 후보만 실행 작업이 된다.
+```
 
-Purpose: run one selected task through the CRATA agent team.
+## 워크플로우 2: 에이전트 작업 실행 그래프
 
-Steps:
+목적: 선택된 작업 하나를 CRATA 에이전트 팀이 처리하게 한다.
+
+흐름:
 
 ```text
 선택된 작업 받기
@@ -57,60 +63,60 @@ Steps:
 -> 결과물/로그 저장
 ```
 
-Default agent paths:
+기본 에이전트 경로:
 
 ```text
-Report phrase task
+결과지 문구 작업
 -> CRATA CEO
--> Concept Guardian
--> Report Editor
--> Quality Inspector
--> Approval Inbox
+-> 개념수호자
+-> 결과지 에디터
+-> 품질검수관
+-> 승인대기함
 
-Counseling transcript task
+상담 전사록 작업
 -> CRATA CEO
--> Case Learner
--> Relationship Analyst
--> Quality Inspector
--> Approval Inbox
+-> 사례학습가
+-> 관계분석가
+-> 품질검수관
+-> 승인대기함
 
-Counseling answer test
+상담 답변 테스트
 -> CRATA CEO
--> Concept Guardian
--> Counseling Coach
--> Quality Inspector
--> Artifact
+-> 개념수호자
+-> 상담 코치
+-> 품질검수관
+-> 산출물 저장
 
-Official knowledge update candidate
+공식 지식 반영 후보
 -> CRATA CEO
--> Concept Guardian
--> Quality Inspector
--> Approval Inbox
+-> 개념수호자
+-> 품질검수관
+-> 승인대기함
 ```
 
-## Approval Gate
+## 승인 게이트
 
-Tasks that affect official knowledge, report phrases, reusable counseling rules, or learning candidates must stop at approval.
+공식 지식, 결과지 문구, 재사용 상담 원칙, 학습 후보에 영향을 주는 작업은 반드시 승인 단계에서 멈춘다.
 
-Approval outcomes:
+승인 결과:
 
-- approved: save as approved artifact and optionally export to Git/Markdown.
-- rejected: save rejection reason and keep original draft for traceability.
-- revise_requested: return to the appropriate agent with review notes.
+- `approved`: 승인된 산출물로 저장하고 필요하면 Git/Markdown으로 내보낸다.
+- `rejected`: 거부 사유를 저장하고 원본 초안은 추적용으로 보존한다.
+- `revise_requested`: 검토 의견과 함께 적절한 에이전트에게 되돌린다.
 
-## Checkpointing
+## 체크포인트
 
-Each workflow run should persist:
+각 워크플로우 실행은 다음 정보를 저장해야 한다.
 
-- input item id
-- candidate task id or task id
-- current step
-- selected agents
-- prompt context references
-- model calls
-- generated output
-- review notes
-- approval state
-- artifact ids
+- 입력물 id.
+- 작업 후보 id 또는 실행 작업 id.
+- 현재 단계.
+- 선택된 에이전트.
+- 프롬프트 컨텍스트 참조.
+- 모델 호출 기록.
+- 생성 결과.
+- 검토 의견.
+- 승인 상태.
+- 산출물 id.
 
-This allows the workflow to resume after approval, inspect past decisions, and debug failed runs.
+이렇게 저장해야 승인 후 이어서 실행할 수 있고, 과거 결정을 점검하거나 실패한 실행을 디버깅할 수 있다.
