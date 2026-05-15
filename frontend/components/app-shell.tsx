@@ -27,7 +27,7 @@ const navItems = [
   { href: "/", label: "활동 로그", count: "", icon: Activity },
   { href: "/", label: "스케줄", count: "", icon: Clock3 },
   { href: "/", label: "비용", count: "", icon: DollarSign },
-  { href: "/", label: "메모리", count: "", icon: Brain },
+  { href: "/memory", label: "메모리", count: "", icon: Brain },
 ];
 
 interface AppShellProps {
