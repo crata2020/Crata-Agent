@@ -7,6 +7,12 @@ export type AgentOperatingGuide = {
 
 export const agentOperatingGuides: AgentOperatingGuide[] = [
   {
+    agentId: "crata_ceo",
+    title: "CRATA CEO 절차",
+    summary: "입력 안의 여러 요청을 작업 후보로 나누고, 담당 에이전트와 승인 게이트를 먼저 정합니다.",
+    steps: ["요청 단위 분리", "작업 유형 판단", "담당 에이전트 배정", "승인 필요 여부 결정"],
+  },
+  {
     agentId: "concept_guardian",
     title: "개념수호자 절차",
     summary: "공식 검사 지식과 상담 사례 관찰을 구분하고, 개념 충돌 여부를 먼저 확인합니다.",
@@ -53,5 +59,11 @@ export const agentOperatingGuides: AgentOperatingGuide[] = [
     title: "콘텐츠전략가 절차",
     summary: "채널, 타깃, 메시지, 전환 목표, 금지 표현을 먼저 확인합니다.",
     steps: ["채널 선택", "타깃 문제 정의", "핵심 메시지 설계", "CTA와 후속 콘텐츠 제안"],
+  },
+  {
+    agentId: "operations_secretary",
+    title: "운영비서 절차",
+    summary: "승인 대기, 데일리 브리핑, 작업 우선순위, 자동화 연결 상태를 정리합니다.",
+    steps: ["승인함 점검", "작업 우선순위 정리", "브리핑 문장 작성", "자동화 연결 후보 표시"],
   },
 ];
