@@ -58,6 +58,22 @@ describe("api client", () => {
     });
   });
 
+  it("requests dashboard summary without server-side caching", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ candidate_task_count: 3, pending_approval_count: 2 }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const { getDashboardSummary } = await import("@/lib/api");
+
+    await getDashboardSummary();
+
+    expect(fetchMock).toHaveBeenCalledWith("http://localhost:8000/dashboard/summary", {
+      cache: "no-store",
+    });
+  });
+
   it("runs a candidate task by candidate id", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

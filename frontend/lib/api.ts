@@ -1,4 +1,4 @@
-import type { Approval, IntakeResponse } from "@/lib/types";
+import type { Approval, DashboardSummary, IntakeResponse } from "@/lib/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
 
@@ -64,6 +64,10 @@ export function runCandidate(candidateId: string) {
 
 export function listApprovals() {
   return requestJson<Approval[]>("/approvals", { cache: "no-store" });
+}
+
+export function getDashboardSummary() {
+  return requestJson<DashboardSummary>("/dashboard/summary", { cache: "no-store" });
 }
 
 export function decideApproval(id: string, decision: ApprovalDecision, reason = "") {
