@@ -1,3 +1,5 @@
+import re
+
 from app.core.config import get_settings
 
 
@@ -192,4 +194,39 @@ class ModelGateway:
     def _reference_excerpt(self, context: str) -> str:
         compact = " ".join(context.split())
         excerpt = compact[:900]
-        return f"\n## 참조한 컨텍스트 요약\n{excerpt}"
+        blocks = []
+        context_questions = self._context_clarifying_questions(context)
+        if context_questions:
+            blocks.extend(
+                [
+                    "## 입력에서 넘어온 확인 질문",
+                    *[f"- {question}" for question in context_questions],
+                    "",
+                ]
+            )
+
+        blocks.extend(["## 참조한 컨텍스트 요약", excerpt])
+        return "\n" + "\n".join(blocks)
+
+    def _context_clarifying_questions(self, context: str) -> list[str]:
+        marker = "# 먼저 확인할 질문"
+        if marker not in context:
+            return []
+
+        question_block = context.split(marker, 1)[1]
+        next_heading_index = question_block.find("\n# ")
+        if next_heading_index >= 0:
+            question_block = question_block[:next_heading_index]
+
+        questions: list[str] = []
+        for line in question_block.splitlines():
+            question = line.strip()
+            if not question:
+                continue
+
+            question = re.sub(r"^[-*]\s+", "", question)
+            question = re.sub(r"^\d+[\.)]\s+", "", question)
+            if question:
+                questions.append(question)
+
+        return questions[:6]

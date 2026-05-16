@@ -47,3 +47,23 @@ def test_report_phrase_revision_fallback_uses_report_editor_structure() -> None:
     assert "낙인" in draft
     assert "개념수호자" in draft
     assert "품질검수관" in draft
+
+
+def test_fallback_draft_surfaces_candidate_clarifying_questions() -> None:
+    draft = ModelGateway().draft(
+        task_title="기관 프로그램 기획",
+        task_type="business_planning",
+        context=(
+            "# 사용자 작업\n"
+            "기관 프로그램 기획을 진행한다.\n\n"
+            "# 먼저 확인할 질문\n\n"
+            "1. 대상 기관 또는 고객은 누구인가?\n"
+            "2. 예산, 일정, 운영 형태의 제한은 무엇인가?\n\n"
+            "# CRATA 지식 컨텍스트\n"
+            "개인행동 동기검사 MASTER\n"
+        ),
+    )
+
+    assert "## 입력에서 넘어온 확인 질문" in draft
+    assert "대상 기관 또는 고객은 누구인가?" in draft
+    assert "예산, 일정, 운영 형태의 제한은 무엇인가?" in draft
