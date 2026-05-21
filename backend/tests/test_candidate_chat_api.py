@@ -215,7 +215,8 @@ def test_candidate_message_guard_uses_latest_planning_context(
 
     def vague_draft(self, *, task_title: str, task_type: str, context: str) -> str:
         assert "개인행동 동기검사" in context
-        assert "친구 행동 오해 카드" in context
+        assert "기획 변환 사고 절차" in context
+        assert "고정 목록에서 가져오지 말고" in context
         assert "1개 학급 25명 기준" in context
         return (
             "### CRATA 검사 기반 차별점\n"

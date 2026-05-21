@@ -89,6 +89,8 @@ def test_output_guard_passes_specific_personal_behavior_planning_draft() -> None
             "개인행동 동기검사의 동기위치는 진로 탐색 행동의 시작 조건을 다루고, "
             "동기성향은 진로 준비를 지속하게 하는 조건을 다룹니다. "
             "고유/현재 비교를 통해 본래 방식과 학교생활에서 쓰는 방식을 연결합니다. "
+            "세부 활동: 활동명 진로 행동 시작 조건 찾기, 목적은 진로 탐색을 실제로 시작하게 하는 조건을 찾는 것, "
+            "진행 방식은 관심 기반 조건과 현실 필요 조건을 비교하는 것, 검사 개념 연결은 동기위치, 산출물은 나의 진로 시작 조건 문장입니다. "
             "세부 운영표는 총 120분으로 구성하고, 예산안은 1개 학급 25명 기준으로 검사비와 강사비를 나누고 총액을 제안합니다. "
             "기대효과는 시작 조건 이해, 지속 조건 이해, 실행 전략 수립입니다."
         ),
@@ -98,7 +100,7 @@ def test_output_guard_passes_specific_personal_behavior_planning_draft() -> None
     assert result.issues == []
 
 
-def test_output_guard_rejects_vague_relationship_activity_and_budget() -> None:
+def test_output_guard_rejects_vague_timed_activity_and_budget() -> None:
     result = validate_output(
         task_type="planning",
         workflow_plan={
@@ -119,11 +121,10 @@ def test_output_guard_rejects_vague_relationship_activity_and_budget() -> None:
 
     assert result.passed is False
     assert any("세부 활동" in issue for issue in result.issues)
-    assert any("오해" in issue for issue in result.issues)
     assert any("총액" in issue for issue in result.issues)
 
 
-def test_output_guard_passes_structured_relationship_planning_draft() -> None:
+def test_output_guard_passes_structured_timed_planning_draft() -> None:
     result = validate_output(
         task_type="planning",
         workflow_plan={
@@ -136,11 +137,11 @@ def test_output_guard_passes_structured_relationship_planning_draft() -> None:
             },
         },
         draft=(
-            "개인행동 동기검사의 동기위치는 친구 행동의 시작 조건을 이해하게 하고, "
-            "동기성향은 친구가 오래 지속하는 조건을 이해하게 합니다. 고유/현재 비교도 포함합니다. "
-            "세부 활동: 활동명 친구 행동 오해 카드 바꾸기, 목적은 행동을 태도 문제가 아니라 조건 차이로 이해하는 것, "
-            "진행 방식은 오해 문장을 무엇이 있어야 시작할까/무엇이 있어야 지속될까 문장으로 바꾸는 것, "
-            "검사 개념 연결은 동기위치와 동기성향, 산출물은 우리 반 행동 이해 카드입니다. "
+            "개인행동 동기검사의 동기위치는 사용자가 제시한 행동의 시작 조건을 이해하게 하고, "
+            "동기성향은 해당 행동을 오래 지속하는 조건을 이해하게 합니다. 고유/현재 비교도 포함합니다. "
+            "세부 활동: 활동명 요청 장면 행동 조건 변환, 목적은 대상과 주제에 맞는 행동을 조건 차이로 이해하는 것, "
+            "진행 방식은 현재 요청의 문제 장면을 시작 조건과 지속 조건 질문으로 바꾸는 것, "
+            "검사 개념 연결은 동기위치와 동기성향, 산출물은 행동 조건 이해 카드입니다. "
             "예산안은 1개 학급 25명 기준이며 검사비 250,000원, 강사비 300,000원, 자료 제작비 75,000원, 운영비 100,000원, 총액 725,000원입니다. "
             "총 180분 운영표로 구성합니다."
         ),

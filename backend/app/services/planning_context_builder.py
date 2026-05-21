@@ -122,23 +122,19 @@ def _render_context(
         ]
     )
     blocks.extend(f"- {focus}" for focus in topic_rule.get("program_focus", []))
-    if topic_rule.get("concept_reframes"):
-        blocks.extend(["", "concept_reframes:"])
-        blocks.extend(f"- {value}" for value in topic_rule.get("concept_reframes", []))
-    if topic_rule.get("example_modules"):
-        blocks.extend(["", "example_modules:"])
-        blocks.extend(f"- {value}" for value in topic_rule.get("example_modules", []))
-    if topic_rule.get("differentiation"):
-        differentiation = topic_rule["differentiation"]
-        blocks.extend(
-            [
-                "",
-                "## 차별점 비교 기준",
-                "",
-                f"- 일반 프로그램: {differentiation.get('general_program', '')}",
-                f"- CRATA 개인행동 동기검사 기반 프로그램: {differentiation.get('crata_program', '')}",
-            ]
-        )
+    blocks.extend(
+        [
+            "",
+            "## 기획 변환 사고 절차",
+            "",
+            "- 사용자 요청에서 해결하려는 장면, 대상, 목적을 먼저 뽑는다.",
+            "- 그 장면에서 '무엇을 시작해야 하는가'와 '무엇을 지속해야 하는가'를 도출한다.",
+            "- 시작해야 하는 행동은 동기위치와 연결하고, 지속해야 하는 행동은 동기성향과 연결한다.",
+            "- 고유/현재는 본래 자연스럽게 오래 가는 방식과 현재 환경에서 적응하며 쓰는 방식의 연결 또는 차이를 설명하는 데 사용한다.",
+            "- 세부 활동명과 활동 예시는 고정 목록에서 가져오지 말고 사용자 요청의 대상/주제/목적에 맞게 새로 설계한다.",
+            "- 차별점 질문을 받으면 일반 프로그램의 통상 접근과 CRATA 개인행동 동기검사의 작동 원리를 비교하되, 비교 문장은 요청 맥락에 맞게 직접 구성한다.",
+        ]
+    )
 
     blocks.extend(["", "## 운영 조건", ""])
     if constraints.get("duration_minutes"):
@@ -163,7 +159,7 @@ def _render_context(
             "- 개인행동 동기검사의 차별점은 행동 시작 조건, 행동 지속 조건, 고유/현재 비교에서 나온다.",
             "- 기획안의 세부 활동과 기대효과는 동기위치, 동기성향, 고유/현재 중 최소 두 가지와 연결한다.",
             "- 세부 활동은 활동명, 목적, 진행 방식, 검사 개념 연결, 산출물을 포함해 작성한다.",
-            "- 차별점 질문을 받으면 일반 프로그램과 CRATA 개인행동 동기검사 기반 프로그램을 비교해 설명한다.",
+            "- 차별점 질문을 받으면 일반 프로그램과 CRATA 개인행동 동기검사 기반 프로그램을 비교하되, 고정 사례가 아니라 현재 요청 맥락에서 차이를 도출한다.",
         ]
     )
     if topic == "career":

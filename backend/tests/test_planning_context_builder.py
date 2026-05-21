@@ -72,11 +72,11 @@ def test_personal_behavior_middle_school_relationship_context_converts_concepts_
     assert context.topic == "relationship"
     assert context.constraints["duration_minutes"] == 180
     assert context.constraints["budget_requested"] is True
-    assert "친구 행동 오해 카드" in context.text
-    assert "무엇이 있어야 시작할까" in context.text
-    assert "무엇이 있어야 지속될까" in context.text
-    assert "일반 프로그램" in context.text
-    assert "CRATA 개인행동 동기검사 기반 프로그램" in context.text
+    assert "기획 변환 사고 절차" in context.text
+    assert "무엇을 시작해야 하는가" in context.text
+    assert "무엇을 지속해야 하는가" in context.text
+    assert "고정 목록에서 가져오지 말고" in context.text
+    assert "현재 요청 맥락에서 차이를 도출" in context.text
     assert "활동명" in context.text
     assert "검사 개념 연결" in context.text
     assert "1개 학급 25명 기준" in context.text

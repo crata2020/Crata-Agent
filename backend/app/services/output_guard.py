@@ -91,12 +91,10 @@ def _personal_behavior_planning_issues(*, draft: str, workflow_plan: dict[str, A
         if "지속" not in normalized:
             issues.append("진로 기획안인데 진로 탐색의 지속 조건이 드러나지 않았습니다.")
 
-    if workflow_plan.get("planning_topic") == "relationship":
+    if constraints.get("duration_minutes"):
         required_activity_terms = ("활동명", "목적", "진행 방식", "검사 개념 연결", "산출물")
         if not all(term in normalized for term in required_activity_terms):
             issues.append("세부 활동은 활동명, 목적, 진행 방식, 검사 개념 연결, 산출물을 포함해야 합니다.")
-        if "오해" not in normalized:
-            issues.append("관계/상호이해 기획안인데 친구 행동 오해를 조건 이해로 바꾸는 활동이 드러나지 않았습니다.")
 
     duration_minutes = constraints.get("duration_minutes")
     if duration_minutes:
