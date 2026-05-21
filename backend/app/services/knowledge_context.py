@@ -7,6 +7,7 @@ from app.services.exam_knowledge_router import (
     select_official_references,
 )
 from app.services.knowledge_scope_planner import KnowledgeScopePlan, plan_knowledge_scope
+from app.services.planning_context_builder import PlanningContext, build_planning_context
 from app.services.task_playbooks import TaskPlaybook, load_task_playbook
 
 AGENT_GUIDE_REFERENCE = "knowledge/agent-guides/agent-operating-guides.md"
@@ -54,6 +55,7 @@ class KnowledgeContext:
     workflow_plan: dict = field(default_factory=dict)
     playbook: TaskPlaybook | None = None
     application_map: ApplicationMap | None = None
+    planning_context: PlanningContext | None = None
     needs_clarification: bool = False
     clarifying_questions: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
@@ -67,12 +69,26 @@ def load_task_knowledge_context(
 ) -> KnowledgeContext:
     assigned_agent_list = [agent for agent in assigned_agents if agent]
     knowledge_scope = plan_knowledge_scope(task_type=task_type, query=query)
-    workflow_plan = knowledge_scope.workflow_plan
+    workflow_plan = dict(knowledge_scope.workflow_plan)
     playbook = load_task_playbook(workflow_plan.get("playbook"))
     application_map = load_application_map(
         exam=knowledge_scope.exam,
         output_type=knowledge_scope.output_type,
     )
+    planning_context = None
+    if knowledge_scope.task_type == "planning":
+        planning_context = build_planning_context(
+            exam=knowledge_scope.exam,
+            audience=knowledge_scope.audience,
+            output_type=knowledge_scope.output_type,
+            query=query,
+        )
+        workflow_plan["exam"] = knowledge_scope.exam
+        workflow_plan["output_type"] = knowledge_scope.output_type
+        workflow_plan["audience"] = planning_context.audience if planning_context else knowledge_scope.audience
+        if planning_context:
+            workflow_plan["planning_topic"] = planning_context.topic
+            workflow_plan["planning_constraints"] = planning_context.constraints
     official_references = _select_official_references(
         task_type=task_type,
         assigned_agents=assigned_agent_list,
@@ -106,8 +122,10 @@ def load_task_knowledge_context(
             task_type=task_type,
             assigned_agents=assigned_agent_list,
             knowledge_scope=knowledge_scope,
+            workflow_plan=workflow_plan,
             playbook=playbook,
             application_map=application_map,
+            planning_context=planning_context,
             references=references,
             evidence_bundle=evidence_bundle,
             needs_clarification=needs_clarification,
@@ -120,6 +138,7 @@ def load_task_knowledge_context(
         workflow_plan=workflow_plan,
         playbook=playbook,
         application_map=application_map,
+        planning_context=planning_context,
         needs_clarification=needs_clarification,
         clarifying_questions=clarifying_questions,
         warnings=warnings,
@@ -162,8 +181,10 @@ def _build_context_text(
     task_type: str,
     assigned_agents: list[str],
     knowledge_scope: KnowledgeScopePlan,
+    workflow_plan: dict,
     playbook: TaskPlaybook | None,
     application_map: ApplicationMap | None,
+    planning_context: PlanningContext | None,
     references: list[str],
     evidence_bundle: list[EvidenceChunk],
     needs_clarification: bool,
@@ -180,7 +201,6 @@ def _build_context_text(
         "",
     ]
 
-    workflow_plan = knowledge_scope.workflow_plan
     action_policy = workflow_plan.get("action_policy", {})
     if workflow_plan:
         blocks.extend(
@@ -244,6 +264,9 @@ def _build_context_text(
             blocks.extend(["## 적용 규칙", ""])
             blocks.extend(f"- {rule}" for rule in application_map.rules)
             blocks.append("")
+
+    if planning_context:
+        blocks.extend([planning_context.text, ""])
 
     if references:
         blocks.extend(["# 선택된 공식 지식", ""])

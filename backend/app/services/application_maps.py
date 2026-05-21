@@ -25,6 +25,15 @@ class ApplicationMap:
 
 
 def load_application_map(*, exam: str | None, output_type: str | None) -> ApplicationMap | None:
+    if exam == "personal_behavior_motivation" and output_type in {
+        "proposal",
+        "school_program",
+        "public_proposal",
+        "b2b_proposal",
+        "workshop",
+        "curriculum",
+    }:
+        return _load_application_map_file("personal_behavior_value_map")
     if exam == "group_behavior" and output_type == "school_program":
         return _load_application_map_file("group_behavior_school_program")
     return None

@@ -18,3 +18,19 @@ def test_load_group_behavior_school_program_application_map() -> None:
 def test_load_application_map_returns_none_for_unmapped_scope() -> None:
     assert load_application_map(exam="group_behavior", output_type="b2b_proposal") is None
     assert load_application_map(exam=None, output_type="school_program") is None
+
+
+def test_load_personal_behavior_value_map_for_planning_outputs() -> None:
+    application_map = load_application_map(
+        exam="personal_behavior_motivation",
+        output_type="school_program",
+    )
+
+    assert application_map is not None
+    assert application_map.id == "personal_behavior_value_map"
+    assert application_map.application == "general_planning"
+    assert any(
+        value.based_on == "personal_behavior_motivation.motivation_position.definition"
+        for value in application_map.value_propositions
+    )
+    assert any("활동 구조로 변환" in rule for rule in application_map.rules)

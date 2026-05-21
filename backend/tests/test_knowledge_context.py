@@ -101,3 +101,25 @@ def test_unclear_query_does_not_fall_back_to_all_official_masters() -> None:
     assert ORGANIZATION_MASTER not in context.references
     for reference in (PERSONAL_MASTER, GROUP_MASTER, ORGANIZATION_MASTER):
         assert _knowledge_text(reference) not in context.text
+
+
+def test_personal_behavior_planning_context_includes_composable_planning_context() -> None:
+    context = load_task_knowledge_context(
+        task_type="business_planning",
+        assigned_agents=["business_designer"],
+        query="개인행동검사를 기반으로 고등학교 학생들 진로 프로그램 기획안 만들어줘. 2시간 정도고 예산도 제안해줘.",
+    )
+
+    assert "# 기획 변환 컨텍스트" in context.text
+    assert "personal_behavior_value_map" in context.text
+    assert "동기위치" in context.text
+    assert "동기성향" in context.text
+    assert "고유/현재" in context.text
+    assert "진로 탐색 행동" in context.text
+    assert "120분" in context.text
+    assert "예산안" in context.text
+    assert context.workflow_plan["exam"] == "personal_behavior_motivation"
+    assert context.workflow_plan["planning_topic"] == "career"
+    assert context.workflow_plan["planning_constraints"]["duration_minutes"] == 120
+    assert context.workflow_plan["planning_constraints"]["budget_requested"] is True
+    assert "personal_behavior_motivation.motivation_position.definition" in context.evidence_keys

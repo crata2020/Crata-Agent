@@ -1,0 +1,39 @@
+{
+  "id": "personal_behavior_value_map",
+  "name": "개인행동 동기검사 핵심 메리트 지도",
+  "exam": "personal_behavior_motivation",
+  "application": "general_planning",
+  "audience": null,
+  "value_propositions": [
+    {
+      "title": "행동 시작 조건",
+      "based_on": "personal_behavior_motivation.motivation_position.definition",
+      "program_use": "대상자가 특정 행동을 어떤 조건에서 시작하는지 찾는 데 사용한다.",
+      "module": "시작 조건 찾기"
+    },
+    {
+      "title": "행동 지속 조건",
+      "based_on": "personal_behavior_motivation.motivation_tendency.definition",
+      "program_use": "대상자가 활동을 오래 지속할 수 있는 조건을 찾는 데 사용한다.",
+      "module": "지속 조건 찾기"
+    },
+    {
+      "title": "고유/현재 연결",
+      "based_on": "personal_behavior_motivation.genuine_current.definition",
+      "program_use": "본래 자연스럽게 오래 가는 방식과 현재 환경에서 실제로 사용하는 방식을 비교하는 데 사용한다.",
+      "module": "고유/현재 비교"
+    },
+    {
+      "title": "개인별 실행 전략",
+      "based_on": "personal_behavior_motivation.genuine_10_combinations",
+      "program_use": "동기위치와 동기성향 조합을 바탕으로 개인별 실행 전략을 다르게 설계하는 데 사용한다.",
+      "module": "개인별 실행 카드"
+    }
+  ],
+  "rules": [
+    "검사 특징을 그대로 설명하는 데 그치지 말고 대상과 주제에 맞는 활동 구조로 변환한다.",
+    "개인행동 동기검사는 단순 성향 검사나 강점/약점 검사가 아니라 행동의 시작 조건과 지속 조건을 보는 검사로 설명한다.",
+    "기획안에서는 동기위치, 동기성향, 고유/현재 중 최소 두 가지 이상이 프로그램 구조에 반영되어야 한다.",
+    "유형을 단정하거나 낙인찍지 않고, 개인별 실행 전략을 세우는 언어로 전환한다."
+  ]
+}

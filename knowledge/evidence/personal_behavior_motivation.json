@@ -1,0 +1,57 @@
+{
+  "personal_behavior_motivation.definition": {
+    "text": "개인행동 동기검사는 행동이 어디서 시작되고, 무엇이 그 사람을 오래 가게 하는지를 함께 보는 검사입니다.",
+    "source": "knowledge/core/personal_behavior_motivation.md",
+    "heading": "검사 정의"
+  },
+  "personal_behavior_motivation.motivation_position.definition": {
+    "text": "동기위치는 행동이 어디서 시작되는가를 보는 축입니다. 기획에서는 대상자가 특정 행동을 시작하게 만드는 조건을 찾는 데 사용합니다.",
+    "source": "knowledge/core/personal_behavior_motivation.md",
+    "heading": "동기위치"
+  },
+  "personal_behavior_motivation.motivation_tendency.definition": {
+    "text": "동기성향은 개인의 행동을 지속하게 만드는 에너지의 방향입니다. 기획에서는 활동을 오래 유지하게 하는 조건을 찾는 데 사용합니다.",
+    "source": "knowledge/core/personal_behavior_motivation.md",
+    "heading": "동기성향"
+  },
+  "personal_behavior_motivation.genuine_current.definition": {
+    "text": "고유는 본래 자연스럽게 오래 가는 방식이고, 현재는 현재 환경에서 실제로 사용하는 사회화된 방식입니다. 고유/현재의 연결이나 차이는 자기이해와 실행 전략을 설계하는 데 중요합니다.",
+    "source": "knowledge/core/personal_behavior_motivation.md",
+    "heading": "고유 / 현재"
+  },
+  "personal_behavior_motivation.position.internal.definition": {
+    "text": "내적자극형은 마음이 끌리고 하고 싶은 감각이 생길 때 행동이 시작되는 유형입니다.",
+    "source": "knowledge/core/personal_behavior_motivation.md",
+    "heading": "내적자극형"
+  },
+  "personal_behavior_motivation.position.external.definition": {
+    "text": "외적자극형은 현재 환경에서 필요하고 먼저 해야 하는 것이 분명할 때 행동이 시작되는 유형입니다.",
+    "source": "knowledge/core/personal_behavior_motivation.md",
+    "heading": "외적자극형"
+  },
+  "personal_behavior_motivation.tendency.growth.definition": {
+    "text": "성장형은 배울 것이 있고 이해가 확장되며 자기 성장이 느껴질 때 오래 지속되는 유형입니다.",
+    "source": "knowledge/core/personal_behavior_motivation.md",
+    "heading": "성장형"
+  },
+  "personal_behavior_motivation.tendency.diffusion.definition": {
+    "text": "발산형은 재미, 새로움, 표현, 영향력, 따르는 사람들의 반응이 있을 때 오래 지속되는 유형입니다.",
+    "source": "knowledge/core/personal_behavior_motivation.md",
+    "heading": "발산형"
+  },
+  "personal_behavior_motivation.tendency.balance.definition": {
+    "text": "균형형은 사람, 일, 자기 자신이 한쪽으로 치우치지 않고 서로 윈윈하는 구조에서 오래 지속되는 유형입니다.",
+    "source": "knowledge/core/personal_behavior_motivation.md",
+    "heading": "균형형"
+  },
+  "personal_behavior_motivation.tendency.harvest.definition": {
+    "text": "수확형은 답과 결과가 분명하고 문제 해결 후 얻을 수 있는 것이 보일 때 오래 지속되는 유형입니다.",
+    "source": "knowledge/core/personal_behavior_motivation.md",
+    "heading": "수확형"
+  },
+  "personal_behavior_motivation.tendency.accumulation.definition": {
+    "text": "축적형은 정보가 쌓이고 이해가 생기며 전략과 전술을 세워 실패를 줄이고 예측 가능한 결과를 만들 수 있을 때 오래 지속되는 유형입니다.",
+    "source": "knowledge/core/personal_behavior_motivation.md",
+    "heading": "축적형"
+  }
+}

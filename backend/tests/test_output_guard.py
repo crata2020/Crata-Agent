@@ -49,3 +49,50 @@ def test_output_guard_passes_clean_planning_draft() -> None:
     assert result.passed is True
     assert result.issues == []
     assert result.rewrite_required is False
+
+
+def test_output_guard_rejects_generic_personal_behavior_planning_draft() -> None:
+    result = validate_output(
+        task_type="planning",
+        workflow_plan={
+            "task_type": "planning",
+            "exam": "personal_behavior_motivation",
+            "planning_topic": "career",
+            "planning_constraints": {
+                "duration_minutes": 120,
+                "budget_requested": True,
+            },
+        },
+        draft="고등학생의 자기 이해와 진로 탐색을 돕는 일반적인 프로그램입니다. 강점과 약점을 파악합니다.",
+    )
+
+    assert result.passed is False
+    assert result.rewrite_required is True
+    assert any("동기위치" in issue for issue in result.issues)
+    assert any("동기성향" in issue for issue in result.issues)
+    assert any("예산" in issue for issue in result.issues)
+
+
+def test_output_guard_passes_specific_personal_behavior_planning_draft() -> None:
+    result = validate_output(
+        task_type="planning",
+        workflow_plan={
+            "task_type": "planning",
+            "exam": "personal_behavior_motivation",
+            "planning_topic": "career",
+            "planning_constraints": {
+                "duration_minutes": 120,
+                "budget_requested": True,
+            },
+        },
+        draft=(
+            "개인행동 동기검사의 동기위치는 진로 탐색 행동의 시작 조건을 다루고, "
+            "동기성향은 진로 준비를 지속하게 하는 조건을 다룹니다. "
+            "고유/현재 비교를 통해 본래 방식과 학교생활에서 쓰는 방식을 연결합니다. "
+            "세부 운영표는 총 120분으로 구성하고, 예산안은 검사비와 강사비를 나누어 제안합니다. "
+            "기대효과는 시작 조건 이해, 지속 조건 이해, 실행 전략 수립입니다."
+        ),
+    )
+
+    assert result.passed is True
+    assert result.issues == []

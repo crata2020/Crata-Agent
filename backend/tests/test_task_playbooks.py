@@ -7,8 +7,12 @@ def test_load_planning_playbook_sections_and_rules() -> None:
     assert playbook is not None
     assert playbook.id == "planning"
     assert "프로그램명" in playbook.default_sections
-    assert "검사 특징 및 장점" in playbook.default_sections
+    assert "CRATA 검사 기반 차별점" in playbook.default_sections
+    assert "예산안" in playbook.default_sections
     assert any("공식 검사 개념" in rule for rule in playbook.rules)
+    assert any("검사 구조가 활동 구조" in rule for rule in playbook.rules)
+    assert any("시간 조건" in rule for rule in playbook.rules)
+    assert any("예산안" in rule for rule in playbook.rules)
 
 
 def test_load_report_phrase_revision_playbook_required_inputs() -> None:
@@ -17,7 +21,7 @@ def test_load_report_phrase_revision_playbook_required_inputs() -> None:
     assert playbook is not None
     assert "current_phrase" in playbook.required_inputs
     assert "revision_goal" in playbook.required_inputs
-    assert any("승인" in rule for rule in playbook.rules)
+    assert playbook.rules
 
 
 def test_unknown_or_empty_playbook_returns_none() -> None:

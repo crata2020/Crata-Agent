@@ -62,6 +62,45 @@ GROUP_BEHAVIOR_SCOPE_EVIDENCE = {
     "type_candidates": [],
 }
 
+PERSONAL_BEHAVIOR_SCOPE_EVIDENCE = {
+    "exam_definition": ["personal_behavior_motivation.definition"],
+    "exam_purpose": [
+        "personal_behavior_motivation.motivation_position.definition",
+        "personal_behavior_motivation.motivation_tendency.definition",
+    ],
+    "axes_summary": [
+        "personal_behavior_motivation.motivation_position.definition",
+        "personal_behavior_motivation.motivation_tendency.definition",
+        "personal_behavior_motivation.genuine_current.definition",
+    ],
+    "strengths": [
+        "personal_behavior_motivation.motivation_position.definition",
+        "personal_behavior_motivation.motivation_tendency.definition",
+        "personal_behavior_motivation.genuine_current.definition",
+    ],
+    "application_points": [
+        "personal_behavior_motivation.motivation_position.definition",
+        "personal_behavior_motivation.motivation_tendency.definition",
+        "personal_behavior_motivation.genuine_current.definition",
+        "personal_behavior_motivation.position.internal.definition",
+        "personal_behavior_motivation.position.external.definition",
+        "personal_behavior_motivation.tendency.growth.definition",
+        "personal_behavior_motivation.tendency.diffusion.definition",
+        "personal_behavior_motivation.tendency.balance.definition",
+        "personal_behavior_motivation.tendency.harvest.definition",
+        "personal_behavior_motivation.tendency.accumulation.definition",
+    ],
+    "cautions": ["personal_behavior_motivation.genuine_current.definition"],
+    "official_definition": ["personal_behavior_motivation.definition"],
+    "current_definition": ["personal_behavior_motivation.definition"],
+    "related_evidence": [
+        "personal_behavior_motivation.motivation_position.definition",
+        "personal_behavior_motivation.motivation_tendency.definition",
+    ],
+    "definition": ["personal_behavior_motivation.definition"],
+    "difference": ["personal_behavior_motivation.genuine_current.definition"],
+}
+
 
 @dataclass(frozen=True)
 class KnowledgeScopePlan:
@@ -90,8 +129,7 @@ def plan_knowledge_scope(*, task_type: str, query: str = "") -> KnowledgeScopePl
     scope = list(workflow_plan.get("knowledge_scope", []))
 
     evidence_keys: list[str] = []
-    if exam == "group_behavior":
-        evidence_keys.extend(_scope_evidence_keys(scope))
+    evidence_keys.extend(_scope_evidence_keys(exam=exam, scope=scope))
 
     if workflow_plan.get("requires_type_hypothesis") or concept_result.type_candidates:
         evidence_keys.extend(concept_result.evidence_keys)
@@ -121,11 +159,20 @@ def plan_knowledge_scope(*, task_type: str, query: str = "") -> KnowledgeScopePl
     )
 
 
-def _scope_evidence_keys(scope: list[str]) -> list[str]:
+def _scope_evidence_keys(*, exam: str | None, scope: list[str]) -> list[str]:
+    scope_map = _scope_map_for_exam(exam)
     evidence_keys: list[str] = []
     for scope_item in scope:
-        evidence_keys.extend(GROUP_BEHAVIOR_SCOPE_EVIDENCE.get(scope_item, []))
+        evidence_keys.extend(scope_map.get(scope_item, []))
     return evidence_keys
+
+
+def _scope_map_for_exam(exam: str | None) -> dict[str, list[str]]:
+    if exam == "group_behavior":
+        return GROUP_BEHAVIOR_SCOPE_EVIDENCE
+    if exam == "personal_behavior_motivation":
+        return PERSONAL_BEHAVIOR_SCOPE_EVIDENCE
+    return {}
 
 
 def _dedupe(values: list[str]) -> list[str]:

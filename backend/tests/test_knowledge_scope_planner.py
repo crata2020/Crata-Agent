@@ -48,3 +48,28 @@ def test_unclear_scope_does_not_select_all_masters() -> None:
     assert result.reference is None
     assert result.evidence_keys == []
     assert result.needs_clarification is True
+
+
+def test_personal_behavior_planning_scope_includes_exam_value_evidence() -> None:
+    result = plan_knowledge_scope(
+        task_type="business_planning",
+        query="개인행동검사를 기반으로 고등학교 학생들 진로 프로그램 기획안 만들어줘.",
+    )
+
+    expected_keys = {
+        "personal_behavior_motivation.definition",
+        "personal_behavior_motivation.motivation_position.definition",
+        "personal_behavior_motivation.motivation_tendency.definition",
+        "personal_behavior_motivation.genuine_current.definition",
+        "personal_behavior_motivation.position.internal.definition",
+        "personal_behavior_motivation.position.external.definition",
+        "personal_behavior_motivation.tendency.growth.definition",
+        "personal_behavior_motivation.tendency.diffusion.definition",
+        "personal_behavior_motivation.tendency.balance.definition",
+        "personal_behavior_motivation.tendency.harvest.definition",
+        "personal_behavior_motivation.tendency.accumulation.definition",
+    }
+
+    assert result.task_type == "planning"
+    assert result.exam == "personal_behavior_motivation"
+    assert expected_keys.issubset(set(result.evidence_keys))

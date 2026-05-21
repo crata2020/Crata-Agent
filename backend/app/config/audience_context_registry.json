@@ -1,0 +1,56 @@
+{
+  "school_students": {
+    "name": "학교 학생",
+    "common_contexts": ["진로", "학업", "자기이해", "학교생활", "생활습관"],
+    "default_focus": "학교생활 안에서 자기 이해와 실행 가능한 행동 전략을 돕는 방향",
+    "language_level": "학생이 이해할 수 있는 쉽고 구체적인 표현"
+  },
+  "middle_school_students": {
+    "name": "중학생",
+    "common_contexts": ["학습 습관", "공부 시작", "자기이해", "학교생활"],
+    "default_focus": "공부를 시작하고 학습 습관을 형성하는 방향",
+    "language_level": "중학생이 이해할 수 있는 짧고 쉬운 표현"
+  },
+  "high_school_students": {
+    "name": "고등학생",
+    "common_contexts": ["진로", "학업", "자기이해", "입시", "생활습관"],
+    "default_focus": "진로와 학업 사이에서 자기 이해를 실제 행동 전략으로 연결하는 방향",
+    "language_level": "고등학생이 이해할 수 있는 구체적이고 부담 없는 표현"
+  },
+  "university_students": {
+    "name": "대학생",
+    "common_contexts": ["전공", "진로", "취업", "자기이해", "생활 루틴"],
+    "default_focus": "전공과 진로 선택을 실제 탐색 행동으로 연결하는 방향",
+    "language_level": "성인 초입의 자기결정 언어"
+  },
+  "adults": {
+    "name": "성인",
+    "common_contexts": ["자기이해", "업무", "관계", "생활 루틴", "소진 예방"],
+    "default_focus": "현재 생활과 본래 동기 구조의 연결을 이해하는 방향",
+    "language_level": "성인이 자기 점검에 사용할 수 있는 실용적인 표현"
+  },
+  "employees": {
+    "name": "직장인",
+    "common_contexts": ["업무 몰입", "성과", "역할 적응", "소진 예방", "협업"],
+    "default_focus": "업무 착수와 몰입 지속 조건을 역할과 조직 환경에 연결하는 방향",
+    "language_level": "업무 현장에서 바로 적용 가능한 표현"
+  },
+  "company": {
+    "name": "기업",
+    "common_contexts": ["직무 적합성", "조직 적합성", "성과", "팀워크", "리더십"],
+    "default_focus": "개인 특성을 직무, 팀, 조직 운영 조건과 연결하는 방향",
+    "language_level": "B2B 제안서에 맞는 실무적 표현"
+  },
+  "public_institution": {
+    "name": "공공기관",
+    "common_contexts": ["교육", "진로", "청년 지원", "조직 역량", "정책 사업"],
+    "default_focus": "공공성과 운영 가능성을 함께 보여주는 방향",
+    "language_level": "기관 제안서에 맞는 객관적 표현"
+  },
+  "participants": {
+    "name": "참여자",
+    "common_contexts": ["자기이해", "관계", "업무", "학습", "성장"],
+    "default_focus": "참여자가 자신의 행동 전략을 이해하고 실행으로 옮기는 방향",
+    "language_level": "폭넓은 대상에게 적용 가능한 쉬운 표현"
+  }
+}
