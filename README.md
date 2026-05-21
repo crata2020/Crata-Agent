@@ -1,6 +1,6 @@
 # CRATA AI Office
 
-청하님 혼자 사용하는 로컬 CRATA 에이전트 내부 운영센터입니다. 입력물을 작업 후보로 분해하고, 선택한 후보를 실행한 뒤 승인대기함에서 승인/거절하는 1차 MVP입니다.
+청하님 혼자 사용하는 로컬 CRATA 에이전트 내부 운영센터입니다. 입력물을 작업 후보로 분해하고, 선택한 후보를 실행한 뒤 승인대기함에서 승인/수정요청/거절하는 1차 MVP입니다.
 
 자세한 실행과 수동 검증 절차는 [docs/runbook.md](docs/runbook.md)를 확인하세요.
 
@@ -28,7 +28,7 @@ npm install
 npm run dev
 ```
 
-브라우저에서 `http://localhost:3005`를 엽니다.
+브라우저에서 `http://localhost:3005`를 엽니다. 첫 화면은 요청 콘솔이며, 운영 맵은 `http://localhost:3005/map`에서 확인합니다.
 
 ## 로컬 포트
 
@@ -39,8 +39,10 @@ npm run dev
 ## MVP 흐름
 
 ```text
-입력물 등록 -> 작업 후보 추출 -> 후보 실행 -> 승인대기 생성 -> 승인/거절
+요청 콘솔 입력 -> 작업 후보 추출 -> 후보별 처리 흐름 확인 -> 후보 검토/분할 -> 후보 실행 -> 실행 로그/승인카드 확인 -> 승인/수정요청/거절
 ```
+
+입력물 분해는 `intake_decomposition_graph`, 에이전트 실행은 `agent_operation_graph` LangGraph 흐름으로 기록합니다. 실행 그래프는 `ceo_routing -> context_retrieval -> question_gate -> specialist_draft -> quality_review -> approval_pending` 순서로 남습니다. 수정요청을 선택하면 수정 사유가 포함된 재작업 후보가 생성되고, 요청 콘솔에서 다시 실행할 수 있습니다.
 
 ## 지식 파일
 

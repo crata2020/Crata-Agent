@@ -1,0 +1,222 @@
+{
+  "tasks": {
+    "planning": {
+      "name": "기획 및 제안",
+      "legacy_task_types": ["business_planning"],
+      "intent_markers": ["기획안", "프로그램", "제안서", "워크숍", "커리큘럼", "운영안", "학교", "공공기관", "기업", "연수"],
+      "output_types": [
+        {
+          "id": "school_program",
+          "markers": ["학교", "학생", "청소년", "학급", "교사"],
+          "audience": "school_students"
+        },
+        {
+          "id": "public_proposal",
+          "markers": ["공공기관", "지자체", "교육청", "기관"],
+          "audience": "public_institution"
+        },
+        {
+          "id": "b2b_proposal",
+          "markers": ["기업", "회사", "조직", "직원", "관리자"],
+          "audience": "company"
+        },
+        {
+          "id": "workshop",
+          "markers": ["워크숍", "연수", "강의"],
+          "audience": "participants"
+        },
+        {
+          "id": "curriculum",
+          "markers": ["커리큘럼", "회기", "수업"],
+          "audience": "participants"
+        }
+      ],
+      "default_output_type": "proposal",
+      "primary_agent": "business_designer",
+      "gates": {
+        "knowledge": "concept_guardian",
+        "quality": "quality_inspector"
+      },
+      "default_knowledge_scope": ["exam_definition", "exam_purpose", "strengths", "application_points", "cautions"],
+      "requires_type_hypothesis": false,
+      "allow_uncertain_type": false,
+      "requires_anonymization": false,
+      "approval_required": false,
+      "action_policy": {
+        "default": "respond_only",
+        "persist_requires_approval": true
+      },
+      "playbook": "planning"
+    },
+    "report_phrase_revision": {
+      "name": "결과지 문구 수정",
+      "legacy_task_types": [],
+      "intent_markers": ["결과지", "문구", "표현", "수정", "나이대", "학생용", "성인용", "부정적으로", "완화"],
+      "output_types": [
+        {
+          "id": "result_phrase",
+          "markers": ["결과지", "문구", "표현"],
+          "audience": "report_reader"
+        }
+      ],
+      "default_output_type": "revised_phrases",
+      "primary_agent": "report_editor",
+      "gates": {
+        "knowledge": "concept_guardian",
+        "quality": "quality_inspector"
+      },
+      "default_knowledge_scope": ["official_definition", "type_description", "cautions", "forbidden_interpretations", "tone_rules"],
+      "requires_type_hypothesis": false,
+      "allow_uncertain_type": true,
+      "requires_anonymization": false,
+      "approval_required": true,
+      "action_policy": {
+        "default": "create_approval",
+        "persist_requires_approval": true
+      },
+      "playbook": "report_phrase_revision"
+    },
+    "knowledge_update_review": {
+      "name": "공식 지식 수정 검토",
+      "legacy_task_types": [],
+      "intent_markers": ["공식 지식", "추가", "수정", "반영", "업데이트", "기존 내용", "충돌", "새로 넣어야"],
+      "operations": ["add", "revise", "merge", "conflict_check", "deprecate"],
+      "default_output_type": "knowledge_patch_candidate",
+      "primary_agent": "concept_guardian",
+      "gates": {
+        "quality": "quality_inspector"
+      },
+      "default_knowledge_scope": ["current_definition", "related_evidence", "conflict_check", "change_summary", "approval_questions"],
+      "requires_type_hypothesis": false,
+      "allow_uncertain_type": true,
+      "requires_anonymization": false,
+      "approval_required": true,
+      "action_policy": {
+        "default": "create_approval",
+        "persist_requires_approval": true
+      },
+      "playbook": "knowledge_update_review"
+    },
+    "case_learning": {
+      "name": "상담 사례 학습 후보",
+      "legacy_task_types": ["counseling_case_learning"],
+      "intent_markers": ["상담 사례", "사례 저장", "학습", "대표 사례", "나중에 반영", "사례로 남겨"],
+      "default_output_type": "case_learning_record",
+      "primary_agent": "case_learner",
+      "gates": {
+        "knowledge": "concept_guardian",
+        "quality": "quality_inspector"
+      },
+      "default_knowledge_scope": ["type_candidates", "case_summary", "anonymization", "learning_value"],
+      "requires_type_hypothesis": true,
+      "allow_uncertain_type": true,
+      "requires_anonymization": true,
+      "approval_required": true,
+      "action_policy": {
+        "default": "create_approval",
+        "persist_requires_approval": true
+      },
+      "playbook": "case_learning"
+    },
+    "concept_explanation": {
+      "name": "개념 설명",
+      "legacy_task_types": [],
+      "intent_markers": ["뭐야", "설명", "정의", "차이", "의미"],
+      "default_output_type": "explanation",
+      "primary_agent": "concept_guardian",
+      "gates": {
+        "quality": "quality_inspector"
+      },
+      "default_knowledge_scope": ["definition", "difference", "cautions"],
+      "requires_type_hypothesis": false,
+      "allow_uncertain_type": false,
+      "requires_anonymization": false,
+      "approval_required": false,
+      "action_policy": {
+        "default": "respond_only",
+        "persist_requires_approval": true
+      },
+      "playbook": "concept_explanation"
+    },
+    "type_judgment": {
+      "name": "유형 판별",
+      "legacy_task_types": [],
+      "intent_markers": ["무슨 유형", "어떤 유형", "유형이야", "쪽이야", "판별"],
+      "default_output_type": "type_hypothesis",
+      "primary_agent": "concept_guardian",
+      "gates": {
+        "quality": "quality_inspector"
+      },
+      "default_knowledge_scope": ["signals", "confused_with", "clarifying_questions"],
+      "requires_type_hypothesis": true,
+      "allow_uncertain_type": true,
+      "requires_anonymization": false,
+      "approval_required": false,
+      "action_policy": {
+        "default": "respond_only",
+        "persist_requires_approval": true
+      },
+      "playbook": "type_judgment"
+    },
+    "relationship_pattern_analysis": {
+      "name": "관계 패턴 분석",
+      "legacy_task_types": [],
+      "intent_markers": ["관계 분석", "관계 패턴", "상호작용", "갈등 루프"],
+      "default_output_type": "relationship_analysis",
+      "primary_agent": "relationship_analyst",
+      "gates": {
+        "knowledge": "concept_guardian",
+        "quality": "quality_inspector"
+      },
+      "default_knowledge_scope": ["type_candidates", "relationship_context", "pattern_signals", "cautions"],
+      "requires_type_hypothesis": true,
+      "allow_uncertain_type": true,
+      "requires_anonymization": false,
+      "approval_required": true,
+      "action_policy": {
+        "default": "respond_only",
+        "persist_requires_approval": true
+      },
+      "playbook": "relationship_pattern_analysis"
+    },
+    "content_strategy": {
+      "name": "콘텐츠 전략",
+      "legacy_task_types": ["content_marketing"],
+      "intent_markers": ["홍보", "콘텐츠", "유튜브", "블로그", "홈페이지", "마케팅", "SNS"],
+      "default_output_type": "content_draft",
+      "primary_agent": "content_strategist",
+      "gates": {
+        "knowledge": "concept_guardian",
+        "quality": "quality_inspector"
+      },
+      "default_knowledge_scope": ["exam_definition", "strengths", "cautions", "audience_language"],
+      "requires_type_hypothesis": false,
+      "allow_uncertain_type": false,
+      "requires_anonymization": false,
+      "approval_required": false,
+      "action_policy": {
+        "default": "respond_only",
+        "persist_requires_approval": true
+      },
+      "playbook": "content_strategy"
+    },
+    "general_agent_task": {
+      "name": "일반 작업",
+      "legacy_task_types": [],
+      "intent_markers": [],
+      "default_output_type": "general_response",
+      "primary_agent": "crata_ceo",
+      "gates": {},
+      "default_knowledge_scope": [],
+      "requires_type_hypothesis": false,
+      "allow_uncertain_type": true,
+      "requires_anonymization": false,
+      "approval_required": false,
+      "action_policy": {
+        "default": "respond_only",
+        "persist_requires_approval": true
+      },
+      "playbook": null
+    }
+  }
+}

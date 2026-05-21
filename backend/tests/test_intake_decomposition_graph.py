@@ -31,7 +31,38 @@ def test_intake_decomposition_graph_splits_short_revision_and_planning_request()
         "report_phrase_revision",
         "business_planning",
     ]
-    assert result.candidate_drafts[1].evidence_excerpt == "기획서 작성해줘."
+    assert result.candidate_drafts[1].evidence_excerpt.rstrip(".") == "기획서 작성해줘"
+    assert result.candidate_drafts[1].workflow_plan["task_type"] == "planning"
+    assert result.candidate_drafts[1].workflow_plan["legacy_task_type"] == "business_planning"
+    assert result.candidate_drafts[1].workflow_plan["primary_agent"] == "business_designer"
+    assert result.candidate_drafts[1].workflow_plan["gates"] == {
+        "knowledge": "concept_guardian",
+        "quality": "quality_inspector",
+    }
+
+
+def test_intake_decomposition_graph_splits_revision_and_relationship_request() -> None:
+    result = run_intake_decomposition_graph("문구수정하고 A유형 B유형 부부관계 패턴 분석해줘.")
+
+    assert [draft.task_type for draft in result.candidate_drafts] == [
+        "report_phrase_revision",
+        "relationship_pattern_analysis",
+    ]
+    assert result.candidate_drafts[1].evidence_excerpt == "A유형 B유형 부부관계 패턴 분석해줘."
+
+
+def test_intake_decomposition_graph_preserves_multiple_same_type_requests() -> None:
+    result = run_intake_decomposition_graph(
+        "개인행동검사 결과지 3페이지 문구를 부드럽게 수정하자. "
+        "집단행동검사 결과지 5페이지 문구도 상담형으로 수정하자."
+    )
+
+    assert [draft.task_type for draft in result.candidate_drafts] == [
+        "report_phrase_revision",
+        "report_phrase_revision",
+    ]
+    assert "개인행동검사" in result.candidate_drafts[0].evidence_excerpt
+    assert "집단행동검사" in result.candidate_drafts[1].evidence_excerpt
 
 
 def test_intake_decomposition_graph_marks_review_required_for_low_confidence_general_task() -> None:

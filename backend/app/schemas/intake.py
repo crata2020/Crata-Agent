@@ -15,6 +15,22 @@ class IntakeCreate(BaseModel):
         return value
 
 
+class CandidateChatMessageCreate(BaseModel):
+    content: str = Field(min_length=1, max_length=12000)
+
+    @field_validator("content", mode="before")
+    @classmethod
+    def strip_content(cls, value: object) -> object:
+        if isinstance(value, str):
+            return value.strip()
+        return value
+
+
+class CandidateChatMessageRead(BaseModel):
+    role: str
+    content: str
+
+
 class CandidateTaskRead(BaseModel):
     id: str
     task_type: str
@@ -33,6 +49,9 @@ class CandidateTaskRead(BaseModel):
     rule_hints: list[str]
     review_flags: list[str]
     clarifying_questions: list[str] = Field(default_factory=list)
+    clarifying_answers: str = ""
+    chat_messages: list[CandidateChatMessageRead] = Field(default_factory=list)
+    workflow_plan: dict = Field(default_factory=dict)
 
 
 class GraphNodeTraceRead(BaseModel):
@@ -45,8 +64,9 @@ class CandidateTaskUpdate(BaseModel):
     title: str = Field(min_length=1, max_length=255)
     summary: str = Field(min_length=1)
     recommended_agents: list[str] = Field(min_length=1)
+    clarifying_answers: str = ""
 
-    @field_validator("title", "summary", mode="before")
+    @field_validator("title", "summary", "clarifying_answers", mode="before")
     @classmethod
     def strip_text_fields(cls, value: object) -> object:
         if isinstance(value, str):

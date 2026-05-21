@@ -29,12 +29,12 @@
 
 - `report_phrase_revision`: 결과지 문구 수정.
 - `counseling_case_learning`: 상담 사례 학습.
-- `official_knowledge_candidate`: 공식 지식 반영 후보.
 - `relationship_pattern_analysis`: 유형 조합·관계 패턴 분석.
 - `business_planning`: 사업·제안서·프로그램 기획.
 - `content_marketing`: 콘텐츠·홍보·유튜브 관련 작업.
-- `operations_task`: 운영·브리핑·자동화 작업.
 - `general_agent_task`: 일반 에이전트 작업.
+
+공식 지식 반영 후보와 운영·자동화 작업은 2차 확장 유형으로 둔다. 현재 MVP에서는 개념수호자, 사례학습가, 품질검수관의 검토 메모와 승인함 상태로 먼저 관리한다.
 
 작업 후보 액션:
 
@@ -51,24 +51,36 @@
 입력물은 작업이 아니다.
 작업 후보는 실행된 작업이 아니다.
 청하님이 선택한 작업 후보만 실행 작업이 된다.
+같은 유형의 요청이 여러 개 들어오면 하나로 합치지 않는다. 예를 들어 “개인행동검사 3페이지 문구 수정”과 “집단행동검사 5페이지 문구 수정”은 둘 다 결과지 문구 수정이지만 별도 후보로 유지한다.
+
+각 후보의 먼저 확인할 질문은 입력문에 이미 있는 정보를 제외하고 만든다. 에이전트가 항상 같은 질문을 반복하는 것이 아니라, 빠진 대상, 문제, 목적, 제약, 검사 활용 방식만 묻는다.
 ```
 
 ## 워크플로우 2: 에이전트 작업 실행 그래프
 
 목적: 선택된 작업 하나를 CRATA 에이전트 팀이 처리하게 한다.
 
+현재 구현 위치:
+
+- `backend/app/services/agent_operation_graph.py`
+- 그래프 이름: `agent_operation_graph`
+- 실행 기록 저장 위치: `workflow_runs.checkpoint.graph_name`, `workflow_runs.checkpoint.node_trace`, `workflow_steps`
+
 흐름:
 
 ```text
 선택된 작업 받기
--> CEO가 작업 성격 판단
--> 필요한 지식 검색
--> 담당 에이전트 초안 작성
--> 개념수호자/품질검수관 검토
--> 승인 필요 여부 판단
--> 승인대기 또는 저장
--> 결과물/로그 저장
+-> ceo_routing: CEO가 작업 성격과 담당 에이전트 판단
+-> context_retrieval: 공식 지식과 에이전트 작업 가이드 연결
+-> question_gate: 담당 에이전트가 먼저 확인할 질문과 입력된 답변 반영 여부 확인
+-> specialist_draft: 담당 에이전트 초안 작성
+-> quality_review: 품질검수관이 개념, 톤, 안전성 검수
+-> approval_pending: 승인함으로 이동
 ```
+
+현재 MVP에서는 모든 실행 결과를 승인함으로 보내고, 승인함에서 `승인`, `거절`, `수정요청`을 결정한다. 수정요청을 선택하면 수정 사유가 포함된 재작업 후보가 요청 콘솔에 다시 나타난다.
+
+후보 카드 안의 대화는 실행 작업이 아니다. 후보 대화에서는 승인함을 만들지 않고, 후보 요약·근거 발췌·최근 대화·필요한 공식 근거 조각만 사용해 답변한다. 사용자가 저장, 공식 반영, 학습 반영, 결과지 반영을 명시하거나 후보를 실행할 때만 실행 워크플로우로 넘어간다.
 
 기본 에이전트 경로:
 
@@ -76,6 +88,7 @@
 결과지 문구 작업
 -> CRATA CEO
 -> 개념수호자
+-> 결과지 에디터 질문/답변 확인
 -> 결과지 에디터
 -> 품질검수관
 -> 승인대기함
@@ -83,6 +96,7 @@
 상담 전사록 작업
 -> CRATA CEO
 -> 사례학습가
+-> 사례학습가 질문/답변 확인
 -> 관계분석가
 -> 품질검수관
 -> 승인대기함
@@ -90,6 +104,7 @@
 상담 답변 테스트
 -> CRATA CEO
 -> 개념수호자
+-> 상담 코치 질문/답변 확인
 -> 상담 코치
 -> 품질검수관
 -> 산출물 저장
@@ -97,20 +112,31 @@
 공식 지식 반영 후보
 -> CRATA CEO
 -> 개념수호자
+-> 개념수호자 질문/답변 확인
 -> 품질검수관
 -> 승인대기함
 ```
 
-지식 컨텍스트 우선순위:
+지식 컨텍스트 구성:
 
 ```text
-1. knowledge/official/*/MASTER.md
-2. knowledge/agent-guides/agent-operating-guides.md
-3. knowledge/_sources/*.raw.md
-4. 실행 중 입력물과 작업 후보 근거
+1. Task Registry: 작업 유형, 담당 실행 모듈, gate, action policy를 정한다.
+2. Knowledge Scope Planner: 작업에 필요한 검사 지식 범위를 정한다.
+3. Evidence Retriever: 공식 문서 전체가 아니라 evidence key에 해당하는 조각만 가져온다.
+4. Task Playbook: 산출물 섹션과 작성 규칙을 붙인다.
+5. Application Map: 기획안처럼 응용 산출물일 때 검사 특징을 프로그램 요소로 변환한다.
+6. Quality Guard: 내부 메타데이터 노출, 승인 전 저장/반영 단정, 익명화 누락을 점검한다.
 ```
 
-원본 보존 자료는 근거 확인용이고, 기본 답변 기준은 MASTER 문서다. MASTER와 원본이 다르게 보이면 개념수호자가 공식 지식 수정 후보로 분리하고 청하님 승인을 요청한다.
+MASTER 문서는 사람이 읽는 공식 원문으로 보존한다. 모델 호출에는 MASTER 전문을 넣지 않고, `knowledge/evidence/*.json`의 짧은 근거 조각과 필요한 reference만 넣는다. 관련 검사를 찾지 못하면 전체 MASTER를 fallback으로 넣지 않고, 먼저 확인할 질문을 남긴다.
+
+작업별 추가 지식:
+
+- `backend/app/config/task_registry.json`: 작업 유형 라우팅 설정.
+- `backend/app/config/task_playbooks/*.json`: 기획안, 결과지 문구, 상담 사례, 콘텐츠 등 산출물 구조.
+- `knowledge/concept_maps/*.json`: 검사·축·유형·signal·confused_with 구조.
+- `knowledge/evidence/*.json`: 답변에 넣을 공식 근거 조각.
+- `knowledge/application_maps/*.json`: 검사 특징을 학교 프로그램 같은 응용 산출물로 전환하는 지도.
 
 ## 승인 게이트
 

@@ -5,6 +5,7 @@ from sqlalchemy import DateTime, ForeignKey, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
+from app.models._time import utcnow
 
 
 class IntakeItem(Base):
@@ -16,7 +17,7 @@ class IntakeItem(Base):
     raw_content: Mapped[str] = mapped_column(Text)
     source: Mapped[str] = mapped_column(String(128), default="manual")
     item_metadata: Mapped[dict] = mapped_column("metadata", JSON, default=dict)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 class CandidateTask(Base):
@@ -31,5 +32,5 @@ class CandidateTask(Base):
     recommended_agents: Mapped[list] = mapped_column(JSON, default=list)
     status: Mapped[str] = mapped_column(String(64), index=True, default="draft")
     item_metadata: Mapped[dict] = mapped_column("metadata", JSON, default=dict)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)

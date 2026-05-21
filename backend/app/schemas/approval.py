@@ -3,6 +3,22 @@ from pydantic import BaseModel, Field, model_validator
 from app.schemas.intake import CandidateTaskRead
 
 
+class ApprovalComparisonRead(BaseModel):
+    source_approval_id: str
+    source_task_id: str
+    source_title: str
+    source_status: str
+    source_after_content: str
+    revision_reason: str
+    revision_candidate_id: str | None = None
+    revision_candidate_status: str | None = None
+    revision_task_id: str | None = None
+    revision_approval_id: str | None = None
+    revision_title: str | None = None
+    revision_status: str | None = None
+    revision_after_content: str | None = None
+
+
 class ApprovalRead(BaseModel):
     id: str
     task_id: str
@@ -17,6 +33,7 @@ class ApprovalRead(BaseModel):
     reviewer_note: str
     knowledge_references: list[str] = Field(default_factory=list)
     revision_candidate_task: CandidateTaskRead | None = None
+    comparison: ApprovalComparisonRead | None = None
 
 
 class ApprovalDecision(BaseModel):

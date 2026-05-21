@@ -22,3 +22,14 @@ Thumbs.db
 # Local exports
 exports/
 knowledge/private/
+*.db
+
+# Runtime/generated local state
+chroma_db/
+*.log
+
+# Ad-hoc local scripts
+inject_test.py
+backend/test_*.py
+backend/convert_docs.py
+backend/reset_db.py

@@ -5,6 +5,7 @@ from sqlalchemy import DateTime, ForeignKey, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
+from app.models._time import utcnow
 
 
 class KnowledgeItem(Base):
@@ -22,8 +23,8 @@ class KnowledgeItem(Base):
         String(64), ForeignKey("approvals.id"), nullable=True
     )
     item_metadata: Mapped[dict] = mapped_column("metadata", JSON, default=dict)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
 
 
 class Document(Base):
@@ -35,7 +36,7 @@ class Document(Base):
     path: Mapped[str] = mapped_column(String(500), default="")
     content_text: Mapped[str] = mapped_column(Text, default="")
     item_metadata: Mapped[dict] = mapped_column("metadata", JSON, default=dict)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 class Embedding(Base):
@@ -47,4 +48,4 @@ class Embedding(Base):
     embedding: Mapped[list[float] | None] = mapped_column(JSON, nullable=True)
     text_chunk: Mapped[str] = mapped_column(Text, nullable=False)
     item_metadata: Mapped[dict] = mapped_column("metadata", JSON, default=dict)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import AgentsPage from "@/app/agents/page";
@@ -17,17 +17,18 @@ describe("AgentsPage", () => {
     }
   });
 
-  it("shows each agent operating guide summary", () => {
+  it("shows the selected agent operating guide without flooding the page", () => {
     expect(agentOperatingGuides).toHaveLength(agentSeeds.length);
 
     render(<AgentsPage />);
 
     expect(screen.getByText("전문 작업 절차")).toBeInTheDocument();
-    expect(screen.getByText("CRATA CEO 절차")).toBeInTheDocument();
-    expect(screen.getByText("사업설계자 절차")).toBeInTheDocument();
+    expect(screen.getAllByText("CRATA CEO 절차").length).toBeGreaterThan(0);
+    expect(screen.queryByText("대상, 문제, 목적, 성과, 예산, 일정, 검사 활용 방식을 먼저 질문합니다.")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "사업설계자 상세 보기" }));
+
+    expect(screen.getAllByText("사업설계자 절차").length).toBeGreaterThan(0);
     expect(screen.getByText("대상, 문제, 목적, 성과, 예산, 일정, 검사 활용 방식을 먼저 질문합니다.")).toBeInTheDocument();
-    expect(screen.getByText("콘텐츠전략가 절차")).toBeInTheDocument();
-    expect(screen.getByText("채널, 타깃, 메시지, 전환 목표, 금지 표현을 먼저 확인합니다.")).toBeInTheDocument();
-    expect(screen.getByText("운영비서 절차")).toBeInTheDocument();
   });
 });

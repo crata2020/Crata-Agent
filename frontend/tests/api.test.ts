@@ -122,6 +122,23 @@ describe("api client", () => {
     });
   });
 
+  it("requests the request map with focus parameters", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ items: [] }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const { getRequestMap } = await import("@/lib/api");
+
+    await getRequestMap({ taskId: "task-1", candidateId: "candidate-1" });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://127.0.0.1:8000/dashboard/request-map?taskId=task-1&candidateId=candidate-1",
+      { cache: "no-store" },
+    );
+  });
+
   it("runs a candidate task by candidate id", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -173,6 +190,7 @@ describe("api client", () => {
       title: "수정 후보",
       summary: "실행 전 후보를 정리한다.",
       recommended_agents: ["crata_ceo", "report_editor"],
+      clarifying_answers: "대상은 공공기관 신규 관리자입니다.",
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -184,7 +202,35 @@ describe("api client", () => {
           title: "수정 후보",
           summary: "실행 전 후보를 정리한다.",
           recommended_agents: ["crata_ceo", "report_editor"],
+          clarifying_answers: "대상은 공공기관 신규 관리자입니다.",
         }),
+      }),
+    );
+  });
+
+  it("sends candidate chat messages without starting a workflow", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        id: "candidate-1",
+        chat_messages: [
+          { role: "user", content: "어떤 검사를 하면 좋을까?" },
+          { role: "assistant", content: "개인행동 동기검사부터 보는 게 맞습니다." },
+        ],
+      }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const { sendCandidateMessage } = await import("@/lib/api");
+
+    await sendCandidateMessage("candidate-1", "어떤 검사를 하면 좋을까?");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://127.0.0.1:8000/intake/candidates/candidate-1/messages",
+      expect.objectContaining({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: "어떤 검사를 하면 좋을까?" }),
       }),
     );
   });

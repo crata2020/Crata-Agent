@@ -1,0 +1,19 @@
+{
+  "id": "report_phrase_revision",
+  "name": "결과지 문구 수정",
+  "required_inputs": [
+    "exam",
+    "axis",
+    "type",
+    "audience",
+    "current_phrase",
+    "revision_goal"
+  ],
+  "rules": [
+    "부정적 낙인을 피한다.",
+    "공식 정의를 왜곡하지 않는다.",
+    "학생용 문구는 쉽고 짧게 쓴다.",
+    "상담자용 문구와 결과지 문구를 구분한다.",
+    "최종 반영은 승인 절차를 거친다."
+  ]
+}

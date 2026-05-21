@@ -5,6 +5,7 @@ import type {
   CandidateSplitResponse,
   DashboardSummary,
   IntakeResponse,
+  RequestMapResponse,
   WorkflowActivityResponse,
 } from "@/lib/types";
 
@@ -21,6 +22,7 @@ export type CandidateUpdatePayload = {
   title: string;
   summary: string;
   recommended_agents: string[];
+  clarifying_answers?: string;
 };
 
 export type ApprovalDecision = "approved" | "rejected" | "revise_requested";
@@ -104,6 +106,14 @@ export function updateCandidate(candidateId: string, payload: CandidateUpdatePay
   });
 }
 
+export function sendCandidateMessage(candidateId: string, content: string) {
+  return requestJson<CandidateTask>(`/intake/candidates/${candidateId}/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content }),
+  });
+}
+
 export function splitCandidate(candidateId: string, parts: string[]) {
   return requestJson<CandidateSplitResponse>(`/intake/candidates/${candidateId}/split`, {
     method: "POST",
@@ -126,6 +136,29 @@ export function getAgentActivity() {
 
 export function getWorkflowActivity() {
   return requestJson<WorkflowActivityResponse>("/dashboard/workflow-activity", { cache: "no-store" });
+}
+
+export function getRequestMap(params: { requestId?: string; taskId?: string; candidateId?: string; agentId?: string } = {}) {
+  const query = new URLSearchParams();
+  if (params.requestId) {
+    query.set("requestId", params.requestId);
+  }
+  if (params.taskId) {
+    query.set("taskId", params.taskId);
+  }
+  if (params.candidateId) {
+    query.set("candidateId", params.candidateId);
+  }
+  if (params.agentId) {
+    query.set("agentId", params.agentId);
+  }
+
+  const queryString = query.toString();
+
+  return requestJson<RequestMapResponse>(
+    `/dashboard/request-map${queryString ? `?${queryString}` : ""}`,
+    { cache: "no-store" },
+  );
 }
 
 export function decideApproval(id: string, decision: ApprovalDecision, reason = "") {

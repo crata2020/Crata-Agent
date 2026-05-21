@@ -79,6 +79,50 @@ describe("ApprovalCard", () => {
     );
   });
 
+  it("compares the original draft and rework draft when revision data is available", () => {
+    render(
+      <ApprovalCard
+        approval={{
+          ...pendingApproval,
+          comparison: {
+            source_approval_id: "approval-original",
+            source_task_id: "task-original",
+            source_title: "결과지 문구 수정 원 승인",
+            source_status: "revise_requested",
+            source_after_content: "원본 초안 문장입니다. 유지 문장입니다.",
+            revision_reason: "상담형 문장으로 더 부드럽게 다시 작성",
+            revision_candidate_id: "candidate-rework",
+            revision_candidate_status: "pending_approval",
+            revision_task_id: "task-rework",
+            revision_approval_id: "approval-rework",
+            revision_title: "결과지 문구 수정 재작업 승인",
+            revision_status: "pending_approval",
+            revision_after_content: "재작업 초안 문장입니다. 유지 문장입니다.",
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByText("재작업 비교")).toBeInTheDocument();
+    expect(screen.getByText("원본 초안")).toBeInTheDocument();
+    expect(screen.getByText("재작업 초안")).toBeInTheDocument();
+    expect(screen.getByText("문장 변경점")).toBeInTheDocument();
+    expect(screen.getByText("삭제됨")).toBeInTheDocument();
+    expect(screen.getByText("추가됨")).toBeInTheDocument();
+    expect(screen.getByText("유지")).toBeInTheDocument();
+    expect(screen.getByText("원본 초안 문장입니다.")).toBeInTheDocument();
+    expect(screen.getByText("재작업 초안 문장입니다.")).toBeInTheDocument();
+    expect(screen.getByText("유지 문장입니다.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "원 승인 보기" })).toHaveAttribute(
+      "href",
+      "/approvals?approvalId=approval-original",
+    );
+    expect(screen.getByRole("link", { name: "재작업 승인 보기" })).toHaveAttribute(
+      "href",
+      "/approvals?approvalId=approval-rework",
+    );
+  });
+
   it("marks the card highlighted when opened from the dashboard", () => {
     render(<ApprovalCard approval={pendingApproval} highlighted />);
 

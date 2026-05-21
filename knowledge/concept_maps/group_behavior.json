@@ -1,0 +1,340 @@
+{
+  "id": "group_behavior",
+  "name": "집단행동검사",
+  "reference": "knowledge/official/group-behavior/MASTER.md",
+  "source_file": "C:/Users/wnsdu/Desktop/Crata/지식파일/집단검사/집단검사 지식_26.5.16.docx",
+  "source_policy": "이 개념지도는 source_file의 내용만 기준으로 작성한다.",
+  "aliases": [
+    "CRATA 집단행동검사",
+    "집단행동검사",
+    "집단검사",
+    "집단 행동 검사",
+    "의사결정방식",
+    "자기효능감 향상방식",
+    "또래 동료 집단",
+    "또래·동료 집단",
+    "의사결정 나침반"
+  ],
+  "exam_definition_key": "group_behavior.definition",
+  "axes": [
+    {
+      "id": "decision_style",
+      "name": "의사결정방식",
+      "purpose": "문제를 풀거나 결정을 내릴 때 생각이 어떻게 정리되고 마음이 어떻게 정해지는지를 본다.",
+      "types": [
+        {
+          "id": "solo",
+          "code": "S",
+          "name": "혼자형",
+          "definition_key": "group_behavior.decision_style.solo.definition",
+          "core_question": "자기 생각이 정리되어야 타인과 이야기할 수 있는가?",
+          "signals": {
+            "strong": [
+              "자기 생각이 정리되지 않으면",
+              "생각이 정리되기 전",
+              "남에게 이야기하기 어렵",
+              "타인에게 이야기하기 어렵",
+              "객관적이고 전문적",
+              "익명성이 보장",
+              "먼저 혼자 고민",
+              "스스로 해답",
+              "객관적 정보",
+              "전문적 정보",
+              "먼저 자료를 찾아"
+            ],
+            "weak": [
+              "혼자 고민",
+              "먼저 찾아",
+              "객관 자료",
+              "공개적으로 자신의 문제"
+            ],
+            "anti": [
+              "관계 속 대화",
+              "주변 사람들과 의논",
+              "생각과 감정이 정리",
+              "자신을 잘 아는 사람"
+            ]
+          },
+          "confused_with": [
+            {
+              "target": "decision_style.group",
+              "reason": "혼자형도 정리된 뒤에는 의견을 듣거나 대화할 수 있으므로, 핵심은 대화 여부가 아니라 생각 정리의 선후순서다.",
+              "clarifying_question": "먼저 혼자 정리한 뒤 의견을 듣는 편인가요, 아니면 관계 속 대화 중에 생각과 감정이 정리되는 편인가요?",
+              "evidence_keys": [
+                "group_behavior.solo_vs_group.difference"
+              ],
+              "clarify_when_matched": false
+            }
+          ]
+        },
+        {
+          "id": "group",
+          "code": "G",
+          "name": "그룹형",
+          "definition_key": "group_behavior.decision_style.group.definition",
+          "core_question": "자신을 이해하는 주변 사람들과의 대화 속에서 생각과 감정이 정리되는가?",
+          "signals": {
+            "strong": [
+              "자신의 상황을 이해하는 주변 사람",
+              "주변 사람들과 의논",
+              "자신에게 맞는 맞춤형 답",
+              "관계 속 대화",
+              "대화하면서 생각과 감정이 정리",
+              "생각과 감정이 정리",
+              "구별되면서 판단",
+              "자신을 잘 아는 사람",
+              "자신을 잘 아는 사람들의 정보",
+              "주변 사람의 의견",
+              "주변 사람이 소개한 전문가"
+            ],
+            "weak": [
+              "의논",
+              "대화 속",
+              "주변 사람",
+              "관계 속"
+            ],
+            "anti": [
+              "익명성이 보장",
+              "객관적이고 전문적",
+              "생각이 정리되기 전",
+              "나를 잘 모르는 사람",
+              "맥락 없는 객관 정보"
+            ]
+          },
+          "confused_with": [
+            {
+              "target": "self_efficacy.comparison",
+              "reason": "그룹형은 생각과 감정이 관계 속 대화에서 정리되는 의사결정 경로이고, 비교형은 수준이 다른 관계에서 자기 신뢰와 거절/결정 타이밍이 달라지는 자기효능감 경로다.",
+              "clarifying_question": "타인의 말을 들을 때 생각과 감정이 정리되어 판단이 선명해지는 쪽인가요, 아니면 수준 차이가 느껴지는 관계에서 거절이나 선택 타이밍이 어려운 쪽인가요?",
+              "evidence_keys": [
+                "group_behavior.group_vs_comparison.difference"
+              ],
+              "clarify_when_matched": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "self_efficacy",
+      "name": "자기효능감 향상방식",
+      "purpose": "어떤 관계 환경에서 자기 신뢰가 높아져 결정을 미루지 않고 적절한 타이밍에 판단할 수 있는지를 본다.",
+      "types": [
+        {
+          "id": "competitive",
+          "code": "R",
+          "name": "경쟁형",
+          "definition_key": "group_behavior.self_efficacy.competitive.definition",
+          "core_question": "수준이 비슷한 또래·동료 관계에서 자기 신뢰와 도전의 용기가 살아나는가?",
+          "signals": {
+            "strong": [
+              "자신과 수준이 비슷",
+              "수준이 비슷한",
+              "비슷한 수준",
+              "또래",
+              "동료",
+              "자기 신뢰가 높아",
+              "긍정적 경쟁심",
+              "도전의 용기",
+              "나도 할 수 있다",
+              "의견 표현과 거절도 비교적 쉽고 단호"
+            ],
+            "weak": [
+              "경쟁심",
+              "도전",
+              "의견 표현",
+              "거절도 비교적 쉽"
+            ],
+            "anti": [
+              "거절이 어렵",
+              "거절 타이밍",
+              "수준이 다른 관계",
+              "다른 수준의 관계",
+              "뚜렷하게 설명되지",
+              "특별히 높아지지"
+            ]
+          },
+          "confused_with": []
+        },
+        {
+          "id": "comparison",
+          "code": "C",
+          "name": "비교형",
+          "definition_key": "group_behavior.self_efficacy.comparison.definition",
+          "core_question": "수준이 다른 관계에서 배우거나 돌보며 자기 신뢰가 높아지는가?",
+          "signals": {
+            "strong": [
+              "자신과 수준이 다른 관계",
+              "수준이 다른 관계",
+              "다른 수준의 관계",
+              "긍정적 비교",
+              "배우거나 돌보",
+              "롤모델",
+              "경계인",
+              "경쟁 그 자체를 불편",
+              "거절에 대한 죄책감",
+              "거절이 어렵",
+              "거절 타이밍",
+              "우유부단"
+            ],
+            "weak": [
+              "수준 차이",
+              "높은 사람",
+              "돌보",
+              "배우",
+              "경계 설정"
+            ],
+            "anti": [
+              "비슷한 수준의 관계에서도 자기 신뢰가 올라가고",
+              "두 방식이 모두",
+              "뚜렷하게 설명되지",
+              "특별히 높아지지"
+            ]
+          },
+          "confused_with": [
+            {
+              "target": "decision_style.group",
+              "reason": "둘 다 타인을 언급할 수 있지만, 비교형은 수준이 다른 관계에서 자기 신뢰가 높아지거나 거절/경계 설정/결정 타이밍이 어려워지는지가 핵심이다.",
+              "clarifying_question": "타인을 찾는 이유가 관계 속 대화로 생각과 감정이 정리되기 때문인가요, 아니면 수준 차이가 느껴지는 관계에서 거절이나 결정 타이밍이 달라지기 때문인가요?",
+              "evidence_keys": [
+                "group_behavior.group_vs_comparison.difference"
+              ],
+              "clarify_when_matched": false
+            }
+          ]
+        },
+        {
+          "id": "both",
+          "code": "RC",
+          "name": "경쟁형과 비교형 둘 다",
+          "definition_key": "group_behavior.self_efficacy.both.definition",
+          "core_question": "비슷한 수준의 관계와 다른 수준의 관계 양쪽에서 모두 자기 신뢰가 살아나는가?",
+          "signals": {
+            "strong": [
+              "비슷한 수준의 관계에서도",
+              "수준이 다른 관계에서도",
+              "다른 수준의 관계에서도",
+              "자기 신뢰가 올라가고",
+              "양쪽에서 모두",
+              "두 방식이 모두",
+              "경쟁형과 비교형 둘 다",
+              "배우거나 돌보는 방식"
+            ],
+            "weak": [
+              "동시에",
+              "둘 다",
+              "모두"
+            ],
+            "anti": [
+              "둘 다 아님",
+              "뚜렷하게 설명되지",
+              "특별히 높아지지"
+            ]
+          },
+          "confused_with": []
+        },
+        {
+          "id": "neither",
+          "code": "N",
+          "name": "경쟁형과 비교형 둘 다 아님",
+          "definition_key": "group_behavior.self_efficacy.neither.definition",
+          "core_question": "자기효능감 향상방식이 경쟁형이나 비교형 어느 한쪽으로도 뚜렷하게 설명되지 않는가?",
+          "signals": {
+            "strong": [
+              "경쟁형과 비교형 둘 다 아님",
+              "둘 다 아님",
+              "어느 한쪽으로도 뚜렷하게 설명되지",
+              "뚜렷하게 설명되지",
+              "특별히 높아지지",
+              "특별히 높아지는 것도 아니고",
+              "경쟁형/비교형 구분만으로는 설명되지"
+            ],
+            "weak": [
+              "어느 한쪽",
+              "둘 다",
+              "설명되지"
+            ],
+            "anti": [
+              "양쪽에서 모두",
+              "두 방식이 모두",
+              "자기 신뢰가 올라가고"
+            ]
+          },
+          "confused_with": []
+        }
+      ]
+    }
+  ],
+  "combinations": [
+    {
+      "id": "s_r",
+      "code": "S+R",
+      "decision_style": "solo",
+      "self_efficacy": "competitive",
+      "definition_key": "group_behavior.combinations.s_r.definition"
+    },
+    {
+      "id": "s_c",
+      "code": "S+C",
+      "decision_style": "solo",
+      "self_efficacy": "comparison",
+      "definition_key": "group_behavior.combinations.s_c.definition"
+    },
+    {
+      "id": "s_rc",
+      "code": "S+RC",
+      "decision_style": "solo",
+      "self_efficacy": "both",
+      "definition_key": "group_behavior.combinations.s_rc.definition"
+    },
+    {
+      "id": "s_n",
+      "code": "S+N",
+      "decision_style": "solo",
+      "self_efficacy": "neither",
+      "definition_key": "group_behavior.combinations.s_n.definition"
+    },
+    {
+      "id": "g_r",
+      "code": "G+R",
+      "decision_style": "group",
+      "self_efficacy": "competitive",
+      "definition_key": "group_behavior.combinations.g_r.definition"
+    },
+    {
+      "id": "g_c",
+      "code": "G+C",
+      "decision_style": "group",
+      "self_efficacy": "comparison",
+      "definition_key": "group_behavior.combinations.g_c.definition"
+    },
+    {
+      "id": "g_rc",
+      "code": "G+RC",
+      "decision_style": "group",
+      "self_efficacy": "both",
+      "definition_key": "group_behavior.combinations.g_rc.definition"
+    },
+    {
+      "id": "g_n",
+      "code": "G+N",
+      "decision_style": "group",
+      "self_efficacy": "neither",
+      "definition_key": "group_behavior.combinations.g_n.definition"
+    }
+  ],
+  "cautions": [
+    {
+      "id": "not_execution_power",
+      "evidence_key": "group_behavior.cautions.not_execution_power"
+    },
+    {
+      "id": "not_sociality",
+      "evidence_key": "group_behavior.solo_vs_group.difference"
+    },
+    {
+      "id": "not_aggression_passivity",
+      "evidence_key": "group_behavior.competitive_vs_comparison.difference"
+    }
+  ]
+}

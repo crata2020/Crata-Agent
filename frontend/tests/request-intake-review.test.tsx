@@ -2,14 +2,11 @@ import "@testing-library/jest-dom/vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import RequestIntakePage from "@/app/request-intake/page";
+import RequestIntakeWorkspace from "@/app/request-intake/request-intake-workspace";
 import { createIntake, listCandidateTasks, runCandidate, runCandidates, splitCandidate, updateCandidate } from "@/lib/api";
-
-const searchParamsState = vi.hoisted(() => ({ value: "" }));
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/request-intake",
-  useSearchParams: () => new URLSearchParams(searchParamsState.value),
 }));
 
 vi.mock("@/lib/api", () => ({
@@ -75,7 +72,19 @@ describe("RequestIntakePage candidate review", () => {
     runCandidatesMock.mockReset();
     splitCandidateMock.mockReset();
     updateCandidateMock.mockReset();
-    searchParamsState.value = "";
+  });
+
+  it("fills the chat input from a quick starter request", () => {
+    render(<RequestIntakeWorkspace />);
+
+    expect(screen.getByText("자동 분류 기준")).toBeInTheDocument();
+    expect(screen.getByText("입력 전 대기")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "관계 패턴 분석" }));
+
+    expect(screen.getByLabelText("제목")).toHaveValue("유형 조합 분석");
+    expect(screen.getByLabelText("원문")).toHaveValue(
+      "A유형과 B유형이 부부관계에서 반복하는 침묵-확인요구 갈등 루프를 분석해줘.",
+    );
   });
 
   it("shows a review workspace for extracted candidates and lets the user hold one", async () => {
@@ -87,7 +96,7 @@ describe("RequestIntakePage candidate review", () => {
       candidate_tasks: candidateTasks,
     });
 
-    render(<RequestIntakePage />);
+    render(<RequestIntakeWorkspace />);
 
     fireEvent.change(screen.getByLabelText("원문"), {
       target: { value: "조직행동검사 5페이지 문구를 수정하고 상담 사례를 학습 후보로 저장하자." },
@@ -133,7 +142,7 @@ describe("RequestIntakePage candidate review", () => {
       ],
     });
 
-    render(<RequestIntakePage />);
+    render(<RequestIntakeWorkspace />);
 
     fireEvent.change(screen.getByLabelText("원문"), {
       target: { value: "결과지 문구 수정 기능을 홍보 콘텐츠로 만들어서 유튜브와 블로그에 올리자." },
@@ -182,16 +191,16 @@ describe("RequestIntakePage candidate review", () => {
       ],
     });
 
-    render(<RequestIntakePage />);
+    render(<RequestIntakeWorkspace />);
 
     fireEvent.change(screen.getByLabelText("원문"), {
       target: { value: "공공기관 연수 프로그램 제안서를 기획해줘." },
     });
     fireEvent.click(screen.getByRole("button", { name: "작업 후보 추출" }));
 
-    expect(await screen.findByText("먼저 확인할 질문")).toBeInTheDocument();
-    expect(screen.getByText("대상 기관 또는 고객은 누구인가요?")).toBeInTheDocument();
-    expect(screen.getByText("해결하려는 문제나 개선하고 싶은 장면은 무엇인가요?")).toBeInTheDocument();
+    expect((await screen.findAllByText("먼저 확인할 질문")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("대상 기관 또는 고객은 누구인가요?").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("해결하려는 문제나 개선하고 싶은 장면은 무엇인가요?").length).toBeGreaterThan(0);
   });
 
   it("shows the intake decomposition graph trace after candidate extraction", async () => {
@@ -222,7 +231,7 @@ describe("RequestIntakePage candidate review", () => {
       candidate_tasks: candidateTasks,
     });
 
-    render(<RequestIntakePage />);
+    render(<RequestIntakeWorkspace />);
 
     fireEvent.change(screen.getByLabelText("원문"), {
       target: { value: "결과지 문구는 상담형으로 수정하고 상담 사례는 학습 후보로 저장하자." },
@@ -253,7 +262,7 @@ describe("RequestIntakePage candidate review", () => {
       status: "pending_approval",
     });
 
-    render(<RequestIntakePage />);
+    render(<RequestIntakeWorkspace />);
 
     fireEvent.change(screen.getByLabelText("원문"), {
       target: { value: "조직행동검사 5페이지 문구를 수정하고 상담 사례를 학습 후보로 저장하자." },
@@ -266,13 +275,20 @@ describe("RequestIntakePage candidate review", () => {
 
     await waitFor(() => expect(runCandidateMock).toHaveBeenCalledWith("candidate-report"));
     expect(runCandidateMock).toHaveBeenCalledTimes(1);
+    expect(await screen.findByRole("link", { name: "실행 흐름" })).toHaveAttribute(
+      "href",
+      "/activity?taskId=task-1",
+    );
+    expect(screen.getByRole("link", { name: "승인 카드" })).toHaveAttribute(
+      "href",
+      "/approvals?approvalId=approval-1",
+    );
   });
 
   it("loads and highlights a candidate linked from the dashboard", async () => {
-    searchParamsState.value = "candidateId=candidate-case";
     listCandidateTasksMock.mockResolvedValue(candidateTasks);
 
-    render(<RequestIntakePage />);
+    render(<RequestIntakeWorkspace linkedCandidateId="candidate-case" />);
 
     await waitFor(() => expect(listCandidateTasksMock).toHaveBeenCalledTimes(1));
 
@@ -303,7 +319,7 @@ describe("RequestIntakePage candidate review", () => {
       ],
     });
 
-    render(<RequestIntakePage />);
+    render(<RequestIntakeWorkspace />);
 
     fireEvent.change(screen.getByLabelText("원문"), {
       target: { value: "조직행동검사 5페이지 문구를 수정하고 상담 사례를 학습 후보로 저장하자." },
@@ -318,6 +334,10 @@ describe("RequestIntakePage candidate review", () => {
     expect(await screen.findByText("선택 후보 1개를 실행했습니다. 승인함에서 검토하세요.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "승인함으로 이동" })).toHaveAttribute("href", "/approvals");
     expect(screen.getByText("승인 ID: approval-1")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "실행 흐름" })).toHaveAttribute(
+      "href",
+      "/activity?taskId=task-1",
+    );
   });
 
   it("edits and saves candidate title, summary, and recommended agents before execution", async () => {
@@ -335,7 +355,7 @@ describe("RequestIntakePage candidate review", () => {
       recommended_agents: ["crata_ceo", "report_editor", "quality_inspector"],
     });
 
-    render(<RequestIntakePage />);
+    render(<RequestIntakeWorkspace />);
 
     fireEvent.change(screen.getByLabelText("원문"), {
       target: { value: "조직행동검사 5페이지 문구를 수정하자." },
@@ -361,12 +381,80 @@ describe("RequestIntakePage candidate review", () => {
         title: "조직행동검사 5페이지 문구 수정",
         summary: "상담형 결과지 문장으로 수정합니다.",
         recommended_agents: ["crata_ceo", "report_editor", "quality_inspector"],
+        clarifying_answers: "",
       }),
     );
     expect(await screen.findByText("후보를 저장했습니다.")).toBeInTheDocument();
-    expect(screen.getByText("조직행동검사 5페이지 문구 수정")).toBeInTheDocument();
+    expect(screen.getAllByText("조직행동검사 5페이지 문구 수정").length).toBeGreaterThan(0);
     expect(screen.getByText("상담형 결과지 문장으로 수정합니다.")).toBeInTheDocument();
     expect(screen.getByText("품질검수관")).toBeInTheDocument();
+  });
+
+  it("edits and saves clarifying answers before execution", async () => {
+    createIntakeMock.mockResolvedValue({
+      id: "intake-1",
+      title: "기획 요청",
+      input_type: "memo",
+      raw_content: "원문",
+      candidate_tasks: [
+        {
+          id: "candidate-plan",
+          task_type: "business_planning",
+          title: "사업·프로그램 기획 후보",
+          summary: "공공기관 연수 프로그램 제안서 기획 요청입니다.",
+          evidence_excerpt: "공공기관 연수 프로그램 제안서를 기획해줘.",
+          recommended_agents: ["crata_ceo", "business_designer"],
+          status: "draft",
+          rule_hint_task_type: "business_planning",
+          ai_task_type: "business_planning",
+          classification_source: "rule_assisted_ai",
+          classification_status: "aligned",
+          confidence: 0.86,
+          classification_reason: "사업 기획 산출물이 필요한 요청으로 판단했습니다.",
+          approval_required: false,
+          rule_hints: ["공공기관", "연수", "프로그램", "제안서"],
+          review_flags: [],
+          clarifying_questions: ["대상 기관 또는 고객은 누구인가요?"],
+          clarifying_answers: "",
+        },
+      ],
+    });
+    updateCandidateMock.mockResolvedValue({
+      id: "candidate-plan",
+      task_type: "business_planning",
+      title: "사업·프로그램 기획 후보",
+      summary: "공공기관 연수 프로그램 제안서 기획 요청입니다.",
+      evidence_excerpt: "공공기관 연수 프로그램 제안서를 기획해줘.",
+      recommended_agents: ["crata_ceo", "business_designer"],
+      status: "draft",
+      clarifying_questions: ["대상 기관 또는 고객은 누구인가요?"],
+      clarifying_answers: "대상은 지방 공공기관 신규 관리자이며 예산은 800만원입니다.",
+    });
+
+    render(<RequestIntakeWorkspace />);
+
+    fireEvent.change(screen.getByLabelText("원문"), {
+      target: { value: "공공기관 연수 프로그램 제안서를 기획해줘." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "작업 후보 추출" }));
+
+    await screen.findByText("작업 후보 검토");
+    fireEvent.click(screen.getByRole("button", { name: "후보 수정" }));
+    fireEvent.change(screen.getByLabelText("질문 답변 / 추가 메모"), {
+      target: { value: "대상은 지방 공공기관 신규 관리자이며 예산은 800만원입니다." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "후보 저장" }));
+
+    await waitFor(() =>
+      expect(updateCandidateMock).toHaveBeenCalledWith("candidate-plan", {
+        title: "사업·프로그램 기획 후보",
+        summary: "공공기관 연수 프로그램 제안서 기획 요청입니다.",
+        recommended_agents: ["crata_ceo", "business_designer"],
+        clarifying_answers: "대상은 지방 공공기관 신규 관리자이며 예산은 800만원입니다.",
+      }),
+    );
+    expect(await screen.findByText("입력한 답변")).toBeInTheDocument();
+    expect(screen.getByText("대상은 지방 공공기관 신규 관리자이며 예산은 800만원입니다.")).toBeInTheDocument();
   });
 
   it("splits one candidate into reclassified draft candidates", async () => {
@@ -409,7 +497,7 @@ describe("RequestIntakePage candidate review", () => {
       ],
     });
 
-    render(<RequestIntakePage />);
+    render(<RequestIntakeWorkspace />);
 
     fireEvent.change(screen.getByLabelText("원문"), {
       target: { value: "문구수정하고 기획서 작성해줘." },
@@ -430,7 +518,7 @@ describe("RequestIntakePage candidate review", () => {
       ]),
     );
     expect(await screen.findByText("후보를 2개로 분할했습니다.")).toBeInTheDocument();
-    expect(screen.getByText("사업·프로그램 기획 후보")).toBeInTheDocument();
+    expect(screen.getAllByText("사업·프로그램 기획 후보").length).toBeGreaterThan(0);
     expect(screen.getByText("실행 대상 2개 / 전체 2개")).toBeInTheDocument();
   });
 
@@ -443,7 +531,7 @@ describe("RequestIntakePage candidate review", () => {
       candidate_tasks: candidateTasks,
     });
 
-    render(<RequestIntakePage />);
+    render(<RequestIntakeWorkspace />);
 
     fireEvent.change(screen.getByLabelText("원문"), {
       target: { value: "조직행동검사 5페이지 문구를 수정하자." },

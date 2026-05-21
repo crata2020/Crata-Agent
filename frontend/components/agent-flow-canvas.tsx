@@ -1,827 +1,575 @@
 "use client";
 
-import { AlertCircle, ClipboardCheck, Loader2, Minus, Move, Play, Plus, RotateCcw } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
-import type { PointerEvent, ReactNode, WheelEvent } from "react";
+import {
+  Bot,
+  BriefcaseBusiness,
+  CheckCircle2,
+  ChevronDown,
+  ClipboardCheck,
+  Database,
+  FileText,
+  Gauge,
+  Info,
+  Maximize2,
+  MessageSquareText,
+  Minus,
+  Plus,
+  Search,
+  ShieldCheck,
+} from "lucide-react";
+import { useMemo, useState } from "react";
 
-import { runCandidate } from "@/lib/api";
 import type {
   AgentActivity,
   AgentActivityStatus,
-  AgentWorkItem,
   DashboardSummary,
   WorkflowRunActivity,
-  WorkflowStepActivity,
 } from "@/lib/types";
 
-const WORLD_WIDTH = 1780;
-const WORLD_HEIGHT = 840;
-const NODE_WIDTH = 316;
-const NODE_HEIGHT = 142;
-
-const nodePositions: Record<string, { x: number; y: number }> = {
-  crata_ceo: { x: 650, y: 70 },
-  concept_guardian: { x: 140, y: 285 },
-  report_editor: { x: 480, y: 285 },
-  counseling_coach: { x: 820, y: 285 },
-  quality_inspector: { x: 1160, y: 285 },
-  operations_secretary: { x: 70, y: 555 },
-  case_learner: { x: 410, y: 555 },
-  relationship_analyst: { x: 750, y: 555 },
-  business_designer: { x: 1090, y: 555 },
-  content_strategist: { x: 1410, y: 555 },
+const statusMeta: Record<AgentActivityStatus, { label: string; dot: string; cls: string }> = {
+  working: { label: "작업 중", dot: "#35E48A", cls: "border-emerald-300/35 bg-emerald-400/10 text-emerald-100" },
+  waiting_approval: { label: "승인 대기", dot: "#F2B84B", cls: "border-amber-300/35 bg-amber-400/10 text-amber-100" },
+  queued: { label: "후보 대기", dot: "#4AA8FF", cls: "border-sky-300/35 bg-sky-400/10 text-sky-100" },
+  idle: { label: "대기 중", dot: "#8A95A7", cls: "border-white/10 bg-white/[0.05] text-[#C8D0DA]" },
+  planned: { label: "확장 예정", dot: "#697280", cls: "border-white/10 bg-white/[0.04] text-[#9BA4B0]" },
 };
 
-const edges = [
-  ["crata_ceo", "concept_guardian"],
-  ["crata_ceo", "report_editor"],
-  ["crata_ceo", "counseling_coach"],
-  ["crata_ceo", "quality_inspector"],
-  ["concept_guardian", "operations_secretary"],
-  ["concept_guardian", "case_learner"],
-  ["report_editor", "relationship_analyst"],
-  ["quality_inspector", "business_designer"],
-  ["quality_inspector", "content_strategist"],
+const roomDefs = [
+  {
+    id: "command",
+    title: "지휘본부",
+    subtitle: "요청 분류와 작업 조율",
+    icon: ShieldCheck,
+    color: "#5B7CFF",
+    x: 84,
+    y: 78,
+    w: 445,
+    h: 205,
+    agents: ["crata_ceo"],
+  },
+  {
+    id: "knowledge",
+    title: "검사·지식 연구실",
+    subtitle: "공식 개념지도와 유형 판별",
+    icon: Database,
+    color: "#34D399",
+    x: 610,
+    y: 98,
+    w: 410,
+    h: 260,
+    agents: ["concept_guardian", "relationship_analyst"],
+  },
+  {
+    id: "report",
+    title: "결과지 제작실",
+    subtitle: "문구 작성, 톤 조정, 승인 전 검수",
+    icon: FileText,
+    color: "#C084FC",
+    x: 1054,
+    y: 130,
+    w: 350,
+    h: 265,
+    agents: ["report_editor", "quality_inspector"],
+  },
+  {
+    id: "case",
+    title: "상담 분석실",
+    subtitle: "상담 사례와 관계 패턴 해석",
+    icon: MessageSquareText,
+    color: "#F472B6",
+    x: 690,
+    y: 430,
+    w: 390,
+    h: 250,
+    agents: ["counseling_coach", "case_learner"],
+  },
+  {
+    id: "growth",
+    title: "기획 스튜디오",
+    subtitle: "사업안, 콘텐츠, 운영 브리핑",
+    icon: BriefcaseBusiness,
+    color: "#F59E0B",
+    x: 174,
+    y: 418,
+    w: 450,
+    h: 245,
+    agents: ["business_designer", "content_strategist", "operations_secretary"],
+  },
 ] as const;
 
-const statusMeta: Record<
-  AgentActivityStatus,
-  { label: string; dot: string; stroke: string; glow: string; badgeClass: string }
-> = {
-  working: {
-    label: "작업 중",
-    dot: "#36D47F",
-    stroke: "#36D47F",
-    glow: "0 0 26px rgba(54, 212, 127, 0.28)",
-    badgeClass: "bg-[#102A1C] text-[#6FF0A0]",
-  },
-  waiting_approval: {
-    label: "승인 대기",
-    dot: "#F2B84B",
-    stroke: "#F2B84B",
-    glow: "0 0 26px rgba(242, 184, 75, 0.28)",
-    badgeClass: "bg-[#302410] text-[#FFD37A]",
-  },
-  queued: {
-    label: "후보 대기",
-    dot: "#38BDF8",
-    stroke: "#38BDF8",
-    glow: "0 0 26px rgba(56, 189, 248, 0.25)",
-    badgeClass: "bg-[#0B2535] text-[#7DD7FF]",
-  },
-  idle: {
-    label: "대기 중",
-    dot: "#77828B",
-    stroke: "#46515C",
-    glow: "0 0 18px rgba(120, 132, 144, 0.08)",
-    badgeClass: "bg-white/[0.06] text-[#B5C0CA]",
-  },
-  planned: {
-    label: "확장 예정",
-    dot: "#6B7280",
-    stroke: "#343C45",
-    glow: "none",
-    badgeClass: "bg-white/[0.05] text-[#A4ADB8]",
-  },
+const taskTypeLabel: Record<string, string> = {
+  business_planning: "사업 기획",
+  content_marketing: "콘텐츠",
+  report_phrase_revision: "결과지",
+  counseling_case_learning: "상담 사례",
+  relationship_pattern_analysis: "관계 분석",
+  general_agent_task: "일반 작업",
 };
 
-const workItemSourceLabels: Record<AgentWorkItem["source_type"], string> = {
-  candidate: "후보",
-  task: "작업",
-  approval: "승인",
-};
-
-const workItemStatusLabels: Record<string, string> = {
-  draft: "후보 대기",
-  running: "실행 중",
-  pending_approval: "승인 대기",
-  approved: "승인 완료",
-  rejected: "반려",
-  revise_requested: "수정요청",
-  failed: "실패",
-};
-
-const workflowStepLabels: Record<string, string> = {
-  ceo_routing: "CEO 라우팅",
-  context_retrieval: "근거 확인",
-  specialist_draft: "초안 작성",
-  quality_review: "품질 검수",
-  approval_pending: "승인 대기",
-};
-
-const workflowStatusLabels: Record<string, string> = {
-  running: "실행 중",
-  pending_approval: "승인 대기",
-  approved: "승인 완료",
-  rejected: "거절됨",
-  revise_requested: "수정요청",
-  failed: "실패",
-};
-
-interface AgentFlowCanvasProps {
+interface Props {
   agents: AgentActivity[];
   summary: DashboardSummary;
   workflowRuns?: WorkflowRunActivity[];
 }
 
-export function AgentFlowCanvas({ agents, summary, workflowRuns = [] }: AgentFlowCanvasProps) {
-  const [view, setView] = useState({ x: 24, y: 48, scale: 0.61 });
-  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
-  const [inspectorTab, setInspectorTab] = useState<"agent" | "logs">("agent");
-  const [runningWorkItemKey, setRunningWorkItemKey] = useState<string | null>(null);
-  const [workItemOverrides, setWorkItemOverrides] = useState<Record<string, Partial<AgentWorkItem>>>({});
-  const [workItemMessages, setWorkItemMessages] = useState<Record<string, { tone: "success" | "error"; text: string }>>({});
-  const dragRef = useRef<{ active: boolean; x: number; y: number }>({ active: false, x: 0, y: 0 });
-  const activityById = useMemo(() => new Map(agents.map((agent) => [agent.id, agent])), [agents]);
-  const leadAgent = agents.find((agent) => agent.activity_status !== "idle" && agent.activity_status !== "planned") ?? agents[0];
-  const selectedAgent = agents.find((agent) => agent.id === selectedAgentId) ?? leadAgent;
-  const agentNameById = useMemo(
-    () => new Map(agents.map((agent) => [agent.id, agent.display_name])),
-    [agents],
-  );
-  const selectedWorkItems = (selectedAgent?.work_items ?? []).map((item) => {
-    const itemKey = workItemKey(item);
-    return {
-      itemKey,
-      item: {
-        ...item,
-        ...workItemOverrides[itemKey],
-      },
-    };
-  });
-  const selectedAgentSteps = selectedAgent
-    ? workflowRuns
-        .flatMap((run) => run.steps.map((step) => ({ run, step })))
-        .filter(({ step }) => step.agent_id === selectedAgent.id)
-        .slice(0, 4)
-    : [];
+export function AgentFlowCanvas({ agents, summary, workflowRuns = [] }: Props) {
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(agents[0]?.id ?? null);
+  const [hoveredAgentId, setHoveredAgentId] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(0.86);
+  const [query, setQuery] = useState("");
 
-  function updateScale(nextScale: number) {
-    setView((current) => ({
-      ...current,
-      scale: Math.min(1.35, Math.max(0.46, nextScale)),
-    }));
-  }
+  const agentById = useMemo(() => new Map(agents.map((agent) => [agent.id, agent])), [agents]);
+  const selectedAgent = selectedAgentId ? agentById.get(selectedAgentId) ?? null : null;
+  const hoveredAgent = hoveredAgentId ? agentById.get(hoveredAgentId) ?? null : null;
+  const visibleRooms = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return roomDefs;
 
-  function handleWheel(event: WheelEvent<HTMLDivElement>) {
-    event.preventDefault();
-    const nextScale = view.scale + (event.deltaY > 0 ? -0.05 : 0.05);
-    updateScale(nextScale);
-  }
-
-  function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
-    dragRef.current = { active: true, x: event.clientX, y: event.clientY };
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-  }
-
-  function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
-    if (!dragRef.current.active) {
-      return;
-    }
-
-    const dx = event.clientX - dragRef.current.x;
-    const dy = event.clientY - dragRef.current.y;
-    dragRef.current = { active: true, x: event.clientX, y: event.clientY };
-    setView((current) => ({ ...current, x: current.x + dx, y: current.y + dy }));
-  }
-
-  function handlePointerUp() {
-    dragRef.current.active = false;
-  }
-
-  async function handleRunWorkItem(itemKey: string, item: AgentWorkItem) {
-    if (item.source_type !== "candidate" || item.status !== "draft") {
-      return;
-    }
-
-    setRunningWorkItemKey(itemKey);
-    setWorkItemMessages((current) => {
-      const next = { ...current };
-      delete next[itemKey];
-      return next;
+    return roomDefs.filter((room) => {
+      const roomText = `${room.title} ${room.subtitle}`.toLowerCase();
+      const agentText = room.agents
+        .map((id) => agentById.get(id))
+        .filter(Boolean)
+        .map((agent) => `${agent?.display_name} ${agent?.role} ${agent?.current_focus}`)
+        .join(" ")
+        .toLowerCase();
+      return `${roomText} ${agentText}`.includes(normalized);
     });
+  }, [agentById, query]);
 
-    try {
-      const response = await runCandidate(item.id);
-      setWorkItemOverrides((current) => ({
-        ...current,
-        [itemKey]: {
-          id: response.approval_id,
-          source_type: "approval",
-          status: response.status,
-          href: `/approvals?approvalId=${response.approval_id}`,
-          summary: `${item.summary} 실행 완료 후 승인함에 올라갔습니다.`,
-        },
-      }));
-      setWorkItemMessages((current) => ({
-        ...current,
-        [itemKey]: { tone: "success", text: "실행 완료. 승인함에서 검토하세요." },
-      }));
-    } catch (err) {
-      setWorkItemMessages((current) => ({
-        ...current,
-        [itemKey]: {
-          tone: "error",
-          text: err instanceof Error ? err.message : "작업 실행에 실패했습니다.",
-        },
-      }));
-    } finally {
-      setRunningWorkItemKey(null);
-    }
-  }
+  const activeRuns = workflowRuns.filter((run) => run.status === "running" || run.status === "queued");
+  const recentRuns = workflowRuns.slice(0, 4);
 
   return (
-    <section className="relative h-[calc(100vh-2rem)] min-h-[760px] overflow-hidden rounded-[18px] border border-white/10 bg-[#05080B] shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_8%,rgba(31,107,87,0.2),transparent_34%),linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[length:auto,48px_48px,48px_48px]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_35%,rgba(56,189,248,0.09),transparent_30%)]" />
+    <div className="flex h-full min-h-0 bg-[#06080A] text-[#EAF0F6]">
+      <section className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <OfficeTopBar
+          summary={summary}
+          activeRuns={activeRuns.length}
+          zoom={zoom}
+          onZoomIn={() => setZoom((value) => Math.min(1.18, value + 0.08))}
+          onZoomOut={() => setZoom((value) => Math.max(0.64, value - 0.08))}
+          onFit={() => setZoom(0.86)}
+          query={query}
+          onQueryChange={setQuery}
+        />
 
-      <header className="absolute left-0 right-0 top-0 z-20 flex h-[74px] items-center justify-between border-b border-white/10 bg-[#071017]/88 px-5 backdrop-blur">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-[#8EA0AE]">Agent Flow</p>
-          <h1 className="mt-1 text-lg font-semibold text-white">CRATA 직원 작업 맵</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="hidden rounded-button border border-white/10 bg-white/[0.06] p-1 text-sm font-semibold text-[#A3ACB5] sm:flex">
-            <span className="rounded-button bg-[#362029] px-4 py-2 text-[#FF5F6D]">Map</span>
-            <span className="px-4 py-2">Grid</span>
-            <span className="px-4 py-2">Feed</span>
+        <div className="relative min-h-0 flex-1 overflow-auto crata-office-floor">
+          <div className="pointer-events-none absolute inset-0 crata-office-grid" />
+          <div className="pointer-events-none absolute left-8 top-8 z-10 hidden rounded-xl border border-white/10 bg-black/35 px-3 py-2 text-[11px] text-[#A9B2BE] backdrop-blur md:block">
+            휠/버튼으로 확대 비율 조정 · 에이전트를 선택하면 우측 브리핑이 바뀝니다.
           </div>
-          <div className="rounded-button border border-white/10 bg-white/[0.06] px-3 py-2 text-xs text-[#C0CAD4]">
-            <span className="mr-3 inline-flex items-center gap-1.5">
-              <span className="size-2 rounded-full bg-[#36D47F]" />
-              Healthy
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="size-2 rounded-full bg-[#F2B84B]" />
-              승인 {summary.pending_approval_count}
-            </span>
-          </div>
-        </div>
-      </header>
 
-      <aside
-        data-testid="agent-inspector-panel"
-        className="absolute right-5 top-24 z-30 hidden max-h-[calc(100vh-8rem)] w-[320px] overflow-y-auto rounded-card border border-white/10 bg-[#11161C]/94 p-4 text-white shadow-[0_18px_60px_rgba(0,0,0,0.42)] backdrop-blur xl:block"
-      >
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8EA0AE]">Agent Inspector</p>
-          <span className="rounded-full bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-[#AEB9C4]">
-            {workflowRuns.length}개 실행
-          </span>
-        </div>
-
-        <div
-          role="tablist"
-          aria-label="에이전트 인스펙터 보기"
-          className="mt-3 grid grid-cols-2 rounded-button border border-white/10 bg-black/20 p-1 text-xs font-semibold"
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={inspectorTab === "agent"}
-            onClick={() => setInspectorTab("agent")}
-            className={`rounded-button px-3 py-2 transition ${
-              inspectorTab === "agent" ? "bg-[#102A1C] text-[#6FF0A0]" : "text-[#94A1AD] hover:bg-white/[0.06] hover:text-white"
-            }`}
+          <div
+            className="relative mx-auto h-[760px] w-[1490px] origin-top-left"
+            style={{ transform: `scale(${zoom})`, transformOrigin: "42px 36px" }}
           >
-            에이전트
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={inspectorTab === "logs"}
-            onClick={() => setInspectorTab("logs")}
-            className={`rounded-button px-3 py-2 transition ${
-              inspectorTab === "logs" ? "bg-[#2A1820] text-[#FF6B7A]" : "text-[#94A1AD] hover:bg-white/[0.06] hover:text-white"
-            }`}
-          >
-            실행 로그
-          </button>
-        </div>
+            <OfficeConnectors />
 
-        {inspectorTab === "agent" ? (
-          <>
-            <div className="mt-4 flex items-start gap-3">
-              <div
-                className="flex size-10 shrink-0 items-center justify-center rounded-[9px] border text-xs font-black"
-                style={{
-                  borderColor: selectedAgent?.color ?? "#38BDF8",
-                  color: selectedAgent?.color ?? "#38BDF8",
-                  backgroundColor: `${selectedAgent?.color ?? "#38BDF8"}1A`,
-                }}
-              >
-                {selectedAgent ? agentInitials(selectedAgent.display_name) : "AI"}
-              </div>
-              <div className="min-w-0">
-                <h2 className="text-base font-semibold leading-5">{selectedAgent?.display_name ?? "CRATA CEO"}</h2>
-                <p className="mt-1 line-clamp-2 text-xs leading-5 text-[#B1BDC7]">{selectedAgent?.role}</p>
-              </div>
-            </div>
-
-            <div className="mt-4 rounded-card border border-white/10 bg-black/20 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-[11px] text-[#8E99A3]">현재 작업</p>
-                {selectedAgent ? (
-                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold ${statusMeta[selectedAgent.activity_status].badgeClass}`}>
-                    <span className="size-1.5 rounded-full" style={{ backgroundColor: statusMeta[selectedAgent.activity_status].dot }} />
-                    {statusMeta[selectedAgent.activity_status].label}
-                  </span>
-                ) : null}
-              </div>
-              <p className="mt-2 line-clamp-3 text-sm leading-5 text-white">{selectedAgent?.current_focus ?? "요청 대기"}</p>
-              {selectedAgent?.current_task_type ? (
-                <p className="mt-2 rounded-button bg-white/[0.06] px-2 py-1 text-xs font-semibold text-[#AEB9C4]">
-                  {selectedAgent.current_task_type}
-                </p>
-              ) : null}
-            </div>
-
-            <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-              <InspectorStat label="작업" value={selectedAgent?.workload_count ?? 0} />
-              <InspectorStat label="후보" value={selectedAgent?.candidate_count ?? 0} />
-              <InspectorStat label="승인" value={selectedAgent?.pending_approval_count ?? 0} />
-            </div>
-
-            <div className="mt-4">
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8EA0AE]">Work Queue</p>
-                <span className="rounded-full bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-[#AEB9C4]">
-                  {selectedWorkItems.length}개
-                </span>
-              </div>
-              <div className="max-h-[230px] space-y-2 overflow-y-auto pr-1">
-                {selectedWorkItems.length > 0 ? (
-                  selectedWorkItems.map(({ itemKey, item }) => (
-                    <WorkItemCard
-                      key={itemKey}
-                      item={item}
-                      isRunning={runningWorkItemKey === itemKey}
-                      message={workItemMessages[itemKey]}
-                      onRun={() => handleRunWorkItem(itemKey, item)}
-                    />
-                  ))
-                ) : (
-                  <div className="rounded-card border border-dashed border-white/10 bg-black/15 p-3 text-xs leading-5 text-[#8F9AA4]">
-                    이 에이전트에게 배정된 후보나 승인 대기 작업이 아직 없습니다.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8EA0AE]">Agent Timeline</p>
-                <span className="rounded-full bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-[#AEB9C4]">
-                  {selectedAgentSteps.length}단계
-                </span>
-              </div>
-              {selectedAgentSteps.length > 0 ? (
-                <div className="space-y-2">
-                  {selectedAgentSteps.map(({ run, step }) => (
-                    <AgentStepCard key={step.id} run={run} step={step} />
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-card border border-dashed border-white/10 bg-black/15 p-3 text-xs leading-5 text-[#8F9AA4]">
-                  아직 이 에이전트가 수행한 실행 단계가 없습니다.
-                </div>
-              )}
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <a
-                href="/request-intake"
-                className="rounded-button border border-white/10 bg-white/[0.06] px-3 py-2 text-center text-xs font-semibold text-[#DDE6EE] transition hover:bg-white/10"
-              >
-                후보 보기
-              </a>
-              <a
-                href="/approvals"
-                className="rounded-button border border-[#F2B84B]/30 bg-[#302410] px-3 py-2 text-center text-xs font-semibold text-[#FFD37A] transition hover:bg-[#3A2B13]"
-              >
-                승인함
-              </a>
-            </div>
-
-            <p className="mt-3 text-[11px] leading-5 text-[#7F8A93]">후보는 요청 콘솔, 승인 항목은 승인함으로 연결됩니다.</p>
-          </>
-        ) : (
-          <LiveLogsContent workflowRuns={workflowRuns} agentNameById={agentNameById} />
-        )}
-      </aside>
-
-      <div className="absolute bottom-6 left-6 z-20 flex flex-col overflow-hidden rounded-full border border-white/10 bg-[#12171D]/90 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur">
-        <CanvasButton label="확대" onClick={() => updateScale(view.scale + 0.1)}>
-          <Plus size={18} />
-        </CanvasButton>
-        <CanvasButton label="축소" onClick={() => updateScale(view.scale - 0.1)}>
-          <Minus size={18} />
-        </CanvasButton>
-        <CanvasButton label="리셋" onClick={() => setView({ x: 24, y: 48, scale: 0.61 })}>
-          <RotateCcw size={16} />
-        </CanvasButton>
-        <CanvasButton label="이동 모드">
-          <Move size={16} />
-        </CanvasButton>
-      </div>
-
-      <div
-        className="absolute inset-0 cursor-grab overflow-hidden pt-[74px] active:cursor-grabbing"
-        data-testid="agent-flow-canvas"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        onWheel={handleWheel}
-      >
-        <div
-          className="relative"
-          style={{
-            width: WORLD_WIDTH,
-            height: WORLD_HEIGHT,
-            transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
-            transformOrigin: "0 0",
-          }}
-        >
-          <svg className="pointer-events-none absolute inset-0" width={WORLD_WIDTH} height={WORLD_HEIGHT} aria-hidden="true">
-            {edges.map(([source, target]) => {
-              const from = nodePositions[source];
-              const to = nodePositions[target];
-              const targetAgent = activityById.get(target);
-              const meta = statusMeta[targetAgent?.activity_status ?? "idle"];
-              const isMuted = targetAgent?.activity_status === "idle" || targetAgent?.activity_status === "planned";
-
-              return (
-                <g key={`${source}-${target}`}>
-                  <path
-                    d={edgePath(from, to)}
-                    fill="none"
-                    stroke={meta.stroke}
-                    strokeLinecap="round"
-                    strokeOpacity={isMuted ? 0.25 : 0.62}
-                    strokeWidth={2}
-                  />
-                  <path d={arrowHeadPath(to)} fill={meta.stroke} fillOpacity={isMuted ? 0.32 : 0.72} />
-                </g>
-              );
-            })}
-          </svg>
-
-          {agents.map((agent) => {
-            const position = nodePositions[agent.id] ?? { x: 80, y: 80 };
-            return (
-              <AgentNode
-                key={agent.id}
-                agent={agent}
-                x={position.x}
-                y={position.y}
-                selected={selectedAgent?.id === agent.id}
-                onSelect={() => {
-                  setSelectedAgentId(agent.id);
-                  setInspectorTab("agent");
-                }}
+            {visibleRooms.map((room) => (
+              <OfficeRoom
+                key={room.id}
+                room={room}
+                agents={room.agents.map((id) => agentById.get(id)).filter((agent): agent is AgentActivity => Boolean(agent))}
+                selectedAgentId={selectedAgentId}
+                onSelectAgent={setSelectedAgentId}
+                onHoverAgent={setHoveredAgentId}
               />
-            );
-          })}
-        </div>
-      </div>
-      <div className="absolute bottom-6 left-1/2 z-20 hidden -translate-x-1/2 rounded-full border border-white/10 bg-[#12171D]/90 p-1 text-sm font-semibold text-[#A7B0BA] shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur md:flex">
-        <span className="rounded-full px-5 py-2">Teams</span>
-        <span className="rounded-full bg-[#362029] px-5 py-2 text-[#FF5F6D]">Hierarchy</span>
-      </div>
-    </section>
-  );
-}
+            ))}
 
-function AgentNode({
-  agent,
-  x,
-  y,
-  selected,
-  onSelect,
-}: {
-  agent: AgentActivity;
-  x: number;
-  y: number;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  const meta = statusMeta[agent.activity_status];
-  const initials = agentInitials(agent.display_name);
-
-  return (
-    <button
-      type="button"
-      onClick={(event) => {
-        event.stopPropagation();
-        onSelect();
-      }}
-      onPointerDown={(event) => event.stopPropagation()}
-      className="absolute cursor-pointer rounded-[10px] border bg-[#111820]/96 p-3.5 text-left text-white shadow-[0_18px_42px_rgba(0,0,0,0.38)] transition duration-150 hover:-translate-y-0.5 hover:bg-[#151D26]"
-      style={{
-        left: x,
-        top: y,
-        width: NODE_WIDTH,
-        height: NODE_HEIGHT,
-        borderColor: meta.stroke,
-        boxShadow: selected ? `${meta.glow}, 0 0 0 2px ${meta.stroke}` : meta.glow,
-      }}
-      aria-pressed={selected}
-      aria-label={`${agent.display_name} 상세 보기`}
-    >
-      <div className="flex items-start gap-3">
-        <div
-          className="flex size-11 shrink-0 items-center justify-center rounded-[9px] border text-xs font-black"
-          style={{ borderColor: agent.color, color: agent.color, backgroundColor: `${agent.color}1A` }}
-        >
-          {initials || "AI"}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
-            <h3 className="min-w-0 max-w-[170px] text-[16px] font-semibold leading-5 text-[#F4F7FA]">
-              {agent.display_name}
-            </h3>
-            <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold ${meta.badgeClass}`}>
-              <span className="size-1.5 rounded-full" style={{ backgroundColor: meta.dot }} />
-              {meta.label}
-            </span>
+            {hoveredAgent ? <AgentHoverCard agent={hoveredAgent} /> : null}
           </div>
-          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#94A1AD]">
-            {agent.enabled ? "LOCAL" : "PLANNED"}
-          </p>
         </div>
-      </div>
-      <p className="mt-2 line-clamp-2 min-h-[24px] text-[13px] font-medium leading-5 text-[#DDE6EE]">
-        {agent.current_focus}
-      </p>
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-semibold">
-        <span className="rounded-full bg-[#2A1820] px-2 py-1 text-[#FF6B7A]">{agent.workload_count} 작업</span>
-        <span className="rounded-full bg-white/[0.07] px-2 py-1 text-[#B1BDC8]">{agent.candidate_count} 후보</span>
-        {agent.pending_approval_count > 0 ? (
-          <span className="rounded-full bg-[#312511] px-2 py-1 text-[#F2B84B]">{agent.pending_approval_count} 승인</span>
-        ) : null}
-      </div>
-    </button>
-  );
-}
+      </section>
 
-function agentInitials(displayName: string) {
-  return displayName
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
-
-function InspectorStat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-button bg-white/[0.06] px-3 py-2">
-      <p className="text-sm font-semibold text-white">{value}</p>
-      <p className="mt-0.5 text-[11px] text-[#A5B0BA]">{label}</p>
+      <OfficeInspector agent={selectedAgent} summary={summary} recentRuns={recentRuns} />
     </div>
   );
 }
 
-function AgentStepCard({ run, step }: { run: WorkflowRunActivity; step: WorkflowStepActivity }) {
-  return (
-    <div className="rounded-card border border-white/10 bg-[#0B1117]/80 p-3">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold text-white">{workflowStepLabels[step.step_name] ?? step.step_name}</p>
-        <span className="rounded-full bg-[#102A1C] px-2 py-1 text-[10px] font-semibold text-[#6FF0A0]">
-          {workflowStatusLabels[step.status] ?? step.status}
-        </span>
-      </div>
-      <p className="mt-1 line-clamp-1 text-xs text-[#9EABB6]">{run.task_title ?? step.input_summary}</p>
-      <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6F7D89]">
-        {formatActivityTime(step.completed_at ?? step.started_at)}
-      </p>
-    </div>
-  );
-}
-
-function LiveLogsContent({
-  workflowRuns,
-  agentNameById,
+function OfficeTopBar({
+  summary,
+  activeRuns,
+  zoom,
+  query,
+  onQueryChange,
+  onZoomIn,
+  onZoomOut,
+  onFit,
 }: {
-  workflowRuns: WorkflowRunActivity[];
-  agentNameById: Map<string, string>;
+  summary: DashboardSummary;
+  activeRuns: number;
+  zoom: number;
+  query: string;
+  onQueryChange: (value: string) => void;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onFit: () => void;
 }) {
-  const recentRuns = workflowRuns.slice(0, 3);
-
   return (
-    <div
-      data-testid="live-logs-panel"
-      className="mt-4 text-[#C2CAD2]"
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex size-2 rounded-full bg-[#FF5F6D]" />
-          <p className="text-sm font-semibold text-white">실행 로그</p>
-        </div>
-        <span className="rounded-full bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-[#AEB9C4]">
-          최근 {recentRuns.length}개
+    <header className="z-20 flex h-[58px] shrink-0 items-center gap-3 border-b border-white/[0.07] bg-[#11161D]/95 px-4 shadow-[0_1px_0_rgba(255,255,255,0.04)] backdrop-blur">
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="flex size-8 items-center justify-center rounded-md border border-[#6B7CFF]/35 bg-[#6B7CFF]/12 text-[#B7C2FF]">
+          <Bot size={16} aria-hidden />
         </span>
+        <div className="hidden min-w-[120px] sm:block">
+          <p className="font-mono text-[11px] font-black uppercase tracking-[0.18em] text-white">Agent Office</p>
+          <p className="text-[10px] text-[#768291]">CRATA OS Visualizer</p>
+        </div>
       </div>
 
-      {recentRuns.length > 0 ? (
-        <div className="mt-3 space-y-3">
-          {recentRuns.map((run) => (
-            <article key={run.id} className="rounded-card border border-white/10 bg-black/20 p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="line-clamp-1 text-xs font-semibold text-white">
-                    {run.task_title ?? "에이전트 실행"}
-                  </p>
-                  <p className="mt-1 text-[11px] text-[#8D99A4]">
-                    {workflowStatusLabels[run.status] ?? run.status} · {formatActivityTime(run.completed_at ?? run.started_at)}
-                  </p>
-                </div>
-                <span className="shrink-0 rounded-full bg-[#302410] px-2 py-1 text-[10px] font-semibold text-[#FFD37A]">
-                  {run.steps.length}단계
-                </span>
-              </div>
-              <div className="mt-3 flex items-center gap-1.5 overflow-hidden">
-                {run.steps.slice(0, 5).map((step, index) => (
-                  <div key={step.id} className="flex min-w-0 items-center gap-1.5">
-                    {index > 0 ? <span className="h-px w-3 shrink-0 bg-white/15" /> : null}
-                    <span
-                      title={`${agentNameById.get(step.agent_id ?? "") ?? step.agent_id ?? "시스템"}: ${
-                        workflowStepLabels[step.step_name] ?? step.step_name
-                      }`}
-                      className="flex size-7 shrink-0 items-center justify-center rounded-[8px] border border-[#38BDF8]/35 bg-[#0B2535] text-[10px] font-black text-[#7DD7FF]"
-                    >
-                      {agentBadge(agentNameById.get(step.agent_id ?? "") ?? step.agent_id ?? "AI")}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <div className="mt-3 rounded-card border border-dashed border-white/10 bg-black/20 p-3 text-xs leading-5 text-[#8F9AA4]">
-          아직 실행 기록이 없습니다. 후보를 실행하면 이곳에 단계가 쌓입니다.
-        </div>
-      )}
-    </div>
-  );
-}
-
-function WorkItemCard({
-  item,
-  isRunning,
-  message,
-  onRun,
-}: {
-  item: AgentWorkItem;
-  isRunning: boolean;
-  message?: { tone: "success" | "error"; text: string };
-  onRun: () => void;
-}) {
-  const statusLabel = workItemStatusLabels[item.status] ?? item.status;
-  const sourceLabel = workItemSourceLabels[item.source_type];
-  const isRevisionCandidate =
-    item.source_type === "candidate" &&
-    (item.status === "revise_requested" || item.title.includes("재작업") || item.summary.includes("수정 사유"));
-  const canRun = item.source_type === "candidate" && item.status === "draft" && !isRevisionCandidate;
-  const shouldReviewApproval = item.source_type === "approval" || item.status === "pending_approval";
-
-  return (
-    <article className="rounded-card border border-white/10 bg-[#0B1117]/88 p-3 transition hover:border-[#38BDF8]/40 hover:bg-[#101923]">
-      <div className="flex items-center justify-between gap-2">
-        <span className="rounded-full bg-white/[0.06] px-2 py-1 text-[10px] font-semibold text-[#C2CDD8]">
-          {sourceLabel}
-        </span>
-        <span className="rounded-full bg-[#17212B] px-2 py-1 text-[10px] font-semibold text-[#8FD3FF]">
-          {statusLabel}
-        </span>
+      <div className="hidden min-w-0 flex-1 items-center gap-2 xl:flex">
+        <OfficeChip label="활성" value={summary.active_agent_count} color="#34D399" />
+        <OfficeChip label="후보" value={summary.candidate_task_count} color="#60A5FA" />
+        <OfficeChip label="실행" value={summary.running_task_count + activeRuns} color="#A78BFA" />
+        <OfficeChip label="승인" value={summary.pending_approval_count} color="#F59E0B" />
+        <OfficeChip label="산출물" value={summary.artifact_count} color="#F472B6" />
       </div>
-      <a href={item.href} className="mt-2 block line-clamp-2 text-sm font-semibold leading-5 text-white hover:text-[#7DD7FF]">
-        {item.title}
-      </a>
-      <p className="mt-1 line-clamp-2 text-xs leading-5 text-[#9EABB6]">{item.summary}</p>
-      <div className="mt-3 flex items-center justify-between gap-2">
-        <p className="min-w-0 truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-[#6F7D89]">
-          {item.task_type}
-        </p>
-        {canRun ? (
-          <button
-            type="button"
-            onClick={onRun}
-            disabled={isRunning}
-            className="inline-flex h-7 shrink-0 items-center gap-1 rounded-button bg-[#1E88B9] px-2 text-[11px] font-semibold text-white transition hover:bg-[#2398CE] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isRunning ? <Loader2 className="animate-spin" size={12} aria-hidden="true" /> : <Play size={12} aria-hidden="true" />}
-            {isRunning ? "실행 중" : "바로 실행"}
-          </button>
-        ) : isRevisionCandidate ? (
-          <a
-            href={item.href}
-            className="inline-flex h-7 shrink-0 items-center gap-1 rounded-button border border-[#F2B84B]/35 bg-[#302410] px-2 text-[11px] font-semibold text-[#FFD37A] transition hover:bg-[#3A2B13]"
-          >
-            <RotateCcw size={12} aria-hidden="true" />
-            수정요청 확인
-          </a>
-        ) : shouldReviewApproval ? (
-          <a
-            href={item.href}
-            className="inline-flex h-7 shrink-0 items-center gap-1 rounded-button border border-[#F2B84B]/35 bg-[#302410] px-2 text-[11px] font-semibold text-[#FFD37A] transition hover:bg-[#3A2B13]"
-          >
-            <ClipboardCheck size={12} aria-hidden="true" />
-            승인함 이동
-          </a>
-        ) : (
-          <a
-            href={item.href}
-            className="inline-flex h-7 shrink-0 items-center rounded-button border border-white/10 bg-white/[0.06] px-2 text-[11px] font-semibold text-[#DDE6EE] transition hover:bg-white/10"
-          >
-            상세 보기
-          </a>
-        )}
-      </div>
-      {message ? (
-        <p
-          role={message.tone === "error" ? "alert" : "status"}
-          className={`mt-2 inline-flex items-start gap-1 rounded-button px-2 py-1 text-[11px] leading-4 ${
-            message.tone === "success"
-              ? "bg-[#102A1C] text-[#6FF0A0]"
-              : "bg-[#2A1217] text-[#FF6B7A]"
-          }`}
+
+      <label className="ml-auto hidden h-8 min-w-[220px] items-center gap-2 rounded-md border border-white/10 bg-black/30 px-2.5 text-[#8D97A5] focus-within:border-[#6B7CFF]/50 md:flex">
+        <Search size={13} aria-hidden />
+        <span className="sr-only">오피스 검색</span>
+        <input
+          value={query}
+          onChange={(event) => onQueryChange(event.target.value)}
+          placeholder="부서·에이전트 검색"
+          className="min-w-0 flex-1 bg-transparent text-xs text-white outline-none placeholder:text-[#6F7987]"
+        />
+      </label>
+
+      <div className="flex shrink-0 items-center gap-1 rounded-md border border-white/10 bg-black/25 p-1">
+        <IconButton label="축소" onClick={onZoomOut} icon={Minus} />
+        <button
+          type="button"
+          className="h-7 min-w-12 rounded px-2 font-mono text-[10px] font-bold text-[#B7C2D0] hover:bg-white/[0.05]"
+          onClick={onFit}
         >
-          {message.tone === "error" ? <AlertCircle className="mt-0.5 shrink-0" size={12} aria-hidden="true" /> : null}
-          {message.text}
-        </p>
-      ) : null}
-    </article>
+          {Math.round(zoom * 100)}%
+        </button>
+        <IconButton label="확대" onClick={onZoomIn} icon={Plus} />
+        <IconButton label="맞춤" onClick={onFit} icon={Maximize2} />
+      </div>
+    </header>
   );
 }
 
-function workItemKey(item: AgentWorkItem) {
-  return `${item.source_type}-${item.id}`;
+function OfficeChip({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <span
+      className="inline-flex h-7 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border bg-black/25 px-2.5 text-[11px] font-bold"
+      style={{ borderColor: `${color}55`, color }}
+    >
+      <span className="size-1.5 rounded-full" style={{ backgroundColor: color }} />
+      {label}
+      <span className="font-mono text-white">{value}</span>
+    </span>
+  );
 }
 
-function agentBadge(name: string) {
-  return name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
-
-function formatActivityTime(value: string) {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "시간 미상";
-  }
-
-  return new Intl.DateTimeFormat("ko-KR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
-
-function CanvasButton({
+function IconButton({
   label,
   onClick,
-  children,
+  icon: Icon,
 }: {
   label: string;
-  onClick?: () => void;
-  children: ReactNode;
+  onClick: () => void;
+  icon: typeof Plus;
 }) {
   return (
     <button
       type="button"
       aria-label={label}
-      title={label}
-      onClick={(event) => {
-        event.stopPropagation();
-        onClick?.();
-      }}
-      className="flex size-11 items-center justify-center border-b border-white/10 text-[#C0C9D2] transition hover:bg-white/10 hover:text-white last:border-b-0"
+      onClick={onClick}
+      className="flex size-7 items-center justify-center rounded text-[#AEB8C5] hover:bg-white/[0.07] hover:text-white"
     >
-      {children}
+      <Icon size={13} aria-hidden />
     </button>
   );
 }
 
-function edgePath(from: { x: number; y: number }, to: { x: number; y: number }) {
-  const startX = from.x + NODE_WIDTH / 2;
-  const startY = from.y + NODE_HEIGHT + 8;
-  const endX = to.x + NODE_WIDTH / 2;
-  const endY = to.y - 26;
-  const midY = startY + (endY - startY) * 0.54;
-
-  return `M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY}`;
+function OfficeConnectors() {
+  return (
+    <svg className="pointer-events-none absolute inset-0 z-0 h-full w-full" aria-hidden>
+      <defs>
+        <linearGradient id="office-line" x1="0" x2="1">
+          <stop stopColor="#6B7CFF" stopOpacity="0.15" />
+          <stop offset="0.48" stopColor="#34D399" stopOpacity="0.42" />
+          <stop offset="1" stopColor="#F472B6" stopOpacity="0.18" />
+        </linearGradient>
+      </defs>
+      <path d="M530 180 C600 180 580 220 610 230" stroke="url(#office-line)" strokeWidth="2" fill="none" />
+      <path d="M1020 235 C1080 235 1040 275 1054 292" stroke="url(#office-line)" strokeWidth="2" fill="none" />
+      <path d="M840 358 C840 400 835 406 835 430" stroke="url(#office-line)" strokeWidth="2" fill="none" />
+      <path d="M624 520 C660 520 648 505 690 508" stroke="url(#office-line)" strokeWidth="2" fill="none" />
+      <path d="M410 283 C410 350 410 380 410 418" stroke="url(#office-line)" strokeWidth="2" fill="none" />
+      <circle cx="610" cy="230" r="4" fill="#34D399" opacity="0.72" />
+      <circle cx="1054" cy="292" r="4" fill="#C084FC" opacity="0.72" />
+      <circle cx="690" cy="508" r="4" fill="#F472B6" opacity="0.72" />
+    </svg>
+  );
 }
 
-function arrowHeadPath(to: { x: number; y: number }) {
-  const centerX = to.x + NODE_WIDTH / 2;
-  const tipY = to.y - 10;
-  const baseY = tipY - 14;
+function OfficeRoom({
+  room,
+  agents,
+  selectedAgentId,
+  onSelectAgent,
+  onHoverAgent,
+}: {
+  room: (typeof roomDefs)[number];
+  agents: AgentActivity[];
+  selectedAgentId: string | null;
+  onSelectAgent: (id: string) => void;
+  onHoverAgent: (id: string | null) => void;
+}) {
+  const Icon = room.icon;
+  const load = agents.reduce((sum, agent) => sum + agent.workload_count + agent.candidate_count, 0);
 
-  return `M ${centerX} ${tipY} L ${centerX - 7} ${baseY} L ${centerX + 7} ${baseY} Z`;
+  return (
+    <section
+      className="absolute z-10 rounded-[7px] border p-4 shadow-[0_18px_55px_rgba(0,0,0,0.32)]"
+      style={{
+        left: room.x,
+        top: room.y,
+        width: room.w,
+        height: room.h,
+        borderColor: `${room.color}72`,
+        background: `linear-gradient(135deg, ${room.color}25, rgba(14, 16, 22, 0.93) 48%, ${room.color}12)`,
+        boxShadow: `0 0 0 1px ${room.color}20 inset, 0 18px 55px rgba(0,0,0,0.36), 0 0 36px ${room.color}16`,
+      }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span
+            className="flex size-8 shrink-0 items-center justify-center rounded-md border bg-black/25"
+            style={{ borderColor: `${room.color}55`, color: room.color }}
+          >
+            <Icon size={15} aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <h2 className="truncate text-sm font-black text-white">{room.title}</h2>
+            <p className="mt-0.5 truncate text-[11px] text-[#A9B2BE]">{room.subtitle}</p>
+          </div>
+        </div>
+        <span className="rounded-md border border-white/10 bg-black/25 px-2 py-1 font-mono text-[10px] font-bold text-[#C7D0DC]">
+          {agents.length}명 · {load}건
+        </span>
+      </div>
+
+      <div className="mt-5 grid grid-cols-3 gap-x-4 gap-y-5">
+        {agents.map((agent, index) => (
+          <button
+            key={agent.id}
+            type="button"
+            aria-label={`${agent.display_name} 프로필 열기`}
+            onMouseEnter={() => onHoverAgent(agent.id)}
+            onMouseLeave={() => onHoverAgent(null)}
+            onFocus={() => onHoverAgent(agent.id)}
+            onBlur={() => onHoverAgent(null)}
+            onClick={() => onSelectAgent(agent.id)}
+            className="group relative flex min-h-[74px] flex-col items-center justify-end rounded-md border border-transparent px-1 pb-1 outline-none hover:border-white/10 hover:bg-white/[0.04] focus-visible:border-white/30"
+          >
+            <AgentSprite agent={agent} selected={selectedAgentId === agent.id} roomColor={room.color} crown={index === 0 && room.id === "command"} />
+            <span className="mt-1 max-w-[78px] truncate text-[11px] font-semibold text-[#C9D2DE] group-hover:text-white">
+              {agent.display_name}
+            </span>
+            {agent.workload_count + agent.pending_approval_count > 0 ? (
+              <span className="absolute right-1 top-1 flex size-4 items-center justify-center rounded bg-black/55 text-[9px] font-black text-white">
+                {agent.workload_count + agent.pending_approval_count}
+              </span>
+            ) : null}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function AgentSprite({
+  agent,
+  selected,
+  roomColor,
+  crown,
+}: {
+  agent: AgentActivity;
+  selected: boolean;
+  roomColor: string;
+  crown?: boolean;
+}) {
+  const meta = statusMeta[agent.activity_status];
+
+  return (
+    <span className="relative block h-12 w-16">
+      <span
+        className="absolute left-1/2 top-0 h-5 w-6 -translate-x-1/2 rounded-t-[6px] border border-white/20"
+        style={{ backgroundColor: selected ? roomColor : "#6B83C7" }}
+      />
+      {crown ? (
+        <span className="absolute left-1/2 top-[-7px] h-3 w-6 -translate-x-1/2 rounded-t-md bg-[#F6D35D] shadow-[0_0_12px_rgba(246,211,93,0.45)]" />
+      ) : null}
+      <span className="absolute left-1/2 top-[13px] h-4 w-5 -translate-x-1/2 rounded-[3px] bg-[#F2C8A5]" />
+      <span className="absolute left-[19px] top-[21px] h-4 w-7 rounded-t-md border border-white/20" style={{ backgroundColor: agent.color }} />
+      <span className="absolute left-[8px] top-[34px] h-[6px] w-12 rounded-sm bg-[#8A6E4F]" />
+      <span className="absolute left-[14px] top-[39px] h-[5px] w-7 rounded-sm bg-[#233137]" />
+      <span className="absolute left-[25px] top-[37px] size-1.5 rounded-full" style={{ backgroundColor: meta.dot, boxShadow: `0 0 10px ${meta.dot}` }} />
+      <span className="absolute right-[5px] top-[2px] rounded-md border border-emerald-300/25 bg-black/45 px-1 font-mono text-[10px] text-emerald-200 opacity-0 shadow-xl transition group-hover:opacity-100">
+        ...
+      </span>
+    </span>
+  );
+}
+
+function AgentHoverCard({ agent }: { agent: AgentActivity }) {
+  const meta = statusMeta[agent.activity_status];
+
+  return (
+    <div className="absolute left-[558px] top-[300px] z-40 w-[372px] rounded-lg border border-white/15 bg-[#05070B]/95 p-4 shadow-[0_26px_80px_rgba(0,0,0,0.62)] backdrop-blur">
+      <div className="flex items-start gap-3">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-lg border text-base font-black" style={{ borderColor: `${agent.color}66`, color: agent.color, backgroundColor: `${agent.color}1C` }}>
+          {agent.display_name.slice(0, 1)}
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate text-lg font-black tracking-tight text-white">{agent.display_name}</h3>
+          <p className="mt-1 truncate text-xs font-semibold text-[#AAB4C0]">{agent.role}</p>
+        </div>
+        <span className={`inline-flex shrink-0 items-center gap-1 rounded-md border px-2 py-1 text-[10px] font-black ${meta.cls}`}>
+          <span className="size-1.5 rounded-full" style={{ backgroundColor: meta.dot }} />
+          {meta.label}
+        </span>
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
+        <MiniMetric label="작업" value={agent.workload_count} />
+        <MiniMetric label="후보" value={agent.candidate_count} />
+        <MiniMetric label="승인" value={agent.pending_approval_count} />
+      </div>
+      <p className="mt-3 line-clamp-2 text-[12px] leading-5 text-[#9FAAB8]">{agent.current_focus || "대기 중입니다."}</p>
+    </div>
+  );
+}
+
+function OfficeInspector({
+  agent,
+  summary,
+  recentRuns,
+}: {
+  agent: AgentActivity | null;
+  summary: DashboardSummary;
+  recentRuns: WorkflowRunActivity[];
+}) {
+  return (
+    <aside className="hidden w-[354px] shrink-0 overflow-y-auto border-l border-white/[0.07] bg-[#0E1218] 2xl:block">
+      <div className="border-b border-white/[0.07] p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="font-mono text-[10px] font-black uppercase tracking-[0.16em] text-[#7E8998]">Operator Panel</p>
+            <h2 className="mt-1 text-lg font-black text-white">운영 현황</h2>
+          </div>
+          <span className="flex size-9 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-[#B8C2D0]">
+            <Info size={16} aria-hidden />
+          </span>
+        </div>
+      </div>
+
+      <div className="space-y-4 p-4">
+        <section className="rounded-lg border border-white/[0.08] bg-black/20 p-3">
+          <p className="mb-3 text-[11px] font-black text-[#AEB8C5]">시스템 요약</p>
+          <div className="grid grid-cols-2 gap-2">
+            <MiniMetric label="에이전트" value={summary.agent_count} />
+            <MiniMetric label="활성" value={summary.active_agent_count} />
+            <MiniMetric label="후보" value={summary.candidate_task_count} />
+            <MiniMetric label="승인" value={summary.pending_approval_count} />
+          </div>
+        </section>
+
+        {agent ? (
+          <section className="rounded-lg border border-white/[0.08] bg-black/25 p-4">
+            <div className="flex items-start gap-3">
+              <span className="flex size-12 items-center justify-center rounded-xl border text-lg font-black" style={{ borderColor: `${agent.color}66`, color: agent.color, backgroundColor: `${agent.color}1C` }}>
+                {agent.display_name.slice(0, 1)}
+              </span>
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate text-base font-black text-white">{agent.display_name}</h3>
+                <p className="mt-1 text-[12px] leading-4 text-[#A5AFBC]">{agent.role}</p>
+              </div>
+            </div>
+            <div className="mt-4">
+              <AgentStatusBadge status={agent.activity_status} />
+              <p className="mt-3 text-[13px] leading-5 text-[#D8DEE7]">{agent.current_focus || "요청을 기다리는 중입니다."}</p>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <a href="/activity" className="flex h-9 flex-1 items-center justify-center rounded-md border border-white/10 bg-white/[0.05] text-xs font-bold text-[#CFD7E2] hover:bg-white/[0.08]">
+                활동 로그
+              </a>
+              <a href="/request-intake" className="flex h-9 flex-1 items-center justify-center rounded-md border border-emerald-300/25 bg-emerald-400/10 text-xs font-bold text-emerald-100 hover:bg-emerald-400/15">
+                요청 배정
+              </a>
+            </div>
+          </section>
+        ) : null}
+
+        <section className="rounded-lg border border-white/[0.08] bg-black/20 p-3">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-[11px] font-black text-[#AEB8C5]">최근 실행</p>
+            <ChevronDown size={14} className="text-[#6F7B8B]" aria-hidden />
+          </div>
+          <div className="space-y-2">
+            {recentRuns.length > 0 ? (
+              recentRuns.map((run) => <RunRow key={run.id} run={run} />)
+            ) : (
+              <div className="rounded-md border border-dashed border-white/10 px-3 py-5 text-center text-xs text-[#7C8796]">
+                아직 실행 기록이 없습니다.
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-lg border border-white/[0.08] bg-black/20 p-3">
+          <p className="mb-3 text-[11px] font-black text-[#AEB8C5]">참고해서 반영한 패턴</p>
+          <ul className="space-y-2 text-[12px] leading-5 text-[#AAB4C0]">
+            <li className="flex gap-2"><CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-300" />에이전트를 카드 목록보다 부서별 오피스 공간으로 배치</li>
+            <li className="flex gap-2"><CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-300" />상태·비용·승인 같은 운영 신호를 상단 칩으로 고정</li>
+            <li className="flex gap-2"><CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-300" />선택한 에이전트의 역할과 현재 작업을 즉시 inspect</li>
+          </ul>
+        </section>
+      </div>
+    </aside>
+  );
+}
+
+function MiniMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-md border border-white/[0.07] bg-white/[0.035] px-3 py-2">
+      <p className="font-mono text-lg font-black text-white">{value}</p>
+      <p className="mt-0.5 text-[10px] font-bold text-[#7D8795]">{label}</p>
+    </div>
+  );
+}
+
+function AgentStatusBadge({ status }: { status: AgentActivityStatus }) {
+  const meta = statusMeta[status];
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-black ${meta.cls}`}>
+      <span className="size-1.5 rounded-full" style={{ backgroundColor: meta.dot, boxShadow: `0 0 8px ${meta.dot}` }} />
+      {meta.label}
+    </span>
+  );
+}
+
+function RunRow({ run }: { run: WorkflowRunActivity }) {
+  const Icon = run.status === "completed" ? CheckCircle2 : run.status === "running" ? Gauge : ClipboardCheck;
+  const taskLabel = run.task_type ? taskTypeLabel[run.task_type] ?? run.task_type : "워크플로우";
+
+  return (
+    <a href={run.task_id ? `/activity?taskId=${encodeURIComponent(run.task_id)}` : "/activity"} className="block rounded-md border border-white/[0.07] bg-white/[0.035] p-3 hover:bg-white/[0.06]">
+      <div className="flex items-start gap-2.5">
+        <span className="mt-0.5 flex size-7 items-center justify-center rounded-md bg-[#6B7CFF]/12 text-[#B7C2FF]">
+          <Icon size={14} aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-bold text-white">{run.task_title || run.workflow_type}</p>
+          <p className="mt-1 text-[11px] text-[#7E8998]">{taskLabel} · {run.current_step || run.status}</p>
+        </div>
+      </div>
+    </a>
+  );
 }

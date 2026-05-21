@@ -81,7 +81,7 @@ describe("ApprovalInbox", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "수정요청 1" }));
 
-    expect(screen.getByText("사업 프로그램 기획 후보 재검토")).toBeInTheDocument();
+    expect(screen.getAllByText("사업 프로그램 기획 후보 재검토").length).toBeGreaterThan(0);
     expect(screen.queryByText("결과지 문구 수정 후보 승인 요청")).not.toBeInTheDocument();
     expect(screen.queryByText("상담 사례 학습 후보 승인 요청")).not.toBeInTheDocument();
     expect(screen.getByText("표시 중 1개 / 전체 3개")).toBeInTheDocument();
@@ -94,7 +94,7 @@ describe("ApprovalInbox", () => {
       target: { value: "전사록" },
     });
 
-    expect(screen.getByText("상담 사례 학습 후보 승인 요청")).toBeInTheDocument();
+    expect(screen.getAllByText("상담 사례 학습 후보 승인 요청").length).toBeGreaterThan(0);
     expect(screen.queryByText("결과지 문구 수정 후보 승인 요청")).not.toBeInTheDocument();
     expect(screen.queryByText("사업 프로그램 기획 후보 재검토")).not.toBeInTheDocument();
   });
@@ -108,5 +108,12 @@ describe("ApprovalInbox", () => {
 
     expect(screen.getByText("조건에 맞는 승인 항목이 없습니다.")).toBeInTheDocument();
     expect(screen.getByText("검색어나 상태 필터를 조정하세요.")).toBeInTheDocument();
+  });
+
+  it("keeps inspector details collapsed for one-glance review", () => {
+    render(<ApprovalInbox approvals={approvals} />);
+
+    expect(screen.getByText("세부 검토")).toBeInTheDocument();
+    expect(screen.getByText("변경안 있음")).toBeInTheDocument();
   });
 });

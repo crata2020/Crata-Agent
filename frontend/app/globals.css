@@ -3,13 +3,27 @@
 @tailwind utilities;
 
 :root {
-  --color-background: #F6F7F4;
-  --color-surface: #FFFFFF;
-  --color-surface-alt: #EEF2EE;
-  --color-border: #D8DED8;
-  --color-text-primary: #1F2723;
-  --color-text-secondary: #5F6B64;
-  --color-brand-primary: #1F6B57;
+  --color-bg: #0A0A0B;
+  --color-surface: #111113;
+  --color-surface-raised: #18181B;
+  --color-surface-overlay: #222226;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.14);
+  --color-text: #EAEDF0;
+  --color-text-secondary: #A0A8B4;
+  --color-text-muted: #5F6872;
+  --color-accent: #4FD1A5;
+  --color-accent-soft: rgba(79, 209, 165, 0.10);
+  --color-accent-hover: #6DE3BB;
+  --color-warning: #F0B95C;
+  --color-warning-soft: rgba(240, 185, 92, 0.10);
+  --color-danger: #FF6B6B;
+  --color-danger-soft: rgba(255, 107, 107, 0.09);
+  --color-info: #7FB7FF;
+  --color-info-soft: rgba(127, 183, 255, 0.10);
+  --color-knowledge: #C9B7FF;
+  --color-knowledge-soft: rgba(201, 183, 255, 0.09);
+  --sidebar-width: 260px;
 }
 
 * {
@@ -17,19 +31,137 @@
 }
 
 html {
-  background: var(--color-background);
+  background: var(--color-bg);
 }
 
 body {
   min-height: 100vh;
   margin: 0;
-  background: var(--color-background);
-  color: var(--color-text-primary);
-  font-family: Pretendard, Inter, system-ui, sans-serif;
-  letter-spacing: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: Pretendard, Inter, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.10);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.20);
+}
+
+/* Canvas grid background */
+.crata-canvas-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* Canvas atmosphere gradients */
+.crata-canvas-atmosphere {
+  background:
+    radial-gradient(ellipse at 30% 10%, rgba(79, 209, 165, 0.06), transparent 50%),
+    radial-gradient(ellipse at 70% 50%, rgba(127, 183, 255, 0.04), transparent 40%),
+    radial-gradient(ellipse at 50% 90%, rgba(201, 183, 255, 0.03), transparent 35%);
+}
+
+/* Agent office visualizer */
+.crata-office-floor {
+  background:
+    radial-gradient(circle at 24% 18%, rgba(91, 124, 255, 0.10), transparent 34%),
+    radial-gradient(circle at 74% 32%, rgba(196, 132, 252, 0.08), transparent 30%),
+    radial-gradient(circle at 48% 78%, rgba(52, 211, 153, 0.08), transparent 34%),
+    #06080A;
+}
+
+.crata-office-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.026) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.026) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(circle at center, black 0%, black 58%, transparent 100%);
+}
+
+/* Glass panel */
+.crata-glass {
+  background: rgba(20, 20, 22, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Stage rail animation */
+@keyframes crata-rail-slide {
+  from { background-position-x: 0; }
+  to { background-position-x: 44px; }
+}
+
+.crata-stage-rail-motion {
+  background-image: linear-gradient(
+    90deg,
+    rgba(127, 183, 255, 0.9) 0 42%,
+    rgba(127, 183, 255, 0.18) 42% 62%,
+    rgba(79, 209, 165, 0.8) 62% 100%
+  );
+  background-size: 44px 1px;
+  box-shadow: 0 0 12px rgba(127, 183, 255, 0.22);
+  animation: crata-rail-slide 1.15s linear infinite;
+}
+
+/* Pulse glow animation */
+@keyframes crata-pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.crata-pulse {
+  animation: crata-pulse-glow 2s ease-in-out infinite;
+}
+
+/* Node hover lift */
+@keyframes crata-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+/* Fade in */
+@keyframes crata-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.crata-fade-in {
+  animation: crata-fade-in 0.3s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crata-stage-rail-motion,
+  .crata-pulse,
+  .crata-fade-in {
+    animation: none;
+  }
+}
+
+/* Smooth transitions for interactive elements */
+button, a, input, textarea, select {
+  transition: all 0.15s ease;
 }

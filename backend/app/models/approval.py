@@ -5,6 +5,7 @@ from sqlalchemy import DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
+from app.models._time import utcnow
 
 
 class Approval(Base):
@@ -23,4 +24,4 @@ class Approval(Base):
     reviewer_note: Mapped[str] = mapped_column(Text, default="")
     decision_reason: Mapped[str] = mapped_column(Text, default="")
     decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

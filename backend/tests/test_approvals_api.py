@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Approval, Artifact, CandidateTask, Task
+from app.models import Approval, Artifact, CandidateTask, IntakeItem, Task
 
 
 def _create_pending_approval(client: TestClient) -> tuple[str, str]:
@@ -38,8 +38,6 @@ def test_approval_inbox_lists_pending_items(app: FastAPI) -> None:
     assert body[0]["task_id"]
     assert body[0]["artifact_id"]
     assert body[0]["knowledge_references"] == [
-        "knowledge/official/personal-behavior-motivation/MASTER.md",
-        "knowledge/official/group-behavior/MASTER.md",
         "knowledge/agent-guides/agent-operating-guides.md",
     ]
 
@@ -85,10 +83,69 @@ def test_approval_inbox_adds_default_references_for_legacy_artifacts(
     assert response.status_code == 200
     body = response.json()
     assert body[0]["knowledge_references"] == [
-        "knowledge/official/personal-behavior-motivation/MASTER.md",
-        "knowledge/official/group-behavior/MASTER.md",
         "knowledge/agent-guides/agent-operating-guides.md",
     ]
+
+
+def test_approval_inbox_ignores_legacy_candidate_without_metadata(
+    app: FastAPI, db_session: Session
+) -> None:
+    client = TestClient(app)
+    task = Task(
+        task_type="report_phrase_revision",
+        title="Legacy task",
+        description="Legacy approval with an unrelated candidate.",
+        status="pending_approval",
+        assigned_agents=["report_editor"],
+    )
+    db_session.add(task)
+    db_session.flush()
+    artifact = Artifact(
+        task_id=task.id,
+        artifact_type="draft",
+        title="Legacy draft",
+        content="Legacy approval content",
+        status="pending_approval",
+        item_metadata={},
+    )
+    db_session.add(artifact)
+    db_session.flush()
+    approval = Approval(
+        task_id=task.id,
+        artifact_id=artifact.id,
+        approval_type="report_phrase_change",
+        status="pending_approval",
+        title="Legacy approval",
+        summary="Legacy approval with unrelated candidate.",
+        affected_area=task.task_type,
+        after_content=artifact.content,
+    )
+    db_session.add(approval)
+    intake = IntakeItem(
+        title="Legacy intake",
+        input_type="memo",
+        raw_content="legacy",
+        item_metadata={},
+    )
+    db_session.add(intake)
+    db_session.flush()
+    db_session.add(
+        CandidateTask(
+            intake_item_id=intake.id,
+            task_type="general_agent_task",
+            title="Legacy candidate",
+            summary="No metadata candidate.",
+            item_metadata=None,
+        )
+    )
+    db_session.commit()
+
+    response = client.get("/approvals")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body[0]["id"] == approval.id
+    assert body[0]["revision_candidate_task"] is None
 
 
 def test_approve_item_changes_status(app: FastAPI, db_session: Session) -> None:
@@ -144,6 +201,35 @@ def test_revise_request_creates_revision_candidate_task(
     assert revision_candidate.recommended_agents == original_candidate.recommended_agents
     assert revision_candidate.item_metadata["source_approval_id"] == approval_id
     assert revision_candidate.item_metadata["revision_reason"] == "문장을 더 상담형으로 바꿔 주세요."
+    assert revision_candidate.item_metadata["clarifying_answers"] == "수정요청 사유: 문장을 더 상담형으로 바꿔 주세요."
+
+
+def test_approval_inbox_links_original_and_rework_drafts_for_comparison(app: FastAPI) -> None:
+    client = TestClient(app)
+    _candidate_id, approval_id = _create_pending_approval(client)
+
+    decision_response = client.post(
+        f"/approvals/{approval_id}/decide",
+        json={"decision": "revise_requested", "reason": "문장을 더 상담형으로 바꿔 주세요."},
+    )
+    revision_candidate_id = decision_response.json()["revision_candidate_task"]["id"]
+    rework_response = client.post(f"/tasks/from-candidate/{revision_candidate_id}/run")
+
+    response = client.get("/approvals")
+
+    assert rework_response.status_code == 201
+    assert response.status_code == 200
+    approvals = {approval["id"]: approval for approval in response.json()}
+    original = approvals[approval_id]
+    rework = approvals[rework_response.json()["approval_id"]]
+    assert original["comparison"]["source_approval_id"] == approval_id
+    assert original["comparison"]["revision_candidate_id"] == revision_candidate_id
+    assert original["comparison"]["revision_approval_id"] == rework_response.json()["approval_id"]
+    assert original["comparison"]["revision_after_content"] == rework["after_content"]
+    assert original["comparison"]["revision_reason"] == "문장을 더 상담형으로 바꿔 주세요."
+    assert rework["comparison"]["source_approval_id"] == approval_id
+    assert rework["comparison"]["revision_approval_id"] == rework_response.json()["approval_id"]
+    assert rework["comparison"]["source_after_content"] == original["after_content"]
 
 
 def test_revise_request_requires_reason(app: FastAPI) -> None:

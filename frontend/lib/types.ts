@@ -19,6 +19,11 @@ export type CandidateTaskStatus =
   | "rejected"
   | "error";
 
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 export interface Agent {
   id: string;
   name: string;
@@ -53,6 +58,9 @@ export interface CandidateTask {
   rule_hints?: string[];
   review_flags?: string[];
   clarifying_questions?: string[];
+  clarifying_answers?: string;
+  chat_messages?: ChatMessage[];
+  workflow_plan?: Record<string, unknown>;
 }
 
 export interface GraphNodeTrace {
@@ -77,6 +85,22 @@ export interface CandidateSplitResponse {
   split_candidates: CandidateTask[];
 }
 
+export interface ApprovalComparison {
+  source_approval_id: string;
+  source_task_id: string;
+  source_title: string;
+  source_status: string;
+  source_after_content: string;
+  revision_reason: string;
+  revision_candidate_id?: string | null;
+  revision_candidate_status?: string | null;
+  revision_task_id?: string | null;
+  revision_approval_id?: string | null;
+  revision_title?: string | null;
+  revision_status?: string | null;
+  revision_after_content?: string | null;
+}
+
 export interface Approval {
   id: string;
   task_id: string;
@@ -89,8 +113,10 @@ export interface Approval {
   after_content: string;
   affected_area: string;
   reviewer_note: string;
+  decision_reason?: string;
   knowledge_references?: string[];
   revision_candidate_task?: CandidateTask | null;
+  comparison?: ApprovalComparison | null;
 }
 
 export interface DashboardSummary {
@@ -113,6 +139,7 @@ export interface AgentWorkItem {
   task_type: string;
   status: string;
   href: string;
+  activity_href?: string | null;
 }
 
 export interface AgentActivity {
@@ -147,6 +174,12 @@ export interface WorkflowStepActivity {
   completed_at: string | null;
 }
 
+export interface WorkflowGraphNodeTrace {
+  name: string;
+  status: string;
+  summary: string;
+}
+
 export interface WorkflowRunActivity {
   id: string;
   workflow_type: string;
@@ -155,11 +188,65 @@ export interface WorkflowRunActivity {
   task_type: string | null;
   status: string;
   current_step: string;
+  graph_name?: string | null;
   started_at: string;
   completed_at: string | null;
+  node_trace?: WorkflowGraphNodeTrace[];
   steps: WorkflowStepActivity[];
 }
 
 export interface WorkflowActivityResponse {
   runs: WorkflowRunActivity[];
+}
+
+export interface RequestMapAgent {
+  id: string;
+  display_name: string;
+  color: string;
+  status: string;
+}
+
+export interface RequestMapTask {
+  id: string;
+  task_id?: string | null;
+  workflow_run_id?: string | null;
+  approval_id?: string | null;
+  revision_source_approval_id?: string | null;
+  revision_source_candidate_id?: string | null;
+  revision_source_task_id?: string | null;
+  revision_reason?: string | null;
+  revision_candidate_id?: string | null;
+  revision_candidate_title?: string | null;
+  revision_candidate_href?: string | null;
+  revision_candidate_status?: string | null;
+  revision_candidate_task_id?: string | null;
+  revision_candidate_workflow_run_id?: string | null;
+  revision_candidate_activity_href?: string | null;
+  revision_candidate_approval_id?: string | null;
+  revision_candidate_approval_href?: string | null;
+  task_type: string;
+  title: string;
+  summary: string;
+  status: string;
+  current_step?: string | null;
+  current_step_index: number;
+  total_steps: number;
+  href: string;
+  activity_href?: string | null;
+  agents: RequestMapAgent[];
+  steps: WorkflowStepActivity[];
+}
+
+export interface RequestMapItem {
+  id: string;
+  title: string;
+  input_type: string;
+  raw_preview: string;
+  created_at: string;
+  decomposition_trace: WorkflowGraphNodeTrace[];
+  candidates: RequestMapTask[];
+}
+
+export interface RequestMapResponse {
+  items: RequestMapItem[];
 }

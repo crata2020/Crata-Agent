@@ -1,40 +1,37 @@
 import "@testing-library/jest-dom/vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "@/components/app-shell";
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
+}));
 
 describe("AppShell", () => {
   beforeEach(() => {
     window.localStorage.clear();
   });
 
-  it("renders primary navigation labels in Korean", () => {
+  it("renders the CRATA OS navigation groups", () => {
     render(
       <AppShell>
         <div>본문</div>
       </AppShell>,
     );
 
-    expect(screen.getByRole("link", { name: "운영 맵" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "요청 콘솔" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "승인함" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "에이전트" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "활동 로그" })).toHaveAttribute("href", "/activity");
-    expect(screen.getByRole("link", { name: "스케줄" })).toHaveAttribute("href", "/schedule");
-    expect(screen.getByRole("link", { name: "비용" })).toHaveAttribute("href", "/costs");
-    expect(screen.getByRole("link", { name: "메모리" })).toHaveAttribute("href", "/memory");
-    expect(screen.getByText("운영 센터")).toBeInTheDocument();
-    expect(screen.getByText("작업공간")).toBeInTheDocument();
-    expect(screen.getByText("실행 상태")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "대시보드" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "새 요청" })).toHaveAttribute("href", "/request-intake");
+    expect(screen.getByRole("link", { name: "인박스" })).toHaveAttribute("href", "/approvals");
+    expect(screen.getByRole("link", { name: "태스크" })).toHaveAttribute("href", "/map");
+    expect(screen.getByRole("link", { name: "에이전트 오피스" })).toHaveAttribute("href", "/office");
+    expect(screen.getByRole("link", { name: "조직도" })).toHaveAttribute("href", "/org-chart");
+    expect(screen.getByRole("link", { name: "지식·검사" })).toHaveAttribute("href", "/memory");
 
-    expect(screen.queryByText("Dashboard")).not.toBeInTheDocument();
-    expect(screen.queryByText("Request Console")).not.toBeInTheDocument();
-    expect(screen.queryByText("Approval Inbox")).not.toBeInTheDocument();
-    expect(screen.queryByText("Agents")).not.toBeInTheDocument();
-    expect(screen.queryByText("Command Centre")).not.toBeInTheDocument();
-    expect(screen.queryByText("Workspace")).not.toBeInTheDocument();
-    expect(screen.queryByText("Runtime")).not.toBeInTheDocument();
+    expect(screen.getByText("운영")).toBeInTheDocument();
+    expect(screen.getByText("작업")).toBeInTheDocument();
+    expect(screen.getAllByText("에이전트").length).toBeGreaterThan(0);
+    expect(screen.getByText("지식")).toBeInTheDocument();
   });
 
   it("can hide and reopen the left sidebar", () => {
@@ -44,16 +41,16 @@ describe("AppShell", () => {
       </AppShell>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "왼쪽 바 숨기기" }));
+    fireEvent.click(screen.getByRole("button", { name: "사이드바 접기" }));
 
-    expect(screen.queryByRole("link", { name: "운영 맵" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "왼쪽 바 열기" })).toBeInTheDocument();
-    expect(window.localStorage.getItem("crata-sidebar-visible")).toBe("false");
+    expect(screen.queryByRole("link", { name: "대시보드" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "사이드바 열기" })).toBeInTheDocument();
+    expect(window.localStorage.getItem("crata-sidebar-collapsed")).toBe("true");
 
-    fireEvent.click(screen.getByRole("button", { name: "왼쪽 바 열기" }));
+    fireEvent.click(screen.getByRole("button", { name: "사이드바 열기" }));
 
-    expect(screen.getByRole("link", { name: "운영 맵" })).toBeInTheDocument();
-    expect(window.localStorage.getItem("crata-sidebar-visible")).toBe("true");
+    expect(screen.getByRole("link", { name: "대시보드" })).toBeInTheDocument();
+    expect(window.localStorage.getItem("crata-sidebar-collapsed")).toBe("false");
   });
 
   it("filters sidebar navigation with the menu search", () => {
@@ -63,9 +60,9 @@ describe("AppShell", () => {
       </AppShell>,
     );
 
-    fireEvent.change(screen.getByLabelText("메뉴 검색"), { target: { value: "메모리" } });
+    fireEvent.change(screen.getByLabelText("메뉴 검색"), { target: { value: "조직" } });
 
-    expect(screen.getByRole("link", { name: "메모리" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "요청 콘솔" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "조직도" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "새 요청" })).not.toBeInTheDocument();
   });
 });

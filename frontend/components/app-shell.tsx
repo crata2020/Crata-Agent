@@ -4,30 +4,64 @@ import {
   Activity,
   Bot,
   Brain,
-  ClipboardList,
-  Clock3,
+  CalendarDays,
   DollarSign,
+  GitFork,
   Inbox,
   LayoutDashboard,
+  ListChecks,
+  Network,
   PanelLeftClose,
   PanelLeftOpen,
   Search,
+  ServerCog,
+  ShieldCheck,
+  Sparkles,
   Users,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
-const navItems = [
-  { href: "/", label: "운영 맵", count: "10", icon: LayoutDashboard },
-  { href: "/request-intake", label: "요청 콘솔", count: "", icon: Inbox },
-  { href: "/approvals", label: "승인함", count: "", icon: ClipboardList },
-  { href: "/agents", label: "에이전트", count: "10", icon: Users },
-  { href: "/activity", label: "활동 로그", count: "", icon: Activity },
-  { href: "/schedule", label: "스케줄", count: "", icon: Clock3 },
-  { href: "/costs", label: "비용", count: "", icon: DollarSign },
-  { href: "/memory", label: "메모리", count: "", icon: Brain },
+type NavItem = {
+  href: string;
+  label: string;
+  icon: typeof Inbox;
+  hint: string;
+  badge?: number;
+};
+
+const navGroups: Array<{ label: string; items: NavItem[] }> = [
+  {
+    label: "운영",
+    items: [
+      { href: "/", label: "대시보드", icon: LayoutDashboard, hint: "운영 현황" },
+      { href: "/request-intake", label: "새 요청", icon: Inbox, hint: "회의록·지시사항 입력" },
+      { href: "/approvals", label: "인박스", icon: ShieldCheck, hint: "승인과 반려" },
+    ],
+  },
+  {
+    label: "작업",
+    items: [
+      { href: "/map", label: "태스크", icon: ListChecks, hint: "요청별 진행 보드" },
+      { href: "/activity", label: "활동 로그", icon: Activity, hint: "실행 단계 기록" },
+      { href: "/schedule", label: "캘린더", icon: CalendarDays, hint: "예약과 반복 작업" },
+      { href: "/costs", label: "비용", icon: DollarSign, hint: "모델 사용량" },
+    ],
+  },
+  {
+    label: "에이전트",
+    items: [
+      { href: "/office", label: "에이전트 오피스", icon: Sparkles, hint: "부서형 시각화" },
+      { href: "/org-chart", label: "조직도", icon: GitFork, hint: "역할과 지휘 체계" },
+      { href: "/agents", label: "에이전트", icon: Users, hint: "직원별 현재 업무" },
+    ],
+  },
+  {
+    label: "지식",
+    items: [{ href: "/memory", label: "지식·검사", icon: Brain, hint: "공식 지식과 사례" }],
+  },
 ];
 
 interface AppShellProps {
@@ -36,157 +70,158 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname() ?? "/";
-  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
-  const [navQuery, setNavQuery] = useState("");
-  const normalizedNavQuery = navQuery.trim().toLowerCase();
-  const visibleNavItems = normalizedNavQuery
-    ? navItems.filter((item) => item.label.toLowerCase().includes(normalizedNavQuery))
-    : navItems;
+  const [collapsed, setCollapsed] = useState(false);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
-    const stored = window.localStorage.getItem("crata-sidebar-visible");
+    const stored = window.localStorage.getItem("crata-sidebar-collapsed");
     if (stored !== null) {
-      setIsSidebarVisible(stored === "true");
+      setCollapsed(stored === "true");
     }
   }, []);
 
+  const filteredGroups = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return navGroups;
+    return navGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter(
+          (item) =>
+            item.label.toLowerCase().includes(q) ||
+            item.hint.toLowerCase().includes(q),
+        ),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [query]);
+
   function toggleSidebar() {
-    setIsSidebarVisible((current) => {
-      const next = !current;
-      window.localStorage.setItem("crata-sidebar-visible", String(next));
+    setCollapsed((prev) => {
+      const next = !prev;
+      window.localStorage.setItem("crata-sidebar-collapsed", String(next));
       return next;
     });
   }
 
   return (
-    <div className="min-h-screen bg-[#05080B] text-[#E8EEF2]">
-      <div className="flex min-h-screen w-full">
-        {isSidebarVisible ? (
-        <aside className="hidden h-screen w-[304px] shrink-0 flex-col border-r border-white/10 bg-[#17191D] lg:flex">
-          <div className="border-b border-white/10 p-5">
-            <div className="flex items-center gap-3">
-              <span className="flex size-11 items-center justify-center rounded-[12px] bg-[#2A1014] text-[#FF5261] shadow-[0_0_24px_rgba(255,82,97,0.25)]">
-                <Bot size={23} aria-hidden="true" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-lg font-bold tracking-[-0.02em] text-white">CRATA Office</p>
-                <p className="mt-0.5 text-sm text-[#8F98A3]">운영 센터</p>
-              </div>
+    <div className="flex h-screen w-full overflow-hidden bg-[var(--color-bg)]">
+      {!collapsed ? (
+        <aside className="hidden h-full w-[260px] shrink-0 flex-col border-r border-white/[0.08] bg-[#0D0E10] lg:flex">
+          <div className="border-b border-white/[0.08] px-4 pb-3 pt-4">
+            <div className="flex items-center justify-between">
+              <Link href="/" className="flex items-center gap-2.5" aria-label="CRATA OS 홈">
+                <span className="flex size-8 items-center justify-center rounded-lg border border-emerald-400/30 bg-emerald-400/[0.10] text-emerald-200">
+                  <Network size={16} aria-hidden="true" />
+                </span>
+                <span>
+                  <span className="block text-sm font-bold text-white">CRATA OS</span>
+                  <span className="block text-[10px] font-medium text-[var(--color-text-muted)]">
+                    Agent Office
+                  </span>
+                </span>
+              </Link>
               <button
                 type="button"
                 onClick={toggleSidebar}
-                aria-label="왼쪽 바 숨기기"
-                title="왼쪽 바 숨기기"
-                className="flex size-9 shrink-0 items-center justify-center rounded-[10px] border border-white/10 bg-white/[0.06] text-[#AEB9C4] transition hover:bg-white/10 hover:text-white"
+                aria-label="사이드바 접기"
+                className="flex size-7 items-center justify-center rounded-md text-[var(--color-text-muted)] hover:bg-white/[0.06] hover:text-white"
               >
-                <PanelLeftClose size={17} aria-hidden="true" />
+                <PanelLeftClose size={15} aria-hidden="true" />
               </button>
             </div>
 
-            <label className="mt-5 flex h-12 items-center gap-3 rounded-[10px] border border-white/10 bg-white/[0.06] px-4 text-[#7D8792] transition focus-within:border-[#38BDF8]/70">
-              <Search size={17} aria-hidden="true" />
+            <label className="mt-3 block">
               <span className="sr-only">메뉴 검색</span>
-              <input
-                aria-label="메뉴 검색"
-                value={navQuery}
-                onChange={(event) => setNavQuery(event.target.value)}
-                placeholder="검색..."
-                className="min-w-0 flex-1 bg-transparent text-sm text-[#DDE6EE] outline-none placeholder:text-[#7D8792]"
-              />
-              <span className="ml-auto rounded-[6px] bg-white/10 px-2 py-1 text-[11px] font-semibold">⌘K</span>
+              <span className="flex h-8 items-center gap-2 rounded-md border border-white/[0.08] bg-black/30 px-2.5 text-[var(--color-text-muted)] focus-within:border-emerald-300/50">
+                <Search size={13} aria-hidden="true" />
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="검색..."
+                  className="min-w-0 flex-1 bg-transparent text-xs text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-muted)]"
+                />
+              </span>
             </label>
           </div>
 
-          <nav className="flex-1 overflow-y-auto px-4 py-5">
-            <p className="px-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#666F7A]">작업공간</p>
-            <div className="mt-3 space-y-1">
-              {visibleNavItems.map((item) => {
-                const Icon = item.icon;
-                const selected = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+          <nav className="flex-1 overflow-y-auto px-3 py-3">
+            <div className="space-y-4">
+              {filteredGroups.map((group) => (
+                <section key={group.label}>
+                  <p className="mb-1.5 px-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
+                    {group.label}
+                  </p>
+                  <div className="space-y-0.5">
+                    {group.items.map((item) => {
+                      const Icon = item.icon;
+                      const isSelected =
+                        item.href === "/"
+                          ? pathname === "/"
+                          : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
-                return (
-                  <Link
-                    key={`${item.href}-${item.label}`}
-                    href={item.href}
-                    className={
-                      selected
-                        ? "flex items-center gap-3 rounded-[10px] bg-[#351D23] px-4 py-3 text-sm font-semibold text-[#FF5F6D]"
-                        : "flex items-center gap-3 rounded-[10px] px-4 py-3 text-sm font-semibold text-[#A2ABB5] transition hover:bg-white/[0.06] hover:text-white"
-                    }
-                  >
-                    <Icon size={18} aria-hidden="true" />
-                    <span>{item.label}</span>
-                    {item.count ? (
-                      <span aria-hidden="true" className="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-[11px] text-[#AAB2BC]">
-                        {item.count}
-                      </span>
-                    ) : null}
-                  </Link>
-                );
-              })}
-              {visibleNavItems.length === 0 ? (
-                <p className="rounded-[10px] px-4 py-3 text-sm text-[#7D8792]">검색 결과가 없습니다.</p>
-              ) : null}
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          aria-label={item.label}
+                          className={
+                            isSelected
+                              ? "flex items-center gap-2.5 rounded-md border border-emerald-400/20 bg-emerald-400/[0.10] px-2.5 py-2 text-emerald-200"
+                              : "flex items-center gap-2.5 rounded-md border border-transparent px-2.5 py-2 text-[var(--color-text-secondary)] hover:bg-white/[0.04] hover:text-white"
+                          }
+                        >
+                          <Icon size={15} aria-hidden="true" />
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-[13px] font-medium">{item.label}</span>
+                          </span>
+                          {item.badge ? (
+                            <span className="rounded-full bg-[var(--color-danger-soft)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--color-danger)]">
+                              {item.badge}
+                            </span>
+                          ) : null}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
             </div>
           </nav>
 
-          <div className="border-t border-white/10 p-5">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#666F7A]">실행 상태</p>
-            <div className="mt-4 space-y-4">
-              <UsageBar label="로컬 모델" value="Healthy" percent={82} tone="#36D47F" />
-              <UsageBar label="승인 큐" value="Active" percent={46} tone="#F2B84B" />
-            </div>
-            <div className="mt-5 flex items-center gap-3 rounded-[12px] bg-black/20 p-3">
-              <span className="flex size-9 items-center justify-center rounded-[10px] bg-[#3A1C23] text-xs font-black text-[#FF5F6D]">
-                CH
-              </span>
-              <div>
-                <p className="text-sm font-semibold text-white">청하님</p>
-                <p className="text-xs text-[#7D8792]">Owner</p>
+          <div className="border-t border-white/[0.08] p-3">
+            <div className="rounded-lg border border-white/[0.08] bg-black/25 p-3">
+              <div className="flex items-center justify-between">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white">
+                  <ServerCog size={13} className="text-sky-300" aria-hidden="true" />
+                  로컬 실행
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/[0.10] px-2 py-0.5 text-[10px] font-bold text-emerald-200">
+                  <span className="size-1.5 rounded-full bg-emerald-300 crata-pulse" />
+                  준비
+                </span>
+              </div>
+              <div className="mt-2 flex items-center justify-between text-[11px] text-[var(--color-text-muted)]">
+                <span className="inline-flex items-center gap-1">
+                  <Bot size={11} className="text-amber-300" aria-hidden="true" />
+                  자동화 보호
+                </span>
+                <span>청하님</span>
               </div>
             </div>
           </div>
         </aside>
-        ) : (
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            aria-label="왼쪽 바 열기"
-            title="왼쪽 바 열기"
-            className="fixed left-4 top-4 z-50 hidden size-11 items-center justify-center rounded-[12px] border border-white/10 bg-[#12171D]/92 text-[#DDE6EE] shadow-[0_18px_50px_rgba(0,0,0,0.34)] backdrop-blur transition hover:border-[#38BDF8]/45 hover:bg-[#18212A] lg:flex"
-          >
-            <PanelLeftOpen size={19} aria-hidden="true" />
-          </button>
-        )}
+      ) : (
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          aria-label="사이드바 열기"
+          className="fixed left-3 top-3 z-50 hidden size-9 items-center justify-center rounded-lg border border-white/[0.08] bg-[#0D0E10]/95 text-[var(--color-text-secondary)] shadow-lg backdrop-blur hover:text-white lg:flex"
+        >
+          <PanelLeftOpen size={16} aria-hidden="true" />
+        </button>
+      )}
 
-        <main className="min-w-0 flex-1 overflow-hidden p-4">{children}</main>
-      </div>
-    </div>
-  );
-}
-
-function UsageBar({
-  label,
-  value,
-  percent,
-  tone,
-}: {
-  label: string;
-  value: string;
-  percent: number;
-  tone: string;
-}) {
-  return (
-    <div>
-      <div className="mb-2 flex items-center justify-between text-xs">
-        <span className="font-semibold text-[#B7C0C9]">{label}</span>
-        <span className="font-bold" style={{ color: tone }}>
-          {value}
-        </span>
-      </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-        <div className="h-full rounded-full" style={{ width: `${percent}%`, backgroundColor: tone }} />
-      </div>
+      <main className="min-w-0 flex-1 overflow-hidden">{children}</main>
     </div>
   );
 }

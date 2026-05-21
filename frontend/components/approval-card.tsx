@@ -6,11 +6,13 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { decideApproval, type ApprovalDecision } from "@/lib/api";
-import type { Approval, ApprovalStatus } from "@/lib/types";
+import { taskTypeLabel } from "@/lib/task-labels";
+import type { Approval, ApprovalComparison, ApprovalStatus } from "@/lib/types";
 
 interface ApprovalCardProps {
   approval: Approval;
   highlighted?: boolean;
+  compact?: boolean;
 }
 
 const statusLabels: Record<ApprovalStatus, string> = {
@@ -37,7 +39,7 @@ function knowledgeReferenceLabel(reference: string) {
   return knowledgeReferenceLabels[reference] ?? reference;
 }
 
-export function ApprovalCard({ approval, highlighted = false }: ApprovalCardProps) {
+export function ApprovalCard({ approval, highlighted = false, compact = false }: ApprovalCardProps) {
   const router = useRouter();
   const cardRef = useRef<HTMLElement | null>(null);
   const [pendingDecision, setPendingDecision] = useState<ApprovalDecision | null>(null);
@@ -48,28 +50,19 @@ export function ApprovalCard({ approval, highlighted = false }: ApprovalCardProp
   const [error, setError] = useState("");
   const currentStatus = decidedStatus ?? approval.status;
   const canDecide = approval.status === "pending_approval" && decidedStatus === null;
+  const hasUnansweredQuestions = approval.after_content?.includes("먼저 확인할 질문") || approval.reviewer_note?.includes("먼저 확인할 질문");
 
   useEffect(() => {
-    if (!highlighted) {
-      return;
-    }
-
+    if (!highlighted) return;
     window.setTimeout(() => {
-      cardRef.current?.scrollIntoView?.({
-        behavior: "smooth",
-        block: "center",
-      });
+      cardRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });
     }, 80);
   }, [highlighted]);
 
   async function handleDecision(decision: ApprovalDecision, reason = "") {
-    if (!canDecide || pendingDecision !== null) {
-      return;
-    }
-
+    if (!canDecide || pendingDecision !== null) return;
     setPendingDecision(decision);
     setError("");
-
     try {
       const decidedApproval = reason
         ? await decideApproval(approval.id, decision, reason)
@@ -85,24 +78,12 @@ export function ApprovalCard({ approval, highlighted = false }: ApprovalCardProp
     }
   }
 
-  function openRevisionForm() {
-    setIsRevisionFormOpen(true);
-    setError("");
-  }
-
-  function cancelRevisionForm() {
-    setIsRevisionFormOpen(false);
-    setRevisionReason("");
-    setError("");
-  }
-
   function submitRevisionRequest() {
     const reason = revisionReason.trim();
     if (!reason) {
       setError("수정 사유를 입력하세요.");
       return;
     }
-
     void handleDecision("revise_requested", reason);
   }
 
@@ -110,155 +91,416 @@ export function ApprovalCard({ approval, highlighted = false }: ApprovalCardProp
     <article
       ref={cardRef}
       id={`approval-${approval.id}`}
-      aria-current={highlighted ? "true" : undefined}
-      className={`rounded-[14px] border p-4 text-white shadow-[0_18px_50px_rgba(0,0,0,0.25)] ${
+      className={`space-y-3 rounded-xl border p-4 text-white transition ${
         highlighted
-          ? "border-[#F2B84B]/80 bg-[#181408] shadow-[0_0_0_1px_rgba(242,184,75,0.26),0_20px_70px_rgba(242,184,75,0.12)]"
-          : "border-white/10 bg-[#111820]"
+          ? "border-[var(--color-warning)]/60 bg-[#241C0F]"
+          : "border-[var(--color-border)] bg-[var(--color-surface)]"
       }`}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-button bg-[#302410] px-2 py-1 text-xs font-semibold text-[#FFD37A]">
-              {statusLabels[currentStatus] ?? currentStatus}
-            </span>
-            <span className="text-xs font-medium text-[#AEB9C4]">{approval.affected_area}</span>
-            {highlighted ? (
-              <span className="rounded-full bg-[#302410] px-2 py-1 text-xs font-semibold text-[#FFD37A]">
-                대시보드 선택
-              </span>
-            ) : null}
-          </div>
-          <h2 className="mt-3 text-base font-semibold text-white">{approval.title}</h2>
-          <p className="mt-2 text-sm leading-6 text-[#C7D2DC]">{approval.summary}</p>
-          <Link
-            href={`/activity?taskId=${encodeURIComponent(approval.task_id)}`}
-            className="mt-3 inline-flex h-8 items-center rounded-button border border-white/10 bg-white/[0.06] px-3 text-xs font-semibold text-[#DDE6EE] transition hover:bg-white/10"
-          >
-            실행 흐름 보기
-          </Link>
+      {/* Header: title + status */}
+      <div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-[#3A2A12] px-2.5 py-0.5 text-[10px] font-bold text-[#FFD37A]">
+            {statusLabels[currentStatus] ?? currentStatus}
+          </span>
+          <span className="text-[11px] font-semibold text-[var(--color-text-muted)]">{taskTypeLabel(approval.affected_area)}</span>
         </div>
+        <h2 className="mt-2 text-base font-bold leading-6 text-white">{approval.title}</h2>
+        <p className="mt-1 text-sm leading-6 text-[var(--color-text-secondary)]">{approval.summary}</p>
+      </div>
 
-        {canDecide ? (
-          <div className="flex shrink-0 flex-wrap gap-2">
+      {/* 작업 내용 - 에이전트가 뭘 했는지 */}
+      <div className="rounded-xl border border-[var(--color-border)] bg-black/20">
+        <TaskContextPanel taskId={approval.task_id} />
+        
+        {/* 검토 메모 (에이전트의 판단 근거) */}
+        {approval.reviewer_note && (
+          <div className="border-b border-[var(--color-border)] p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">검토 메모 (Reviewer Note)</p>
+            <p className="mt-1.5 text-sm leading-6 text-[#DDE6EE]">{approval.reviewer_note}</p>
+          </div>
+        )}
+
+        {/* 변경 내역 하이라이트 (Diff) 또는 단일 결과 */}
+        <div className="p-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--color-accent)]">
+            {approval.before_content ? "변경 사항 하이라이트 (Diff)" : "작업 결과"}
+          </p>
+          {approval.before_content ? (
+            <DiffViewer before={approval.before_content} after={approval.after_content} />
+          ) : (
+            <FormattedContent content={approval.after_content} />
+          )}
+        </div>
+      </div>
+
+      {/* 참조 근거 */}
+      {approval.knowledge_references?.length ? (
+        <div className="rounded-xl border border-[var(--color-info)]/20 bg-[var(--color-info-soft)] p-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--color-info)]">참조 근거</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {approval.knowledge_references.map((ref) => (
+              <Link
+                key={ref}
+                href={`/memory?query=${encodeURIComponent(knowledgeReferenceLabel(ref))}`}
+                className="rounded-lg border border-[var(--color-info)]/25 bg-black/20 px-2.5 py-1 text-[11px] font-semibold text-white transition hover:bg-black/30"
+              >
+                {knowledgeReferenceLabel(ref)}
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* Links */}
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href={`/activity?taskId=${encodeURIComponent(approval.task_id)}`}
+          className="rounded-lg border border-[var(--color-border)] bg-white/[0.04] px-3 py-1.5 text-[11px] font-semibold text-[var(--color-text-secondary)] hover:bg-white/[0.08]"
+        >
+          실행 흐름 보기
+        </Link>
+        <Link
+          href={`/map?taskId=${encodeURIComponent(approval.task_id)}`}
+          className="rounded-lg border border-[var(--color-info)]/25 bg-[var(--color-info-soft)] px-3 py-1.5 text-[11px] font-semibold text-[var(--color-info)] hover:bg-[rgba(127,183,255,0.14)]"
+        >
+          운영 맵 보기
+        </Link>
+      </div>
+
+      {/* Decision buttons */}
+      {canDecide ? (
+        <div className="space-y-3">
+          {hasUnansweredQuestions && (
+            <div className="flex items-center gap-2 rounded-lg bg-[var(--color-warning)]/20 px-3 py-2 text-[11px] font-bold text-[var(--color-warning)]">
+              <span className="flex size-4 items-center justify-center rounded-full bg-[var(--color-warning)] text-black">!</span>
+              에이전트가 작업을 완료하지 못하고 질문을 남겼습니다. [답변하기]를 통해 내용을 전달해 주세요.
+            </div>
+          )}
+          <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
               onClick={() => handleDecision("approved")}
-              disabled={pendingDecision !== null}
-              className="inline-flex h-9 items-center gap-1.5 rounded-button bg-[#2F7D4E] px-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={pendingDecision !== null || hasUnansweredQuestions}
+              className="flex h-9 items-center justify-center gap-1.5 rounded-xl bg-[#1E5F3D] text-xs font-bold text-white hover:bg-[#26734B] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Check size={16} aria-hidden="true" />
-              {decisionLabels.approved}
+              <Check size={14} />
+              승인
             </button>
             <button
               type="button"
               onClick={() => handleDecision("rejected")}
               disabled={pendingDecision !== null}
-              className="inline-flex h-9 items-center gap-1.5 rounded-button bg-[#B83A3A] px-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex h-9 items-center justify-center gap-1.5 rounded-xl bg-[#8C2D35] text-xs font-bold text-white hover:bg-[#A33740] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <X size={16} aria-hidden="true" />
-              {decisionLabels.rejected}
+              <X size={14} />
+              거절 / 삭제
             </button>
             <button
               type="button"
-              onClick={openRevisionForm}
+              onClick={() => { setIsRevisionFormOpen(true); setError(""); }}
               disabled={pendingDecision !== null}
-              className="inline-flex h-9 items-center gap-1.5 rounded-button border border-white/10 bg-white/[0.06] px-3 text-sm font-semibold text-[#DDE6EE] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+              className={`flex h-9 items-center justify-center gap-1.5 rounded-xl border text-xs font-bold disabled:opacity-50 transition ${hasUnansweredQuestions ? "border-[var(--color-warning)] bg-[var(--color-warning)]/10 text-[var(--color-warning)] hover:bg-[var(--color-warning)]/20" : "border-[var(--color-border)] bg-white/[0.04] text-[var(--color-text-secondary)] hover:bg-white/[0.08]"}`}
             >
-              <RotateCcw size={16} aria-hidden="true" />
-              {decisionLabels.revise_requested}
+              <RotateCcw size={14} />
+              {hasUnansweredQuestions ? "답변하기" : "수정요청"}
             </button>
           </div>
-        ) : (
-          <div className="shrink-0 rounded-button border border-white/10 bg-white/[0.06] px-3 py-2 text-sm font-semibold text-[#AEB9C4]">
-            최종 상태: {statusLabels[currentStatus] ?? currentStatus}
-          </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-[var(--color-border)] bg-white/[0.03] px-3 py-2 text-xs font-semibold text-[var(--color-text-muted)]">
+          최종 상태: {statusLabels[currentStatus] ?? currentStatus}
+        </div>
+      )}
 
-      <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-        <section className="rounded-[10px] border border-white/10 bg-black/20 p-3">
-          <h3 className="text-xs font-semibold tracking-normal text-[#AEB9C4]">검토 메모</h3>
-          <p className="mt-2 text-sm leading-6 text-[#E8EEF2]">{approval.reviewer_note || "검토 메모가 없습니다."}</p>
-        </section>
-        <section className="rounded-[10px] border border-white/10 bg-[#0A111B] p-3 text-white">
-          <h3 className="text-xs font-semibold tracking-normal text-[#CBD5E1]">변경 후 내용</h3>
-          <pre className="mt-2 max-h-56 overflow-auto whitespace-pre-wrap text-xs leading-5">
-            <code>{approval.after_content}</code>
-          </pre>
-        </section>
-      </div>
-
-      {approval.knowledge_references?.length ? (
-        <section className="mt-4 rounded-[10px] border border-[#38BDF8]/25 bg-[#07141C] p-3">
-          <h3 className="text-xs font-semibold uppercase tracking-normal text-[#7DD7FF]">참조 지식</h3>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {approval.knowledge_references.map((reference) => {
-              const label = knowledgeReferenceLabel(reference);
-
-              return (
-                <Link
-                  key={reference}
-                  href={`/memory?query=${encodeURIComponent(label)}`}
-                  title={reference}
-                  className="rounded-button border border-[#38BDF8]/25 bg-[#092234] px-2.5 py-1 text-xs font-semibold text-[#DDE6EE] transition hover:border-[#7DD7FF]/60 hover:bg-[#10344A]"
-                >
-                  {label}
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      ) : null}
-
-      {isRevisionFormOpen && canDecide ? (
-        <section className="mt-4 rounded-[10px] border border-[#F2B84B]/40 bg-[#241C0F] p-3">
+      {/* Revision form */}
+      {isRevisionFormOpen && canDecide && (
+        <div className="rounded-xl border border-[var(--color-warning)]/40 bg-[#241C0F] p-4">
           <label className="block">
-            <span className="text-xs font-semibold text-[#FFD37A]">수정 사유</span>
+            <span className="text-xs font-bold text-[var(--color-warning)]">
+              {hasUnansweredQuestions ? "에이전트 질문에 대한 답변" : "수정 사유"}
+            </span>
             <textarea
               value={revisionReason}
-              onChange={(event) => setRevisionReason(event.target.value)}
+              onChange={(e) => setRevisionReason(e.target.value)}
               rows={3}
-              placeholder="어떤 부분을 어떻게 다시 작업해야 하는지 적어주세요."
-              className="mt-1 w-full resize-y rounded-[10px] border border-white/10 bg-[#101820] px-3 py-2 text-sm leading-6 text-white outline-none focus:border-[#38BDF8]"
+              placeholder={hasUnansweredQuestions ? "질문에 대한 답변을 남겨주시면 에이전트가 이어서 작업을 진행합니다." : "어떤 부분을 어떻게 다시 작업해야 하는지 적어주세요."}
+              className="mt-2 w-full resize-y rounded-xl border border-[var(--color-border)] bg-[#16161A] px-3 py-2.5 text-sm leading-6 text-white outline-none focus:border-[var(--color-accent)]"
             />
           </label>
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 flex gap-2">
             <button
               type="button"
               onClick={submitRevisionRequest}
               disabled={pendingDecision !== null}
-              className="inline-flex h-9 items-center gap-1.5 rounded-button bg-[#FF5261] px-3 text-sm font-semibold text-white transition hover:bg-[#FF6976] disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex h-9 items-center gap-1.5 rounded-xl bg-[var(--color-warning)] px-4 text-xs font-bold text-black hover:opacity-90 disabled:opacity-50"
             >
-              <RotateCcw size={16} aria-hidden="true" />
+              <RotateCcw size={14} />
               수정요청 확정
             </button>
             <button
               type="button"
-              onClick={cancelRevisionForm}
-              disabled={pendingDecision !== null}
-              className="inline-flex h-9 items-center rounded-button border border-white/10 bg-white/[0.06] px-3 text-sm font-semibold text-[#DDE6EE] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => { setIsRevisionFormOpen(false); setRevisionReason(""); setError(""); }}
+              className="rounded-xl border border-[var(--color-border)] px-4 text-xs font-semibold text-[var(--color-text-muted)] hover:text-white"
             >
               취소
             </button>
           </div>
-        </section>
-      ) : null}
+        </div>
+      )}
 
-      {revisionCandidate ? (
-        <section className="mt-4 rounded-[10px] border border-[#38BDF8]/35 bg-[#0B2535]/45 p-3">
-          <p className="text-sm font-semibold text-[#7DD7FF]">재작업 후보가 생성되었습니다.</p>
-          <p className="mt-2 text-sm font-semibold text-white">{revisionCandidate.title}</p>
-          <p className="mt-1 text-xs leading-5 text-[#AEB9C4]">{revisionCandidate.summary}</p>
-        </section>
-      ) : null}
+      {/* Revision candidate */}
+      {revisionCandidate && (
+        <div className="rounded-xl border border-[var(--color-info)]/30 bg-[#0B2535]/45 p-3">
+          <p className="text-xs font-bold text-[var(--color-info)]">재작업 후보가 생성되었습니다</p>
+          <p className="mt-1 text-sm font-semibold text-white">{revisionCandidate.title}</p>
+          <p className="mt-1 text-xs text-[var(--color-text-secondary)]">{revisionCandidate.summary}</p>
+          <Link
+            href={`/request-intake?candidateId=${encodeURIComponent(revisionCandidate.id)}`}
+            className="mt-2 inline-flex rounded-lg border border-[var(--color-info)]/25 bg-[var(--color-info-soft)] px-3 py-1.5 text-[11px] font-bold text-[var(--color-info)] hover:bg-[rgba(127,183,255,0.14)]"
+          >
+            재작업 후보 열기
+          </Link>
+        </div>
+      )}
 
-      {error ? (
-        <p role="alert" className="mt-3 rounded-button border border-[#FF6B7A]/30 bg-[#2A1217] px-3 py-2 text-sm text-[#FF6B7A]">
+      {/* Comparison panel */}
+      {approval.comparison && <ComparisonPanel comparison={approval.comparison} currentApprovalId={approval.id} />}
+
+      {/* Error */}
+      {error && (
+        <p className="rounded-xl border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-3 py-2 text-sm text-[var(--color-danger)]">
           {error}
         </p>
-      ) : null}
+      )}
     </article>
   );
 }
+
+function ComparisonPanel({ comparison, currentApprovalId }: { comparison: ApprovalComparison; currentApprovalId: string }) {
+  const revisionContent = comparison.revision_after_content?.trim();
+
+  return (
+    <div className="rounded-xl border border-[var(--color-warning)]/30 bg-[#241C0F]/50 p-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-bold text-[var(--color-warning)]">원본 vs 재작업 비교</h3>
+        <span className="rounded-full bg-[#3A2A12] px-2 py-0.5 text-[10px] font-bold text-[#FFD37A]">
+          {revisionContent ? "비교 가능" : "재작업 대기"}
+        </span>
+      </div>
+
+      {comparison.revision_reason && (
+        <p className="rounded-lg border border-[var(--color-warning)]/20 bg-black/25 px-3 py-2 text-xs text-[#E9D6A8]">
+          수정요청: {comparison.revision_reason}
+        </p>
+      )}
+
+      <div className="grid gap-2 md:grid-cols-2">
+        <DraftBox label="원본 초안" content={comparison.source_after_content} />
+        <DraftBox
+          label="재작업 초안"
+          content={revisionContent || "재작업 후보를 실행하면 여기에 표시됩니다."}
+          muted={!revisionContent}
+        />
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href={`/approvals?approvalId=${encodeURIComponent(comparison.source_approval_id)}`}
+          className="rounded-lg border border-[var(--color-warning)]/25 bg-[#302410] px-3 py-1.5 text-[11px] font-semibold text-[#FFD37A] hover:bg-[#3A2B13]"
+        >
+          원 승인 보기
+        </Link>
+        {comparison.revision_approval_id && (
+          <Link
+            href={`/approvals?approvalId=${encodeURIComponent(comparison.revision_approval_id)}`}
+            className="rounded-lg border border-[var(--color-accent)]/25 bg-[var(--color-accent-soft)] px-3 py-1.5 text-[11px] font-semibold text-[var(--color-accent)] hover:bg-[rgba(79,209,165,0.14)]"
+          >
+            재작업 승인 보기
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DraftBox({ label, content, muted = false }: { label: string; content: string; muted?: boolean }) {
+  return (
+    <div className="rounded-lg border border-[var(--color-border)] bg-black/20 p-3">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">{label}</p>
+      <FormattedContent content={content} muted={muted} />
+    </div>
+  );
+}
+
+function FormattedContent({ content, muted = false }: { content: string; muted?: boolean }) {
+  // Pre-process: insert line breaks before markdown patterns that appear mid-line
+  const preprocessed = content
+    .replace(/\s(?=#{1,3}\s)/g, "\n")       // break before # ## ###
+    .replace(/\s(?=---)/g, "\n")             // break before ---
+    .replace(/\s(?=- [^\s])/g, "\n")         // break before - list items
+    .replace(/([.。!?])\s+(?=[가-힣A-Z])/g, "$1\n") // break after sentence ends before Korean/uppercase
+    .replace(/(?:작업 유형:|배정 에이전트:|설명:|source:|status:|updated_at:|exam:|knowledge_type:)/g, "\n$&") // break before key: patterns
+    .replace(/\n{3,}/g, "\n\n");             // collapse excessive breaks
+
+  const lines = preprocessed.split("\n");
+  const textColor = muted ? "text-[#8A929B]" : "text-[var(--color-text-secondary)]";
+  const headingColor = muted ? "text-[#A0A8B0]" : "text-white";
+
+  const elements: React.ReactNode[] = [];
+  let listBuffer: string[] = [];
+  let idx = 0;
+
+  function flushList() {
+    if (listBuffer.length === 0) return;
+    elements.push(
+      <ul key={`list-${idx}`} className={`mt-1.5 space-y-1 pl-4 ${textColor}`}>
+        {listBuffer.map((item, i) => (
+          <li key={i} className="list-disc text-[13px] leading-5">{item}</li>
+        ))}
+      </ul>
+    );
+    listBuffer = [];
+    idx++;
+  }
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      flushList();
+      continue;
+    }
+
+    // Horizontal rule
+    if (/^-{3,}$/.test(trimmed)) {
+      flushList();
+      elements.push(<hr key={`hr-${idx++}`} className="my-2 border-[var(--color-border)]" />);
+      continue;
+    }
+
+    // Headings
+    if (trimmed.startsWith("## ")) {
+      flushList();
+      elements.push(
+        <p key={`h2-${idx++}`} className={`mt-3 text-[13px] font-bold ${headingColor}`}>
+          {trimmed.slice(3)}
+        </p>
+      );
+      continue;
+    }
+    if (trimmed.startsWith("# ")) {
+      flushList();
+      elements.push(
+        <p key={`h1-${idx++}`} className={`mt-3 text-sm font-bold ${headingColor}`}>
+          {trimmed.slice(2)}
+        </p>
+      );
+      continue;
+    }
+
+    // List item
+    if (trimmed.startsWith("- ")) {
+      listBuffer.push(trimmed.slice(2));
+      continue;
+    }
+
+    // Numbered list (1. 2. 3.)
+    if (/^\d+\.\s/.test(trimmed)) {
+      flushList();
+      elements.push(
+        <p key={`ol-${idx++}`} className={`mt-1 text-[13px] leading-6 ${textColor}`}>
+          {trimmed}
+        </p>
+      );
+      continue;
+    }
+
+    // Key: value pattern (make key bold)
+    const kvMatch = trimmed.match(/^([가-힣a-zA-Z_]+\s*[:：])\s*(.+)$/);
+    if (kvMatch) {
+      flushList();
+      elements.push(
+        <p key={`kv-${idx++}`} className={`mt-1 text-[13px] leading-6 ${textColor}`}>
+          <span className={`font-semibold ${headingColor}`}>{kvMatch[1]}</span> {kvMatch[2]}
+        </p>
+      );
+      continue;
+    }
+
+    // Normal text
+    flushList();
+    elements.push(
+      <p key={`p-${idx++}`} className={`mt-1.5 text-[13px] leading-6 ${textColor}`}>
+        {trimmed}
+      </p>
+    );
+  }
+
+  flushList();
+
+  return <div className="mt-1.5 max-h-[400px] overflow-y-auto">{elements}</div>;
+}
+
+function TaskContextPanel({ taskId }: { taskId: string }) {
+  const [context, setContext] = useState<{ original: string } | null>(null);
+  
+  useEffect(() => {
+    async function load() {
+      try {
+        const { getRequestMap } = await import("@/lib/api");
+        const res = await getRequestMap({ taskId });
+        if (res.items.length > 0) {
+          const item = res.items[0];
+          setContext({
+            original: item.raw_preview || item.title
+          });
+        }
+      } catch (e) {}
+    }
+    load();
+  }, [taskId]);
+
+  if (!context) return null;
+
+  return (
+    <div className="border-b border-[var(--color-border)] p-3">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--color-info)]">원본 요청 요약 (Context)</p>
+      <p className="mt-1.5 text-xs text-[var(--color-text-secondary)] whitespace-pre-wrap rounded-lg bg-black/30 p-2 leading-relaxed">{context.original}</p>
+    </div>
+  );
+}
+
+function DiffViewer({ before, after }: { before: string; after: string }) {
+  const [diffs, setDiffs] = useState<any[]>([]);
+  
+  useEffect(() => {
+    async function load() {
+      try {
+        const { diffWordsWithSpace } = await import("diff");
+        setDiffs(diffWordsWithSpace(before, after));
+      } catch (e) {
+        // fallback to standard display if diff fails
+        setDiffs([{ value: after }]);
+      }
+    }
+    load();
+  }, [before, after]);
+
+  if (!diffs.length) return null;
+
+  return (
+    <div className="mt-1.5 whitespace-pre-wrap text-[13px] leading-6 max-h-[400px] overflow-y-auto bg-[#111114] p-3 rounded-lg border border-white/5">
+      {diffs.map((part, i) => {
+        if (part.added) {
+          return <span key={i} className="bg-[var(--color-accent)]/20 text-[var(--color-accent)] font-medium px-0.5 rounded-[2px]">{part.value}</span>;
+        }
+        if (part.removed) {
+          return <span key={i} className="bg-[var(--color-danger)]/20 text-[var(--color-danger)] line-through opacity-70 px-0.5 rounded-[2px]">{part.value}</span>;
+        }
+        return <span key={i} className="text-[#AAB0B8]">{part.value}</span>;
+      })}
+    </div>
+  );
+}
+

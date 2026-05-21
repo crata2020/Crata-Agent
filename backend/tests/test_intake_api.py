@@ -125,6 +125,30 @@ def test_create_intake_extracts_all_mixed_candidate_task_types_in_order(app: Fas
     ]
 
 
+def test_create_intake_preserves_multiple_same_type_candidate_tasks(app: FastAPI) -> None:
+    client = TestClient(app)
+
+    response = client.post(
+        "/intake",
+        json={
+            "title": "결과지 회의록",
+            "raw_content": (
+                "개인행동검사 결과지 3페이지 문구를 부드럽게 수정하자. "
+                "집단행동검사 결과지 5페이지 문구도 상담형으로 수정하자."
+            ),
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert [task["task_type"] for task in body["candidate_tasks"]] == [
+        "report_phrase_revision",
+        "report_phrase_revision",
+    ]
+    assert "개인행동검사" in body["candidate_tasks"][0]["evidence_excerpt"]
+    assert "집단행동검사" in body["candidate_tasks"][1]["evidence_excerpt"]
+
+
 def test_create_intake_extracts_short_revision_and_planning_request(app: FastAPI) -> None:
     client = TestClient(app)
 
@@ -143,6 +167,32 @@ def test_create_intake_extracts_short_revision_and_planning_request(app: FastAPI
         "business_planning",
     ]
     assert body["candidate_tasks"][1]["title"] == "사업·프로그램 기획 후보"
+    assert body["candidate_tasks"][1]["workflow_plan"]["task_type"] == "planning"
+    assert body["candidate_tasks"][1]["workflow_plan"]["primary_agent"] == "business_designer"
+    assert body["candidate_tasks"][1]["workflow_plan"]["gates"]["knowledge"] == "concept_guardian"
+
+
+def test_create_intake_marks_case_learning_as_approval_required_hypothesis_workflow(app: FastAPI) -> None:
+    client = TestClient(app)
+
+    response = client.post(
+        "/intake",
+        json={
+            "title": "상담 사례 저장",
+            "raw_content": "상담 사례를 비교형 대표 사례 후보로 저장하고 나중에 학습에 반영하자.",
+        },
+    )
+
+    assert response.status_code == 201
+    candidate = response.json()["candidate_tasks"][0]
+    workflow_plan = candidate["workflow_plan"]
+    assert candidate["task_type"] == "counseling_case_learning"
+    assert workflow_plan["task_type"] == "case_learning"
+    assert workflow_plan["requires_type_hypothesis"] is True
+    assert workflow_plan["allow_uncertain_type"] is True
+    assert workflow_plan["requires_anonymization"] is True
+    assert workflow_plan["approval_required"] is True
+    assert workflow_plan["action_policy"]["default"] == "create_approval"
 
 
 def test_create_intake_returns_clarifying_questions_for_business_planning(app: FastAPI) -> None:
@@ -152,7 +202,7 @@ def test_create_intake_returns_clarifying_questions_for_business_planning(app: F
         "/intake",
         json={
             "title": "기획 요청",
-            "raw_content": "공공기관 연수 프로그램 제안서를 기획해줘.",
+            "raw_content": "연수 프로그램 제안서를 기획해줘.",
         },
     )
 
@@ -165,6 +215,50 @@ def test_create_intake_returns_clarifying_questions_for_business_planning(app: F
         "이번 제안서의 목적과 기대 성과는 무엇인가요?",
         "예산, 일정, 운영 형태의 제한은 무엇인가요?",
     ]
+
+
+def test_create_intake_separates_relationship_pattern_analysis(app: FastAPI) -> None:
+    client = TestClient(app)
+
+    response = client.post(
+        "/intake",
+        json={
+            "title": "관계 분석 요청",
+            "raw_content": "A유형과 B유형이 부부관계에서 반복되는 침묵-확인요구 갈등 루프를 분석해줘.",
+        },
+    )
+
+    assert response.status_code == 201
+    candidate = response.json()["candidate_tasks"][0]
+    assert candidate["task_type"] == "relationship_pattern_analysis"
+    assert "relationship_analyst" in candidate["recommended_agents"]
+    questions = candidate["clarifying_questions"]
+    assert "분석할 사용자 유형과 상대 유형은 무엇인가요?" not in questions
+    assert "관계 맥락은 부부, 연인, 부모자녀, 직장, 친구 중 어디에 가까운가요?" not in questions
+    assert "공식 지식 후보인지, 상담 답변용 참고 패턴인지 구분이 필요한가요?" in questions
+
+
+def test_create_intake_asks_only_missing_planning_questions(app: FastAPI) -> None:
+    client = TestClient(app)
+
+    response = client.post(
+        "/intake",
+        json={
+            "title": "기획 요청",
+            "raw_content": (
+                "지방 공공기관 신규 관리자 대상으로 1박2일 회복 프로그램 제안서를 기획해줘. "
+                "예산은 800만원 안쪽으로 잡고 싶어."
+            ),
+        },
+    )
+
+    assert response.status_code == 201
+    candidate = response.json()["candidate_tasks"][0]
+    questions = candidate["clarifying_questions"]
+    assert "대상 기관 또는 고객은 누구인가요?" not in questions
+    assert "예산, 일정, 운영 형태의 제한은 무엇인가요?" not in questions
+    assert "해결하려는 문제나 개선하고 싶은 장면은 무엇인가요?" in questions
+    assert "CRATA 검사 중 어떤 검사를 어떤 단계에 넣고 싶나요?" in questions
 
 
 def test_create_intake_returns_ai_classification_metadata_for_review(app: FastAPI) -> None:
@@ -299,6 +393,38 @@ def test_update_candidate_task_before_execution(app: FastAPI, db_session: Sessio
     assert candidate is not None
     assert candidate.title == "조직행동검사 5페이지 문구 수정"
     assert candidate.recommended_agents == ["crata_ceo", "report_editor", "quality_inspector"]
+
+
+def test_update_candidate_task_persists_clarifying_answers(app: FastAPI, db_session: Session) -> None:
+    client = TestClient(app)
+    intake_response = client.post(
+        "/intake",
+        json={
+            "title": "기획 요청",
+            "raw_content": "공공기관 연수 프로그램 제안서를 기획해줘.",
+        },
+    )
+    candidate = intake_response.json()["candidate_tasks"][0]
+
+    response = client.patch(
+        f"/intake/candidates/{candidate['id']}",
+        json={
+            "title": candidate["title"],
+            "summary": candidate["summary"],
+            "recommended_agents": candidate["recommended_agents"],
+            "clarifying_answers": "대상은 지방 공공기관 신규 관리자이며, 예산은 1박2일 800만원 안쪽입니다.",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["clarifying_answers"] == "대상은 지방 공공기관 신규 관리자이며, 예산은 1박2일 800만원 안쪽입니다."
+
+    saved_candidate = db_session.get(CandidateTask, candidate["id"])
+    assert saved_candidate is not None
+    assert saved_candidate.item_metadata["clarifying_answers"] == (
+        "대상은 지방 공공기관 신규 관리자이며, 예산은 1박2일 800만원 안쪽입니다."
+    )
 
 
 def test_split_candidate_task_creates_reclassified_draft_candidates(

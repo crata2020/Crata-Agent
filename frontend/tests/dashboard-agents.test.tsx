@@ -1,23 +1,11 @@
 import "@testing-library/jest-dom/vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
 
-import { DashboardContent } from "@/app/page";
-import { runCandidate } from "@/lib/api";
-import { agentSeeds } from "@/lib/agent-seeds";
-import type { AgentActivity, DashboardSummary, WorkflowRunActivity } from "@/lib/types";
-import sharedAgentSeeds from "../../shared/agent-seeds.json";
+import { DashboardContent } from "@/app/map/page";
+import type { DashboardSummary, RequestMapItem } from "@/lib/types";
 
-vi.mock("@/lib/api", () => ({
-  getAgentActivity: vi.fn(),
-  getDashboardSummary: vi.fn(),
-  getWorkflowActivity: vi.fn(),
-  runCandidate: vi.fn(),
-}));
-
-const runCandidateMock = vi.mocked(runCandidate);
-
-describe("dashboard agent flow map", () => {
+describe("request flow map", () => {
   const summary: DashboardSummary = {
     agent_count: 10,
     active_agent_count: 9,
@@ -26,273 +14,233 @@ describe("dashboard agent flow map", () => {
     pending_approval_count: 2,
     artifact_count: 1,
   };
-  const activity: AgentActivity[] = sharedAgentSeeds.map((agent) => ({
-    id: agent.id,
-    display_name: agent.display_name,
-    role: agent.role,
-    color: agent.color,
-    enabled: agent.enabled,
-    status: agent.status,
-    activity_status:
-      agent.id === "report_editor" || agent.id === "case_learner"
-        ? "waiting_approval"
-        : agent.id === "counseling_coach"
-          ? "queued"
-          : agent.enabled
-            ? "idle"
-            : "planned",
-    current_focus:
-      agent.id === "report_editor"
-        ? "결과지 문구 수정 후보 승인 요청"
-        : agent.id === "case_learner"
-          ? "결과지 문구 수정 재작업 후보"
-        : agent.id === "counseling_coach"
-          ? "상담 전사록 사례 분리 후보"
-        : agent.enabled
-          ? "새 요청 대기"
-          : "2차 확장 준비",
-    current_task_title:
-      agent.id === "report_editor"
-        ? "결과지 문구 수정 후보 승인 요청"
-        : agent.id === "case_learner"
-          ? "결과지 문구 수정 재작업 후보"
-        : agent.id === "counseling_coach"
-          ? "상담 전사록 사례 분리 후보"
-          : null,
-    current_task_type:
-      agent.id === "report_editor"
-        ? "report_phrase_revision"
-        : agent.id === "case_learner"
-          ? "report_phrase_revision"
-        : agent.id === "counseling_coach"
-          ? "counseling_case_learning"
-          : null,
-    workload_count: agent.id === "report_editor" ? 2 : agent.id === "counseling_coach" || agent.id === "case_learner" ? 1 : 0,
-    pending_approval_count: agent.id === "report_editor" ? 1 : 0,
-    candidate_count: agent.id === "counseling_coach" || agent.id === "case_learner" ? 1 : 0,
-    work_items:
-      agent.id === "report_editor"
-        ? [
-            {
-              id: "approval-1",
-              source_type: "approval",
-              title: "결과지 문구 수정 후보 승인 요청",
-              summary: "공식 반영 전 결과지 문구 수정 초안을 검토합니다.",
-              task_type: "report_phrase_revision",
-              status: "pending_approval",
-              href: "/approvals?approvalId=approval-1",
-            },
-          ]
-        : agent.id === "case_learner"
-          ? [
-              {
-                id: "candidate-revision",
-                source_type: "candidate",
-                title: "결과지 문구 수정 재작업 후보",
-                summary: "수정 사유: 문장을 더 상담형으로 바꿔 주세요.",
-                task_type: "report_phrase_revision",
-                status: "draft",
-                href: "/request-intake?candidateId=candidate-revision",
-              },
-            ]
-        : agent.id === "counseling_coach"
-          ? [
-              {
-                id: "candidate-1",
-                source_type: "candidate",
-                title: "상담 전사록 사례 분리 후보",
-                summary: "상담 전사록에서 사례 학습 후보와 관계 패턴을 분리합니다.",
-                task_type: "counseling_case_learning",
-                status: "draft",
-                href: "/request-intake?candidateId=candidate-1",
-              },
-            ]
-          : [],
-  }));
-  const workflowActivity: WorkflowRunActivity[] = [
+
+  const requestMap: RequestMapItem[] = [
     {
-      id: "workflow-1",
-      workflow_type: "agent_operation",
-      task_id: "task-1",
-      task_title: "결과지 문구 수정 후보",
-      task_type: "report_phrase_revision",
-      status: "pending_approval",
-      current_step: "approval_pending",
-      started_at: "2026-05-16T00:00:00",
-      completed_at: "2026-05-16T00:03:00",
-      steps: [
+      id: "intake-1",
+      title: "결과지 문구 요청",
+      input_type: "meeting_notes",
+      raw_preview: "결과지 문구를 수정하고 사업 프로그램 기획 후보도 같이 분리하자.",
+      created_at: "2026-05-16T03:10:00Z",
+      decomposition_trace: [
+        { name: "detect_input", status: "completed", summary: "회의록으로 판단했습니다." },
+        { name: "build_candidates", status: "completed", summary: "2개 후보를 만들었습니다." },
+      ],
+      candidates: [
         {
-          id: "step-1",
-          step_name: "ceo_routing",
-          agent_id: "crata_ceo",
-          input_summary: "결과지 문구 수정 후보",
-          output_summary: "completed",
-          status: "completed",
-          started_at: "2026-05-16T00:00:00",
-          completed_at: "2026-05-16T00:00:30",
+          id: "candidate-1",
+          task_id: "task-1",
+          workflow_run_id: "run-1",
+          approval_id: "approval-1",
+          task_type: "report_phrase_revision",
+          title: "결과지 문구 수정 후보",
+          summary: "회의록에서 나온 결과지 문구 수정 요청을 승인 후보로 정리한다.",
+          status: "pending_approval",
+          current_step: "approval_pending",
+          current_step_index: 5,
+          total_steps: 5,
+          href: "/approvals?approvalId=approval-1",
+          activity_href: "/activity?taskId=task-1",
+          agents: [
+            { id: "report_editor", display_name: "결과지 에디터", color: "#38BDF8", status: "active" },
+            { id: "quality_inspector", display_name: "품질검수관", color: "#F2B84B", status: "active" },
+          ],
+          steps: [
+            {
+              id: "step-1",
+              step_name: "ceo_routing",
+              agent_id: "crata_ceo",
+              input_summary: "작업 흐름을 배정합니다.",
+              output_summary: "completed",
+              status: "completed",
+              started_at: "2026-05-16T03:10:00Z",
+              completed_at: "2026-05-16T03:10:03Z",
+            },
+            {
+              id: "step-2",
+              step_name: "quality_review",
+              agent_id: "quality_inspector",
+              input_summary: "검수합니다.",
+              output_summary: "completed",
+              status: "completed",
+              started_at: "2026-05-16T03:10:03Z",
+              completed_at: "2026-05-16T03:10:08Z",
+            },
+          ],
         },
+      ],
+    },
+    {
+      id: "intake-2",
+      title: "상담 전사록 요청",
+      input_type: "transcript",
+      raw_preview: "상담 전사록에서 사례 학습 후보와 관계 패턴 후보를 분리한다.",
+      created_at: "2026-05-16T03:12:00Z",
+      decomposition_trace: [],
+      candidates: [
         {
-          id: "step-2",
-          step_name: "context_retrieval",
-          agent_id: "concept_guardian",
-          input_summary: "결과지 문구 수정 후보",
-          output_summary: "completed",
-          status: "completed",
-          started_at: "2026-05-16T00:00:30",
-          completed_at: "2026-05-16T00:01:00",
-        },
-        {
-          id: "step-3",
-          step_name: "specialist_draft",
-          agent_id: "report_editor",
-          input_summary: "결과지 문구 수정 후보",
-          output_summary: "completed",
-          status: "completed",
-          started_at: "2026-05-16T00:01:00",
-          completed_at: "2026-05-16T00:02:00",
-        },
-        {
-          id: "step-4",
-          step_name: "quality_review",
-          agent_id: "quality_inspector",
-          input_summary: "결과지 문구 수정 후보",
-          output_summary: "completed",
-          status: "completed",
-          started_at: "2026-05-16T00:02:00",
-          completed_at: "2026-05-16T00:03:00",
+          id: "candidate-2",
+          task_id: null,
+          workflow_run_id: null,
+          approval_id: null,
+          task_type: "counseling_case_learning",
+          title: "상담 사례 학습 후보",
+          summary: "익명화된 사례 학습 후보를 만든다.",
+          status: "draft",
+          current_step: null,
+          current_step_index: 1,
+          total_steps: 5,
+          href: "/?candidateId=candidate-2",
+          activity_href: null,
+          agents: [{ id: "case_learner", display_name: "사례학습가", color: "#F2B84B", status: "active" }],
+          steps: [],
         },
       ],
     },
   ];
 
-  beforeEach(() => {
-    runCandidateMock.mockReset();
+  it("renders each chat request in the selector and expands the selected flow card", () => {
+    render(<DashboardContent summary={summary} requestMap={requestMap} />);
+
+    expect(screen.getByRole("heading", { name: "운영 맵" })).toBeInTheDocument();
+    expect(screen.getByText("요청 목록")).toBeInTheDocument();
+    expect(screen.getByText("요청별 진행")).toBeInTheDocument();
+    expect(screen.getAllByTestId("request-flow-card")).toHaveLength(1);
+    expect(screen.getAllByText("채팅 1").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("채팅 2").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("회의록").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("상담 전사록").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("결과지 문구 요청").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("상담 전사록 요청").length).toBeGreaterThan(0);
   });
 
-  it("uses the shared agent seed source", () => {
-    expect(agentSeeds).toEqual(sharedAgentSeeds);
-  });
+  it("shows classified work, assigned agents, and approval/activity links inside the request card", () => {
+    render(<DashboardContent summary={summary} requestMap={requestMap} />);
 
-  it("renders the command-centre sidebar and agent flow canvas", () => {
-    render(<DashboardContent summary={summary} agentActivity={activity} />);
-
-    expect(screen.getByText("CRATA Office")).toBeInTheDocument();
-    expect(screen.getByText("운영 센터")).toBeInTheDocument();
-    expect(screen.queryByText("Command Centre")).not.toBeInTheDocument();
-    expect(screen.getByText("운영 맵")).toBeInTheDocument();
-    expect(screen.getByText("요청 콘솔")).toBeInTheDocument();
-    expect(screen.getAllByText("승인함").length).toBeGreaterThan(0);
-    expect(screen.getByText("Agent Flow")).toBeInTheDocument();
-    expect(screen.getByText("CRATA 직원 작업 맵")).toBeInTheDocument();
-  });
-
-  it("renders every agent as a node with its current work", () => {
-    render(<DashboardContent summary={summary} agentActivity={activity} />);
-
-    for (const agent of sharedAgentSeeds) {
-      expect(screen.getAllByText(agent.display_name).length).toBeGreaterThan(0);
-    }
-
-    expect(screen.getAllByText("결과지 문구 수정 후보 승인 요청").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("승인 대기").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("확장 예정").length).toBe(1);
-  });
-
-  it("selects an agent node and marks it as active", () => {
-    render(<DashboardContent summary={summary} agentActivity={activity} workflowActivity={workflowActivity} />);
-
-    const counselingCoach = screen.getByRole("button", { name: "상담 코치 상세 보기" });
-
-    expect(counselingCoach).toHaveAttribute("aria-pressed", "false");
-    fireEvent.click(counselingCoach);
-
-    expect(counselingCoach).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByText("Agent Inspector")).toBeInTheDocument();
-    expect(screen.getAllByText("상담 코치").length).toBeGreaterThan(1);
-    expect(screen.getAllByText("상담 전사록 사례 분리 후보").length).toBeGreaterThan(0);
-    expect(screen.getByText("상담 전사록에서 사례 학습 후보와 관계 패턴을 분리합니다.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /상담 전사록 사례 분리 후보/ })).toHaveAttribute(
+    expect(screen.getAllByText("작업 분류").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("에이전트 실행").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("검수").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("승인").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("결과지 에디터 · 품질검수관").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "실행 로그" })).toHaveAttribute(
       "href",
-      "/request-intake?candidateId=candidate-1",
-    );
-    expect(screen.getByRole("button", { name: "바로 실행" })).toBeInTheDocument();
-    expect(screen.getByText("Agent Timeline")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "후보 보기" })).toHaveAttribute("href", "/request-intake");
-    expect(screen.getAllByRole("link", { name: "승인함" }).length).toBeGreaterThan(0);
-  });
-
-  it("runs a candidate directly from the inspector and changes it to an approval action", async () => {
-    runCandidateMock.mockResolvedValue({
-      task_id: "task-1",
-      workflow_run_id: "run-1",
-      artifact_id: "artifact-1",
-      approval_id: "approval-new",
-      status: "pending_approval",
-    });
-    render(<DashboardContent summary={summary} agentActivity={activity} workflowActivity={workflowActivity} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "상담 코치 상세 보기" }));
-    fireEvent.click(screen.getByRole("button", { name: "바로 실행" }));
-
-    await waitFor(() => expect(runCandidateMock).toHaveBeenCalledWith("candidate-1"));
-
-    expect(await screen.findByText("실행 완료. 승인함에서 검토하세요.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "승인함 이동" })).toHaveAttribute(
-      "href",
-      "/approvals?approvalId=approval-new",
+      "/activity?taskId=task-1",
     );
   });
 
-  it("shows approval and revision quick actions in the inspector", () => {
-    render(<DashboardContent summary={summary} agentActivity={activity} workflowActivity={workflowActivity} />);
+  it("selects a request and updates the inspector summary", () => {
+    render(<DashboardContent summary={summary} requestMap={requestMap} selectedRequestId="intake-2" />);
 
-    fireEvent.click(screen.getByRole("button", { name: "결과지 에디터 상세 보기" }));
-    expect(screen.getByRole("link", { name: "승인함 이동" })).toHaveAttribute(
+    expect(screen.getAllByText("상담 전사록 요청").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("상담 전사록에서 사례 학습 후보와 관계 패턴 후보를 분리한다.").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("사례학습가").length).toBeGreaterThan(0);
+  });
+
+  it("selects the matching request when opened from a candidate link", () => {
+    render(<DashboardContent summary={summary} requestMap={requestMap} focusCandidateId="candidate-2" />);
+
+    expect(screen.getAllByText("상담 전사록 요청").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("상담 전사록에서 사례 학습 후보와 관계 패턴 후보를 분리한다.").length).toBeGreaterThan(0);
+  });
+
+  it("opens a task detail inspector when a work card is selected", () => {
+    render(<DashboardContent summary={summary} requestMap={requestMap} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "결과지 문구 수정 후보 상세 보기" }));
+
+    expect(screen.getByText("선택 작업")).toBeInTheDocument();
+    expect(screen.getAllByText("결과지 문구 수정 후보").length).toBeGreaterThan(1);
+    expect(screen.getByText("담당 에이전트")).toBeInTheDocument();
+    expect(screen.getByText("단계 로그")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "실행 로그" })).toHaveAttribute("href", "/activity?taskId=task-1");
+    expect(screen.getAllByRole("link", { name: "승인함" }).some((link) =>
+      link.getAttribute("href") === "/approvals?approvalId=approval-1",
+    )).toBe(true);
+  });
+
+  it("shows the approval revision loop and links to the generated rework candidate", () => {
+    const originalCandidate = requestMap[0].candidates[0];
+    const revisionCandidate = {
+      ...originalCandidate,
+      id: "candidate-revision-1",
+      task_id: null,
+      workflow_run_id: null,
+      approval_id: null,
+      title: "결과지 문구 수정 재작업 후보",
+      summary: "수정요청 사유를 반영해 다시 실행할 후보입니다.",
+      status: "draft",
+      current_step: null,
+      current_step_index: 1,
+      href: "/?candidateId=candidate-revision-1",
+      activity_href: null,
+      revision_source_approval_id: "approval-1",
+      revision_source_candidate_id: "candidate-1",
+      revision_source_task_id: "task-1",
+      revision_reason: "상담형 문장으로 더 부드럽게 다시 작성",
+      revision_candidate_id: null,
+      revision_candidate_title: null,
+      revision_candidate_href: null,
+      steps: [],
+    };
+    const revisionMap: RequestMapItem[] = [
+      {
+        ...requestMap[0],
+        candidates: [
+          {
+            ...originalCandidate,
+            status: "revise_requested",
+            revision_candidate_id: "candidate-revision-1",
+            revision_candidate_title: "결과지 문구 수정 재작업 후보",
+            revision_candidate_href: "/?candidateId=candidate-revision-1",
+            revision_candidate_status: "pending_approval",
+            revision_candidate_task_id: "task-revision-1",
+            revision_candidate_workflow_run_id: "run-revision-1",
+            revision_candidate_activity_href: "/activity?taskId=task-revision-1",
+            revision_candidate_approval_id: "approval-revision-1",
+            revision_candidate_approval_href: "/approvals?approvalId=approval-revision-1",
+          },
+          revisionCandidate,
+        ],
+      },
+    ];
+
+    render(<DashboardContent summary={summary} requestMap={revisionMap} focusCandidateId="candidate-1" />);
+
+    expect(screen.getByText("수정요청 루프")).toBeInTheDocument();
+    expect(screen.getByText("재작업 연결")).toBeInTheDocument();
+    expect(screen.getAllByText("결과지 문구 수정 재작업 후보").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "재작업 맵" })).toHaveAttribute(
+      "href",
+      "/map?candidateId=candidate-revision-1",
+    );
+    expect(screen.getByRole("link", { name: "재작업 실행 로그" })).toHaveAttribute(
+      "href",
+      "/activity?taskId=task-revision-1",
+    );
+    expect(screen.getByRole("link", { name: "새 승인 카드" })).toHaveAttribute(
+      "href",
+      "/approvals?approvalId=approval-revision-1",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "결과지 문구 수정 재작업 후보 상세 보기" }));
+
+    expect(screen.getAllByText("재작업 후보").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("상담형 문장으로 더 부드럽게 다시 작성").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "원 승인 보기" })).toHaveAttribute(
       "href",
       "/approvals?approvalId=approval-1",
     );
-
-    fireEvent.click(screen.getByRole("button", { name: "사례학습가 상세 보기" }));
-    expect(screen.getByRole("link", { name: "수정요청 확인" })).toHaveAttribute(
-      "href",
-      "/request-intake?candidateId=candidate-revision",
-    );
+    expect(screen.getByRole("link", { name: "원 실행 로그" })).toHaveAttribute("href", "/activity?taskId=task-1");
   });
 
-  it("shows recent workflow runs in the live logs panel", () => {
-    render(<DashboardContent summary={summary} agentActivity={activity} workflowActivity={workflowActivity} />);
+  it("uses a fixed readable board instead of zooming and panning controls", () => {
+    render(<DashboardContent summary={summary} requestMap={requestMap} />);
 
-    expect(screen.getByRole("tab", { name: "에이전트" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.queryByTestId("live-logs-panel")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("tab", { name: "실행 로그" }));
-
-    expect(screen.getByRole("tab", { name: "실행 로그" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByTestId("live-logs-panel")).toHaveClass("mt-4");
-    expect(screen.getByTestId("agent-inspector-panel")).toHaveClass("right-5", "w-[320px]");
-    expect(screen.getAllByText("결과지 문구 수정 후보").length).toBeGreaterThan(0);
-    expect(screen.getByText("4단계")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "결과지 에디터 상세 보기" }));
-
-    expect(screen.getByRole("tab", { name: "에이전트" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByText("초안 작성")).toBeInTheDocument();
-  });
-
-  it("shows map controls for zoom, reset, and movement", () => {
-    render(<DashboardContent summary={summary} agentActivity={activity} />);
-
-    const canvas = screen.getByTestId("agent-flow-canvas");
-    expect(screen.getByRole("button", { name: "확대" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "축소" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "리셋" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "이동 모드" })).toBeInTheDocument();
-
-    fireEvent.wheel(canvas, { deltaY: -120 });
-    fireEvent.pointerDown(canvas, { clientX: 100, clientY: 100 });
-    fireEvent.pointerMove(canvas, { clientX: 140, clientY: 130 });
-    fireEvent.pointerUp(canvas);
+    const canvas = screen.getByTestId("request-flow-canvas");
 
     expect(canvas).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "확대" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "축소" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "리셋" })).not.toBeInTheDocument();
   });
 });

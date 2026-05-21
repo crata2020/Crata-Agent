@@ -5,6 +5,7 @@ from sqlalchemy import Boolean, DateTime, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
+from app.models._time import utcnow
 
 
 class AppSetting(Base):
@@ -14,4 +15,4 @@ class AppSetting(Base):
     key: Mapped[str] = mapped_column(String(160), nullable=False, unique=True, index=True)
     value: Mapped[str] = mapped_column(Text, default="")
     is_secret: Mapped[bool] = mapped_column(Boolean, default=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)

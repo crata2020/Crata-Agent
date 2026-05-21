@@ -1,0 +1,39 @@
+{
+  "id": "group_behavior_school_program",
+  "name": "집단행동검사 학교 학생 프로그램 적용 지도",
+  "exam": "group_behavior",
+  "application": "school_program",
+  "audience": "school_students",
+  "value_propositions": [
+    {
+      "title": "의사결정 방식 인식",
+      "based_on": "group_behavior.short_definition",
+      "program_use": "학생이 혼자 정리형과 대화 정리형의 차이를 이해하고, 자신에게 맞는 판단 정리 방식을 찾도록 돕는다.",
+      "module": "나는 어떻게 결정하는가"
+    },
+    {
+      "title": "또래 관계 속 자기 신뢰",
+      "based_on": "group_behavior.self_efficacy.competitive.definition",
+      "program_use": "또래나 동료 관계에서 자기 신뢰가 살아나는 조건을 탐색하고 의견 표현을 연습한다.",
+      "module": "나에게 힘이 되는 관계 환경 찾기"
+    },
+    {
+      "title": "수준 차이 관계에서의 선택과 거절",
+      "based_on": "group_behavior.self_efficacy.comparison.definition",
+      "program_use": "선배, 교사, 우수 학생 등 수준 차이가 느껴지는 관계에서 거절과 선택 타이밍을 연습한다.",
+      "module": "거절과 선택 타이밍 연습"
+    },
+    {
+      "title": "결정 지연과 소통 비용 감소",
+      "based_on": "group_behavior.cautions.not_execution_power",
+      "program_use": "결정을 미루는 문제를 성격 결함이 아니라 의사결정 환경과 관계 조건의 문제로 다루도록 설계한다.",
+      "module": "조별 의사결정 시뮬레이션"
+    }
+  ],
+  "rules": [
+    "학생을 유형으로 단정하지 않는다.",
+    "검사 특징을 교육 활동과 피드백 언어로 변환한다.",
+    "집단행동검사를 실행력 일반 검사로 설명하지 않는다.",
+    "학교 현장에서 바로 운영 가능한 회기와 활동으로 연결한다."
+  ]
+}

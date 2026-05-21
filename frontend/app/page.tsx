@@ -1,106 +1,44 @@
-import { AgentFlowCanvas } from "@/components/agent-flow-canvas";
-import { AppShell } from "@/components/app-shell";
+import { OperationsDashboard } from "@/components/operations-dashboard";
 import { getAgentActivity, getDashboardSummary, getWorkflowActivity } from "@/lib/api";
 import { agentSeeds } from "@/lib/agent-seeds";
-import type { Agent, AgentActivity, DashboardSummary, WorkflowRunActivity } from "@/lib/types";
-
-const agents: Agent[] = agentSeeds.map((agent) => ({
-  ...agent,
-  default_model_provider: "openai",
-  default_model_name: "gpt-4.1-mini",
-  prompt: "",
-}));
+import type { AgentActivity, DashboardSummary } from "@/lib/types";
 
 const fallbackSummary: DashboardSummary = {
-  agent_count: agents.length,
-  active_agent_count: agents.filter((agent) => agent.enabled).length,
+  agent_count: agentSeeds.length,
+  active_agent_count: agentSeeds.filter((a) => a.enabled).length,
   candidate_task_count: 0,
   running_task_count: 0,
   pending_approval_count: 0,
   artifact_count: 0,
 };
 
-function fallbackActivityFor(agent: Agent): AgentActivity {
-  return {
-    id: agent.id,
-    display_name: agent.display_name,
-    role: agent.role,
-    color: agent.color,
-    enabled: agent.enabled,
-    status: agent.status,
-    activity_status: agent.enabled ? "idle" : "planned",
-    current_focus: agent.enabled ? "새 요청 대기" : "2차 확장 준비",
-    current_task_title: null,
-    current_task_type: null,
-    workload_count: 0,
-    pending_approval_count: 0,
-    candidate_count: 0,
-    work_items: [],
-  };
-}
+const fallbackAgents: AgentActivity[] = agentSeeds.map((seed) => ({
+  id: seed.id,
+  display_name: seed.display_name,
+  role: seed.role,
+  color: seed.color,
+  enabled: seed.enabled,
+  status: seed.status,
+  activity_status: seed.enabled ? "idle" : "planned",
+  current_focus: seed.enabled ? "새 요청을 기다리는 중입니다." : "2차 확장 예정 에이전트입니다.",
+  current_task_title: null,
+  current_task_type: null,
+  workload_count: 0,
+  pending_approval_count: 0,
+  candidate_count: 0,
+  work_items: [],
+}));
 
-const fallbackAgentActivity = agents.map(fallbackActivityFor);
-const fallbackWorkflowActivity: WorkflowRunActivity[] = [];
-
-async function loadDashboardData() {
-  const [summaryResult, activityResult, workflowResult] = await Promise.allSettled([
+export default async function HomePage() {
+  const [summaryRes, agentRes, workflowRes] = await Promise.allSettled([
     getDashboardSummary(),
     getAgentActivity(),
     getWorkflowActivity(),
   ]);
 
-  return {
-    summary: summaryResult.status === "fulfilled" ? summaryResult.value : fallbackSummary,
-    agentActivity:
-      activityResult.status === "fulfilled" ? activityResult.value.agents : fallbackAgentActivity,
-    workflowActivity:
-      workflowResult.status === "fulfilled" ? workflowResult.value.runs : fallbackWorkflowActivity,
-    dataUnavailable:
-      summaryResult.status === "rejected" ||
-      activityResult.status === "rejected" ||
-      workflowResult.status === "rejected",
-  };
-}
+  const summary = summaryRes.status === "fulfilled" ? summaryRes.value : fallbackSummary;
+  const agents = agentRes.status === "fulfilled" ? agentRes.value.agents : fallbackAgents;
+  const runs = workflowRes.status === "fulfilled" ? workflowRes.value.runs : [];
 
-export default async function HomePage() {
-  const { summary, agentActivity, workflowActivity, dataUnavailable } = await loadDashboardData();
-
-  return (
-    <DashboardContent
-      summary={summary}
-      agentActivity={agentActivity}
-      workflowActivity={workflowActivity}
-      dataUnavailable={dataUnavailable}
-    />
-  );
-}
-
-export function DashboardContent({
-  summary,
-  agentActivity = fallbackAgentActivity,
-  workflowActivity = fallbackWorkflowActivity,
-  dataUnavailable = false,
-}: {
-  summary: DashboardSummary;
-  agentActivity?: AgentActivity[];
-  workflowActivity?: WorkflowRunActivity[];
-  dataUnavailable?: boolean;
-}) {
-  const orderedActivity = agents.map((agent) => {
-    const activity = agentActivity.find((item) => item.id === agent.id);
-    return activity ?? fallbackActivityFor(agent);
-  });
-
-  return (
-    <AppShell>
-      <div className="relative">
-        {dataUnavailable ? (
-          <div className="absolute left-5 top-5 z-30 rounded-button border border-[#F2B84B]/40 bg-[#2A2113]/90 px-4 py-2 text-xs font-semibold text-[#F2B84B]">
-            백엔드 연결이 불안정해서 일부 값은 로컬 기준으로 표시합니다.
-          </div>
-        ) : null}
-        <AgentFlowCanvas agents={orderedActivity} summary={summary} workflowRuns={workflowActivity} />
-      </div>
-    </AppShell>
-  );
+  return <OperationsDashboard agents={agents} summary={summary} workflowRuns={runs} />;
 }

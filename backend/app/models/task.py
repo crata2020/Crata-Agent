@@ -5,6 +5,7 @@ from sqlalchemy import DateTime, ForeignKey, JSON, String, Text, UniqueConstrain
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
+from app.models._time import utcnow
 
 
 class Task(Base):
@@ -21,5 +22,5 @@ class Task(Base):
     status: Mapped[str] = mapped_column(String(64), index=True, default="draft")
     priority: Mapped[str] = mapped_column(String(64), default="normal")
     assigned_agents: Mapped[list] = mapped_column(JSON, default=list)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)

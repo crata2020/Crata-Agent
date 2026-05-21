@@ -64,7 +64,7 @@ export function MemoryBrowser({
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="검사명, 에이전트, 파일 경로로 검색"
-              className="mt-2 h-11 w-full rounded-[10px] border border-white/10 bg-black/24 px-3 text-sm text-white outline-none transition placeholder:text-[#687481] focus:border-[#38BDF8]"
+              className="mt-2 h-11 w-full rounded-[10px] border border-white/10 bg-black/[0.24] px-3 text-sm text-white outline-none transition placeholder:text-[#687481] focus:border-[#38BDF8]"
             />
           </label>
           <div className="flex flex-wrap gap-2">
@@ -78,7 +78,7 @@ export function MemoryBrowser({
                   onClick={() => setActiveKind(filter.value)}
                   className={`h-10 rounded-button border px-3 text-sm font-semibold transition ${
                     isActive
-                      ? "border-[#FF5261]/50 bg-[#431C24] text-[#FF9AA4]"
+                      ? "border-[var(--color-danger)]/40 bg-[var(--color-danger-soft)] text-[var(--color-danger)]"
                       : "border-white/10 bg-white/[0.06] text-[#C7D2DC] hover:bg-white/10"
                   }`}
                 >

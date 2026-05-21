@@ -4,8 +4,10 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from app.models import Approval, Artifact, CandidateTask, Task, WorkflowRun, WorkflowStep
+from app.services.agent_operation_graph import run_agent_operation_graph
 from app.services.knowledge_context import load_task_knowledge_context
 from app.services.model_gateway import ModelGateway
+from app.services.output_guard import validate_output
 
 
 @dataclass(frozen=True)
@@ -37,25 +39,31 @@ def run_task_workflow(db: Session, task_id: str) -> WorkflowResult:
     knowledge_context = load_task_knowledge_context(
         task_type=task.task_type,
         assigned_agents=task.assigned_agents,
+        query=_knowledge_query(task),
     )
+    operation_graph = run_agent_operation_graph(
+        task_type=task.task_type,
+        assigned_agents=task.assigned_agents or [],
+        knowledge_references=knowledge_context.references,
+    )
+    run.checkpoint = {
+        "task_type": task.task_type,
+        "assigned_agents": task.assigned_agents,
+        **operation_graph.metadata(),
+    }
 
-    for step_name, agent_id in (
-        ("ceo_routing", "crata_ceo"),
-        ("context_retrieval", "concept_guardian"),
-        ("specialist_draft", _primary_agent(task.task_type)),
-        ("quality_review", "quality_inspector"),
-    ):
+    for planned_step in operation_graph.steps:
         step_metadata = {}
-        if step_name == "context_retrieval":
+        if planned_step.step_name == "context_retrieval":
             step_metadata = {"knowledge_references": knowledge_context.references}
 
         db.add(
             WorkflowStep(
                 workflow_run_id=run.id,
-                step_name=step_name,
-                agent_id=agent_id,
+                step_name=planned_step.step_name,
+                agent_id=planned_step.agent_id,
                 input_summary=task.title,
-                output_summary=_step_output_summary(step_name),
+                output_summary=planned_step.output_summary,
                 status="completed",
                 completed_at=_utcnow(),
                 item_metadata=step_metadata,
@@ -67,6 +75,11 @@ def run_task_workflow(db: Session, task_id: str) -> WorkflowResult:
         task_type=task.task_type,
         context=_build_model_context(db=db, task=task, knowledge_context=knowledge_context.text),
     )
+    quality_guard = validate_output(
+        task_type=task.task_type,
+        workflow_plan=knowledge_context.workflow_plan,
+        draft=draft,
+    )
     artifact = Artifact(
         task_id=task.id,
         workflow_run_id=run.id,
@@ -77,6 +90,8 @@ def run_task_workflow(db: Session, task_id: str) -> WorkflowResult:
         item_metadata={
             "generated_by": "workflow_runner",
             "knowledge_references": knowledge_context.references,
+            "workflow_plan": knowledge_context.workflow_plan,
+            "quality_guard": quality_guard.to_dict(),
         },
     )
     db.add(artifact)
@@ -92,7 +107,7 @@ def run_task_workflow(db: Session, task_id: str) -> WorkflowResult:
         before_content="",
         after_content=draft,
         affected_area=task.task_type,
-        reviewer_note="공식 반영 전 청하님 검토가 필요합니다.",
+        reviewer_note=_reviewer_note(quality_guard.to_dict()),
     )
     db.add(approval)
     db.flush()
@@ -111,16 +126,6 @@ def run_task_workflow(db: Session, task_id: str) -> WorkflowResult:
     )
 
 
-def _primary_agent(task_type: str) -> str:
-    return {
-        "report_phrase_revision": "report_editor",
-        "counseling_case_learning": "case_learner",
-        "relationship_pattern_analysis": "relationship_analyst",
-        "business_planning": "business_designer",
-        "content_marketing": "content_strategist",
-    }.get(task_type, "crata_ceo")
-
-
 def _approval_type(task_type: str) -> str:
     return {
         "report_phrase_revision": "report_phrase_change",
@@ -128,17 +133,29 @@ def _approval_type(task_type: str) -> str:
     }.get(task_type, "general_review")
 
 
-def _step_output_summary(step_name: str) -> str:
-    return {
-        "ceo_routing": "작업 유형과 담당 에이전트 실행 순서를 정했습니다.",
-        "context_retrieval": "공식 지식과 에이전트 작업 가이드를 연결했습니다.",
-        "specialist_draft": "담당 에이전트가 초안을 작성했습니다.",
-        "quality_review": "개념, 톤, 안전성 검수 단계가 완료되었습니다.",
-    }.get(step_name, "단계가 완료되었습니다.")
+def _reviewer_note(quality_guard: dict) -> str:
+    issues = quality_guard.get("issues") or []
+    if issues:
+        return "검수 이슈: " + "; ".join(str(issue) for issue in issues)
+    return "공식 반영 전 청하님 검토가 필요합니다."
+
+
+def _knowledge_query(task: Task) -> str:
+    return "\n".join(
+        part
+        for part in (
+            task.title,
+            task.description,
+            task.task_type,
+            " ".join(task.assigned_agents or []),
+        )
+        if part
+    )
 
 
 def _build_model_context(*, db: Session, task: Task, knowledge_context: str) -> str:
     clarifying_questions = _candidate_clarifying_questions(db, task)
+    clarifying_answers = _candidate_clarifying_answers(db, task)
     question_context = ""
     if clarifying_questions:
         formatted_questions = "\n".join(
@@ -146,6 +163,8 @@ def _build_model_context(*, db: Session, task: Task, knowledge_context: str) -> 
             for index, question in enumerate(clarifying_questions, start=1)
         )
         question_context = f"\n# 먼저 확인할 질문\n\n{formatted_questions}\n"
+    if clarifying_answers:
+        question_context += f"\n# 질문 답변 / 추가 메모\n\n{clarifying_answers}\n"
 
     return (
         "# 사용자 작업\n\n"
@@ -171,6 +190,18 @@ def _candidate_clarifying_questions(db: Session, task: Task) -> list[str]:
         return []
 
     return [question for question in questions if isinstance(question, str) and question.strip()]
+
+
+def _candidate_clarifying_answers(db: Session, task: Task) -> str:
+    if not task.candidate_task_id:
+        return ""
+
+    candidate = db.get(CandidateTask, task.candidate_task_id)
+    if candidate is None:
+        return ""
+
+    answers = (candidate.item_metadata or {}).get("clarifying_answers", "")
+    return answers.strip() if isinstance(answers, str) else ""
 
 
 def _utcnow() -> datetime:

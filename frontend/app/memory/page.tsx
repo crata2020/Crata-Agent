@@ -1,7 +1,7 @@
 import { readFile, readdir } from "fs/promises";
 import path from "path";
 
-import { AppShell } from "@/components/app-shell";
+
 import { MemoryBrowser, type MemoryEntry } from "@/components/memory-browser";
 
 const repoRoot = path.resolve(process.cwd(), "..");
@@ -23,10 +23,10 @@ export default async function MemoryPage({ searchParams }: MemoryPageProps = {})
   };
 
   return (
-    <AppShell>
+    <>
       <section className="min-h-[calc(100vh-2rem)] rounded-[18px] border border-white/10 bg-[#05080B] p-5 text-white shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
         <header className="border-b border-white/10 pb-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-[#8EA0AE]">Memory</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-[#8EA0AE]">지식 저장소</p>
           <h1 className="mt-2 text-2xl font-semibold text-white">메모리</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[#B7C2CC]">
             로컬 `knowledge/` 폴더에 들어온 공식 검사 지식, 원본 보존 자료, 에이전트 작업 가이드를 확인합니다.
@@ -53,7 +53,7 @@ export default async function MemoryPage({ searchParams }: MemoryPageProps = {})
           </aside>
         </div>
       </section>
-    </AppShell>
+    </>
   );
 }
 
