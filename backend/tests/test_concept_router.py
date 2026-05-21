@@ -95,3 +95,74 @@ def test_structural_concept_maps_do_not_emit_blank_type_candidates() -> None:
     )
 
     assert all(candidate.type for candidate in result.type_candidates)
+
+
+def test_rc_is_not_detected_from_explanation_request_only() -> None:
+    result = classify_concept(
+        query="경쟁형과 비교형 둘 다 설명해줘.",
+        task_type="concept_explanation",
+    )
+
+    assert not any(
+        candidate.type == "both" and candidate.confidence in {"medium", "high"}
+        for candidate in result.type_candidates
+    )
+
+
+def test_rc_is_not_detected_from_generic_all_words() -> None:
+    result = classify_concept(
+        query="혼자형과 그룹형 모두 알려줘.",
+        task_type="concept_explanation",
+    )
+
+    assert not any(
+        candidate.axis == "self_efficacy" and candidate.type == "both"
+        for candidate in result.type_candidates
+    )
+
+
+def test_neither_is_not_detected_from_insufficient_information() -> None:
+    result = classify_concept(
+        query="어떤 관계에서 자신감이 생기는지는 아직 잘 모르겠어요.",
+        task_type="type_judgment",
+    )
+
+    assert not any(
+        candidate.axis == "self_efficacy" and candidate.type == "neither"
+        for candidate in result.type_candidates
+    )
+    assert result.needs_clarification is True
+
+
+def test_rc_detected_when_both_relation_levels_raise_self_trust() -> None:
+    result = classify_concept(
+        query=(
+            "또래나 동료처럼 비슷한 수준의 관계에서도 자신감이 생기고, "
+            "나보다 수준이 다른 사람에게 배우거나 내가 돌봐야 하는 사람을 챙길 때도 자기 신뢰가 올라가요."
+        ),
+        task_type="type_judgment",
+    )
+
+    assert any(
+        candidate.axis == "self_efficacy"
+        and candidate.type == "both"
+        and candidate.confidence in {"medium", "high"}
+        for candidate in result.type_candidates
+    )
+
+
+def test_neither_detected_when_both_relation_levels_do_not_raise_self_trust() -> None:
+    result = classify_concept(
+        query=(
+            "비슷한 수준의 또래 관계에서도 특별히 자기 신뢰가 올라가는 편은 아니고, "
+            "수준이 다른 사람을 보거나 돌보는 관계에서도 특별히 자신감이 살아나는 편은 아니에요."
+        ),
+        task_type="type_judgment",
+    )
+
+    assert any(
+        candidate.axis == "self_efficacy"
+        and candidate.type == "neither"
+        and candidate.confidence in {"medium", "high"}
+        for candidate in result.type_candidates
+    )

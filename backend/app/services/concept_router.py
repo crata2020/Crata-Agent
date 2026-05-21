@@ -70,6 +70,11 @@ def _classify_map(*, concept_map: dict, text: str) -> ConceptResult:
             if not _is_router_ready_type(type_def):
                 continue
             score, matched, anti_matched = _score_type(type_def=type_def, text=text)
+            policy_passed, policy_bonus, policy_matched = _matching_policy_result(type_def=type_def, text=text)
+            if not policy_passed:
+                continue
+            score += policy_bonus
+            matched = [*matched, *policy_matched]
             if score <= 0:
                 continue
             type_scores.append((axis, type_def, score, matched, anti_matched))
@@ -155,6 +160,56 @@ def _is_router_ready_type(type_def: dict) -> bool:
     type_id = str(type_def.get("id", "")).strip()
     signals = type_def.get("signals", {})
     return bool(type_id and isinstance(signals, dict) and signals)
+
+
+def _matching_policy_result(*, type_def: dict, text: str) -> tuple[bool, int, list[str]]:
+    policy = type_def.get("matching_policy")
+    if not isinstance(policy, dict):
+        return True, 0, []
+
+    policy_type = str(policy.get("type", "")).strip()
+    if policy_type == "requires_both_relation_levels":
+        required_groups = policy.get("required_groups", {})
+        if not isinstance(required_groups, dict) or not required_groups:
+            return True, 0, []
+        matched_terms: list[str] = []
+        for terms in required_groups.values():
+            group_matches = _matched_terms(_policy_terms(terms), text)
+            if not group_matches:
+                return False, 0, []
+            matched_terms.extend(group_matches)
+        return True, 8, _dedupe(matched_terms)
+
+    if policy_type == "explicit_or_both_absent":
+        explicit_terms = _policy_terms(policy.get("explicit_terms", []))
+        explicit_matches = _matched_terms(explicit_terms, text)
+        if explicit_matches:
+            return True, 0, explicit_matches
+
+        relation_groups = policy.get("relation_groups", {})
+        if not isinstance(relation_groups, dict) or not relation_groups:
+            return False, 0, []
+
+        matched_terms = []
+        has_all_relation_groups = True
+        for terms in relation_groups.values():
+            group_matches = _matched_terms(_policy_terms(terms), text)
+            if not group_matches:
+                has_all_relation_groups = False
+                break
+            matched_terms.extend(group_matches)
+        absence_matches = _matched_terms(_policy_terms(policy.get("absence_markers", [])), text)
+        if has_all_relation_groups and len(absence_matches) >= 2:
+            return True, 6, _dedupe([*matched_terms, *absence_matches])
+        return False, 0, []
+
+    return True, 0, []
+
+
+def _policy_terms(value: object) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(term) for term in value]
 
 
 def _matched_terms(terms: list[str], text: str) -> list[str]:

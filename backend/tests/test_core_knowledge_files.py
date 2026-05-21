@@ -89,3 +89,28 @@ def test_organizational_behavior_four_axes_exclude_self_efficacy_enhancement() -
         "goal_execution",
     }
     assert "self_efficacy_enhancement" not in axis_ids
+
+
+def test_group_behavior_neither_combination_definitions_are_natural() -> None:
+    data = _load_json(KNOWLEDGE_ROOT / "combinations" / "group_behavior_combinations.json")
+    neither_definitions = [
+        combination["definition"]
+        for combination in data["combinations"]
+        if combination["self_efficacy_style"] == "neither"
+    ]
+
+    assert neither_definitions
+    for definition in neither_definitions:
+        assert "설명되지 않음에서 높아지는" not in definition
+        assert "어느 한쪽으로도 뚜렷하게 설명되지" in definition
+
+
+def test_group_behavior_concept_map_uses_relative_source_document() -> None:
+    data = _load_json(KNOWLEDGE_ROOT / "concept_maps" / "group_behavior.json")
+
+    assert "source_file" not in data
+    assert data["source_doc"] == {
+        "id": "group_behavior_2026_05_16",
+        "path": "knowledge/_sources/group-behavior_2026-05-16.raw.md",
+        "source_type": "extracted_markdown",
+    }
