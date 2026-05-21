@@ -13,6 +13,8 @@ def test_load_planning_playbook_sections_and_rules() -> None:
     assert any("검사 구조가 활동 구조" in rule for rule in playbook.rules)
     assert any("시간 조건" in rule for rule in playbook.rules)
     assert any("예산안" in rule for rule in playbook.rules)
+    assert any("활동명" in rule for rule in playbook.rules)
+    assert any("총액" in rule for rule in playbook.rules)
 
 
 def test_load_report_phrase_revision_playbook_required_inputs() -> None:

@@ -178,3 +178,74 @@ def test_candidate_message_rewrites_internal_metadata_leakage(
     assert "작업 유형" not in assistant_message
     assert "primary_agent" not in assistant_message
     assert "## 제안서 기본 구조" in assistant_message
+
+
+def test_candidate_message_guard_uses_latest_planning_context(
+    app: FastAPI,
+    db_session: Session,
+    monkeypatch,
+) -> None:
+    client = TestClient(app)
+    intake_item = IntakeItem(
+        id="intake-personal-planning",
+        title="personal planning",
+        input_type="meeting_note",
+        raw_content="개인행동검사를 기반으로 학교 프로그램 기획안을 만든다.",
+    )
+    db_session.add(intake_item)
+    db_session.flush()
+    candidate = CandidateTask(
+        id="candidate-personal-planning",
+        intake_item_id=intake_item.id,
+        task_type="planning",
+        title="개인행동검사 기반 학교 프로그램 기획안",
+        summary="개인행동 동기검사를 기반으로 중학생 학급 상호이해 프로그램을 만든다.",
+        evidence_excerpt="반 아이들이 서로의 행동을 더 잘 이해하는 것이 목적이다.",
+        recommended_agents=["business_designer"],
+        item_metadata={
+            "workflow_plan": {
+                "task_type": "planning",
+                "exam": "group_behavior",
+                "planning_topic": "general",
+            }
+        },
+    )
+    db_session.add(candidate)
+    db_session.commit()
+
+    def vague_draft(self, *, task_title: str, task_type: str, context: str) -> str:
+        assert "개인행동 동기검사" in context
+        assert "친구 행동 오해 카드" in context
+        assert "1개 학급 25명 기준" in context
+        return (
+            "### CRATA 검사 기반 차별점\n"
+            "개인행동검사는 동기위치와 동기성향, 고유/현재를 봅니다.\n\n"
+            "### 세부 활동\n"
+            "역할극과 그룹 토론을 진행합니다.\n\n"
+            "### 예산안\n"
+            "검사비와 강사비를 제안합니다."
+        )
+
+    fallback_calls: list[str] = []
+
+    def structured_fallback(self, *, task_title: str, task_type: str, context: str) -> str:
+        fallback_calls.append(context)
+        return "검수 기준을 반영한 구조화 기획안"
+
+    monkeypatch.setattr("app.services.model_gateway.ModelGateway.draft", vague_draft)
+    monkeypatch.setattr("app.services.model_gateway.ModelGateway.fallback_draft", structured_fallback)
+
+    response = client.post(
+        "/intake/candidates/candidate-personal-planning/messages",
+        json={
+            "content": (
+                "중학생 대상이고, 반 아이들이 서로의 행동을 더 잘 이해하는 것이 목적이야. "
+                "3시간 정도고 예산은 우리가 제안해야 해."
+            )
+        },
+    )
+
+    assert response.status_code == 200
+    assistant_message = response.json()["chat_messages"][-1]["content"]
+    assert assistant_message == "검수 기준을 반영한 구조화 기획안"
+    assert fallback_calls

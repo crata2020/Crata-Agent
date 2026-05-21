@@ -122,6 +122,23 @@ def _render_context(
         ]
     )
     blocks.extend(f"- {focus}" for focus in topic_rule.get("program_focus", []))
+    if topic_rule.get("concept_reframes"):
+        blocks.extend(["", "concept_reframes:"])
+        blocks.extend(f"- {value}" for value in topic_rule.get("concept_reframes", []))
+    if topic_rule.get("example_modules"):
+        blocks.extend(["", "example_modules:"])
+        blocks.extend(f"- {value}" for value in topic_rule.get("example_modules", []))
+    if topic_rule.get("differentiation"):
+        differentiation = topic_rule["differentiation"]
+        blocks.extend(
+            [
+                "",
+                "## 차별점 비교 기준",
+                "",
+                f"- 일반 프로그램: {differentiation.get('general_program', '')}",
+                f"- CRATA 개인행동 동기검사 기반 프로그램: {differentiation.get('crata_program', '')}",
+            ]
+        )
 
     blocks.extend(["", "## 운영 조건", ""])
     if constraints.get("duration_minutes"):
@@ -132,6 +149,8 @@ def _render_context(
 
     if constraints.get("budget_requested"):
         blocks.append("- 예산안: 요청됨. 검사비, 강사비, 자료 제작비, 운영비를 분리해 제안한다.")
+        blocks.append("- 예산안은 인원 가정을 먼저 밝힌다. 기본값은 1개 학급 25명 기준이다.")
+        blocks.append("- 예산안에는 검사비, 강사비, 자료 제작비, 운영비, 총액을 포함한다.")
     else:
         blocks.append("- 예산안: 요청된 경우에만 별도 섹션으로 제안한다.")
 
@@ -143,6 +162,8 @@ def _render_context(
             "- 검사 특징을 그대로 소개하지 말고 대상과 주제에 맞는 활동 구조로 변환한다.",
             "- 개인행동 동기검사의 차별점은 행동 시작 조건, 행동 지속 조건, 고유/현재 비교에서 나온다.",
             "- 기획안의 세부 활동과 기대효과는 동기위치, 동기성향, 고유/현재 중 최소 두 가지와 연결한다.",
+            "- 세부 활동은 활동명, 목적, 진행 방식, 검사 개념 연결, 산출물을 포함해 작성한다.",
+            "- 차별점 질문을 받으면 일반 프로그램과 CRATA 개인행동 동기검사 기반 프로그램을 비교해 설명한다.",
         ]
     )
     if topic == "career":
@@ -174,13 +195,17 @@ def _infer_audience(*, audience: str | None, query: str) -> str | None:
 
 
 def _infer_topic(query: str) -> str:
+    best_topic = "general"
+    best_score = 0
     for topic_id, rule in _topic_rules().items():
         if topic_id == "general":
             continue
         markers = [str(marker) for marker in rule.get("markers", [])]
-        if any(_normalize(marker) in query for marker in markers):
-            return topic_id
-    return "general"
+        score = sum(len(_normalize(marker).replace(" ", "")) for marker in markers if _normalize(marker) in query)
+        if score > best_score:
+            best_topic = topic_id
+            best_score = score
+    return best_topic
 
 
 def _extract_constraints(query: str) -> dict[str, Any]:

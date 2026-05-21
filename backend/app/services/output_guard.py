@@ -91,6 +91,13 @@ def _personal_behavior_planning_issues(*, draft: str, workflow_plan: dict[str, A
         if "지속" not in normalized:
             issues.append("진로 기획안인데 진로 탐색의 지속 조건이 드러나지 않았습니다.")
 
+    if workflow_plan.get("planning_topic") == "relationship":
+        required_activity_terms = ("활동명", "목적", "진행 방식", "검사 개념 연결", "산출물")
+        if not all(term in normalized for term in required_activity_terms):
+            issues.append("세부 활동은 활동명, 목적, 진행 방식, 검사 개념 연결, 산출물을 포함해야 합니다.")
+        if "오해" not in normalized:
+            issues.append("관계/상호이해 기획안인데 친구 행동 오해를 조건 이해로 바꾸는 활동이 드러나지 않았습니다.")
+
     duration_minutes = constraints.get("duration_minutes")
     if duration_minutes:
         duration_markers = [f"{duration_minutes}분"]
@@ -99,8 +106,13 @@ def _personal_behavior_planning_issues(*, draft: str, workflow_plan: dict[str, A
         if not _contains_any(draft, tuple(duration_markers)):
             issues.append(f"사용자가 요청한 시간 조건({duration_minutes}분)이 세부 운영표에 반영되지 않았습니다.")
 
-    if constraints.get("budget_requested") and "예산" not in normalized:
-        issues.append("사용자가 예산 제안을 요청했지만 예산안이 포함되지 않았습니다.")
+    if constraints.get("budget_requested"):
+        if "예산" not in normalized:
+            issues.append("사용자가 예산 제안을 요청했지만 예산안이 포함되지 않았습니다.")
+        if not any(marker in normalized for marker in ("기준", "명 기준", "인원")):
+            issues.append("예산안에 인원 가정 또는 운영 기준이 없습니다.")
+        if "총액" not in normalized:
+            issues.append("예산안에 총액이 없습니다.")
 
     return issues
 

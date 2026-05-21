@@ -83,6 +83,46 @@ def test_planning_fallback_uses_playbook_sections_without_internal_metadata() ->
     assert "action_policy" not in draft
 
 
+def test_personal_relationship_planning_fallback_uses_structured_crata_program() -> None:
+    draft = ModelGateway()._fallback_draft(
+        task_title="개인행동검사 기반 중학생 학급 프로그램",
+        task_type="planning",
+        context=(
+            "# 기획 변환 컨텍스트\n"
+            "application_map: personal_behavior_value_map\n"
+            "exam: personal_behavior_motivation\n"
+            "audience: middle_school_students\n"
+            "topic: relationship\n"
+            "동기위치 = 행동 시작 조건\n"
+            "동기성향 = 행동 지속 조건\n"
+            "고유/현재 = 본래 방식과 현재 학교생활 방식의 연결 또는 차이\n"
+            "concept_reframes:\n"
+            "- 왜 안 해? -> 무엇이 있어야 시작할까?\n"
+            "- 왜 오래 못 해? -> 무엇이 있어야 지속될까?\n"
+            "example_modules:\n"
+            "- 친구 행동 오해 카드 바꾸기\n"
+            "- 우리 반 서로 돕는 방식 만들기\n"
+            "## 운영 조건\n"
+            "- 시간 조건: 180분\n"
+            "- 예산안은 1개 학급 25명 기준으로 총액을 포함한다.\n"
+        ),
+    )
+
+    assert "일반 프로그램과의 차별점" in draft
+    assert "친구 행동 오해 카드 바꾸기" in draft
+    assert "활동명" in draft
+    assert "목적" in draft
+    assert "진행 방식" in draft
+    assert "검사 개념 연결" in draft
+    assert "산출물" in draft
+    assert "동기위치" in draft
+    assert "동기성향" in draft
+    assert "고유/현재" in draft
+    assert "180분" in draft
+    assert "1개 학급 25명 기준" in draft
+    assert "총액" in draft
+
+
 def test_fallback_draft_surfaces_candidate_clarifying_questions() -> None:
     draft = ModelGateway()._fallback_draft(
         task_title="기관 프로그램 기획",

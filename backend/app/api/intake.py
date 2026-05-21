@@ -17,7 +17,7 @@ from app.services.agent_seed import AGENT_IDS
 from app.services.concept_router import ConceptResult, classify_concept
 from app.services.intake_decomposition import detect_input_type
 from app.services.intake_decomposition_graph import GRAPH_NAME, run_intake_decomposition_graph
-from app.services.knowledge_context import load_task_knowledge_context
+from app.services.knowledge_context import KnowledgeContext, load_task_knowledge_context
 from app.services.model_gateway import ModelGateway
 from app.services.output_guard import validate_output
 
@@ -219,11 +219,17 @@ def create_candidate_message(
     )
     model_gateway = ModelGateway()
     model_context = ""
+    knowledge_context: KnowledgeContext | None = None
     if not assistant_content:
+        knowledge_context = _candidate_chat_knowledge_context(
+            candidate=candidate,
+            messages=messages,
+        )
         model_context = _candidate_chat_context(
             intake_item=intake_item,
             candidate=candidate,
             messages=messages,
+            knowledge_context=knowledge_context,
         )
         assistant_content = model_gateway.draft(
             task_title=candidate.title,
@@ -235,16 +241,25 @@ def create_candidate_message(
 
     guard_result = validate_output(
         task_type=candidate.task_type,
-        workflow_plan=metadata.get("workflow_plan", {}),
+        workflow_plan=(
+            knowledge_context.workflow_plan
+            if knowledge_context
+            else metadata.get("workflow_plan", {})
+        ),
         draft=assistant_content,
         enforce_case_learning_requirements=False,
     )
     if guard_result.rewrite_required:
         if not model_context:
+            knowledge_context = _candidate_chat_knowledge_context(
+                candidate=candidate,
+                messages=messages,
+            )
             model_context = _candidate_chat_context(
                 intake_item=intake_item,
                 candidate=candidate,
                 messages=messages,
+                knowledge_context=knowledge_context,
             )
         assistant_content = model_gateway.fallback_draft(
             task_title=candidate.title,
@@ -329,24 +344,11 @@ def _candidate_chat_context(
     intake_item: IntakeItem,
     candidate: CandidateTask,
     messages: list[dict[str, str]],
+    knowledge_context: KnowledgeContext | None = None,
 ) -> str:
     metadata = candidate.item_metadata or {}
-    latest_user_message = _latest_user_message(messages)
-    query = "\n".join(
-        part
-        for part in (
-            candidate.title,
-            candidate.summary,
-            candidate.evidence_excerpt,
-            latest_user_message,
-        )
-        if part
-    )
-    knowledge_context = load_task_knowledge_context(
-        task_type=candidate.task_type,
-        assigned_agents=candidate.recommended_agents,
-        query=query,
-    )
+    if knowledge_context is None:
+        knowledge_context = _candidate_chat_knowledge_context(candidate=candidate, messages=messages)
     conversation = "\n".join(
         f"{'나' if message['role'] == 'user' else 'CRATA AI'}: {message['content']}"
         for message in messages[-6:]
@@ -384,6 +386,29 @@ def _candidate_chat_context(
             knowledge_context.text,
         )
         if block
+    )
+
+
+def _candidate_chat_knowledge_context(
+    *,
+    candidate: CandidateTask,
+    messages: list[dict[str, str]],
+) -> KnowledgeContext:
+    latest_user_message = _latest_user_message(messages)
+    query = "\n".join(
+        part
+        for part in (
+            candidate.title,
+            candidate.summary,
+            candidate.evidence_excerpt,
+            latest_user_message,
+        )
+        if part
+    )
+    return load_task_knowledge_context(
+        task_type=candidate.task_type,
+        assigned_agents=candidate.recommended_agents,
+        query=query,
     )
 
 
