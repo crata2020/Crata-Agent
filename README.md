@@ -50,9 +50,12 @@ CRATA 검사 지식과 에이전트 작업 가이드는 `knowledge/` 폴더에 �
 
 - 원본 추출 자료: `knowledge/_sources/`
 - 공식 MASTER 지식: `knowledge/official/`
+- 핵심 개념 문서: `knowledge/core/`
+- 구조화 개념지도: `knowledge/concept_maps/`
+- 검사별 조합 정의: `knowledge/combinations/`
 - 에이전트 작업 가이드: `knowledge/agent-guides/`
 
-현재 반영된 검사 지식은 개인행동 동기검사와 집단행동검사입니다. 색채검사와 조직행동검사는 추후 지식 파일을 받으면 같은 구조로 추가합니다.
+현재 반영된 검사 지식은 개인행동 동기검사, 집단행동검사, 조직행동검사입니다. 조직행동검사의 성장역량 인지는 개인행동 동기검사의 고유 기준 10조합을 참조합니다.
 
 ## 현재 상태
 

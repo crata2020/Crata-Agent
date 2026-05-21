@@ -4,7 +4,7 @@
 
 ## 기본 원칙
 
-CRATA 지식은 세 층으로 나눈다.
+CRATA 지식은 여섯 층으로 나눈다.
 
 ```text
 _sources
@@ -12,6 +12,15 @@ _sources
 
 official
 = 현재 공식 기준으로 사용할 검사별 MASTER 지식
+
+core
+= 검사 정의, 축, 유형, 조합, 헷갈리는 비교만 담은 핵심 개념 문서
+
+concept_maps
+= 에이전트가 구조를 읽을 수 있는 검사별 개념 지도
+
+combinations
+= 검사별 조합 경우의 수와 자동 생성 조합 초안
 
 agent-guides
 = 각 에이전트가 질문하고 판단하고 산출물을 만드는 작업 절차
@@ -21,8 +30,11 @@ agent-guides
 
 - 개인행동 동기검사: `official/personal-behavior-motivation/MASTER.md`
 - 집단행동검사: `official/group-behavior/MASTER.md`
+- 조직행동검사: `official/organizational-behavior/MASTER.md`
 
-색채검사와 조직행동검사는 아직 원본 지식 파일이 들어오지 않았으므로, 이후 문서를 받으면 같은 구조로 추가한다.
+핵심 개념 문서는 `core/`, 구조화 JSON은 `concept_maps/`, 조합 정의는 `combinations/`에 둔다. 결과지 문구, 상담 사례, 기획안/프로그램 적용 문서는 핵심 개념 문서에 섞지 않고 별도 적용 문서로 분리한다.
+
+조직행동검사에서 성장역량 인지는 개인행동 동기검사의 고유 기준 10조합 중 1개를 참조한다. 자기효능감향상방식은 조직검사 10유형에는 포함하지만, 행동방식 4축에는 포함하지 않는다.
 
 ## 공식 반영 규칙
 

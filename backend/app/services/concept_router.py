@@ -67,6 +67,8 @@ def _classify_map(*, concept_map: dict, text: str) -> ConceptResult:
     for axis in concept_map.get("axes", []):
         axis_id = str(axis.get("id", ""))
         for type_def in axis.get("types", []):
+            if not _is_router_ready_type(type_def):
+                continue
             score, matched, anti_matched = _score_type(type_def=type_def, text=text)
             if score <= 0:
                 continue
@@ -147,6 +149,12 @@ def _score_type(*, type_def: dict, text: str) -> tuple[int, list[str], list[str]
     anti = _matched_terms(signals.get("anti", []), text)
     score = (len(strong) * 3) + (len(identity) * 2) + len(weak) - (len(anti) * 3)
     return score, [*identity, *strong, *weak], anti
+
+
+def _is_router_ready_type(type_def: dict) -> bool:
+    type_id = str(type_def.get("id", "")).strip()
+    signals = type_def.get("signals", {})
+    return bool(type_id and isinstance(signals, dict) and signals)
 
 
 def _matched_terms(terms: list[str], text: str) -> list[str]:

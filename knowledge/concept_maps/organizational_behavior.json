@@ -1,0 +1,274 @@
+{
+  "id": "organizational_behavior",
+  "name": "조직행동검사",
+  "definition": "사람이 문제를 어떻게 이해하고 해결하며, 어떤 조직·직무·팀 구조에서 자신의 역량을 발휘하는지를 분석하는 문제해결방식과 환경적합성 검사.",
+  "competencies": [
+    {
+      "id": "central_competency",
+      "name": "중심역량",
+      "cognition_value_source": "organizational_10_types",
+      "behavior_value_source": "organizational_10_types",
+      "definition": "사람의 인지와 행동의 중심을 잡아주는 환경조건을 찾아 삶의 뿌리 역할을 해주는 역량."
+    },
+    {
+      "id": "core_competency",
+      "name": "핵심역량",
+      "cognition_value_source": "organizational_10_types",
+      "behavior_value_source": "organizational_10_types",
+      "definition": "현실의 문제를 해결하는 과정에서 긍정적인 결과를 만드는 행동의 패턴."
+    },
+    {
+      "id": "growth_competency",
+      "name": "성장역량",
+      "cognition_value_source": "personal_behavior_motivation.genuine_10_combinations",
+      "behavior_value_source": "organizational_10_types",
+      "definition": "자기 이해를 통해 기존 반복 패턴을 인지하고 그 반복을 넘는 다른 행동을 선택하게 만드는 성장의 역량."
+    },
+    {
+      "id": "potential_competency",
+      "name": "잠재역량",
+      "value_source": "upper_5_methods",
+      "definition": "아직 구체적 형태로 정해지지 않은 선택적 가능성의 역량."
+    }
+  ],
+  "organizational_10_types": [
+    {
+      "id": "task",
+      "method": "purpose_achievement",
+      "name": "과제형",
+      "definition": "과업 완수 자체에서 만족하며 역할, 지시, 규정, 절차, 공정성, 일의 전문성을 중시하는 유형."
+    },
+    {
+      "id": "relationship",
+      "method": "purpose_achievement",
+      "name": "관계형",
+      "definition": "인정, 신뢰, 존경을 통해 만족하며 사람 중심으로 몰입하고 리더십 영향을 크게 받는 유형."
+    },
+    {
+      "id": "intuition",
+      "method": "information_processing",
+      "name": "직관형",
+      "definition": "이해 기반, 선행 정보 기반, 멘토 기반이 강하며 이해가 되어야 정보 처리가 가능하고 결정 후 움직이는 유형."
+    },
+    {
+      "id": "experience",
+      "method": "information_processing",
+      "name": "경험형",
+      "definition": "먼저 해보고 나중에 질문하며 직접 경험해야 내 것이 되고 몸으로 배우는 속도가 빠른 유형."
+    },
+    {
+      "id": "design",
+      "method": "ability_expression",
+      "name": "설계형",
+      "definition": "전체를 살피고 구조를 만들며 시스템화하고, 특별한 기술을 일반화·대량화·대중화하는 유형."
+    },
+    {
+      "id": "technique",
+      "method": "ability_expression",
+      "name": "기술형",
+      "definition": "자기 기술과 능력을 깊이 파고들며 연구·개발·구현·전문성 강화를 통해 자기 분야의 권위자가 되는 유형."
+    },
+    {
+      "id": "tactical",
+      "method": "goal_execution",
+      "name": "전술형",
+      "definition": "자율적 결정권, 현재 보상, 즉시 처리에서 강하며 지금 눈앞의 문제 해결에 강한 유형."
+    },
+    {
+      "id": "strategic",
+      "method": "goal_execution",
+      "name": "전략형",
+      "definition": "미래 보장, 안정감, 비전, 경력 축적이 중요하며 전체 맥락을 알고 문제를 해결하는 유형."
+    },
+    {
+      "id": "competitive",
+      "method": "self_efficacy_enhancement",
+      "name": "경쟁형",
+      "definition": "자신과 수준이 비슷한 관계에서 긍정적 경쟁심을 통해 자기 성장과 발전의 용기가 생기는 유형."
+    },
+    {
+      "id": "comparison",
+      "method": "self_efficacy_enhancement",
+      "name": "비교형",
+      "definition": "자신과 수준이 다른 관계에서 긍정적 비교를 통해 배우거나 돌보며 자기 성장과 발전이 일어나는 유형."
+    }
+  ],
+  "upper_5_methods": [
+    "정보처리방식",
+    "능력표현방식",
+    "목표실행방식",
+    "목적성취방식",
+    "자기효능감향상방식"
+  ],
+  "behavior_4_axes": [
+    {
+      "id": "purpose_achievement",
+      "name": "목적성취방식",
+      "types": [
+        "task",
+        "relationship"
+      ],
+      "graph_axis": "top(O)"
+    },
+    {
+      "id": "information_processing",
+      "name": "정보처리방식",
+      "types": [
+        "intuition",
+        "experience"
+      ],
+      "graph_axis": "left(S)"
+    },
+    {
+      "id": "ability_expression",
+      "name": "능력표현방식",
+      "types": [
+        "design",
+        "technique"
+      ],
+      "graph_axis": "right(P)"
+    },
+    {
+      "id": "goal_execution",
+      "name": "목표실행방식",
+      "types": [
+        "tactical",
+        "strategic"
+      ],
+      "graph_axis": "bottom(A)"
+    }
+  ],
+  "behavior_16_types": [
+    {
+      "code": "UN",
+      "bit": "0000",
+      "axes": "없음",
+      "name": "잠재형",
+      "summary": "4축 없음. 단순 공백형이 아니라 자기 글자 반복으로 4축으로 번역될 값이 안 나오는 상태이며 주변 사람·환경의 영향이 매우 큼."
+    },
+    {
+      "code": "RS",
+      "bit": "0001",
+      "axes": "S",
+      "name": "수용형",
+      "summary": "먼저 받아들이고 이해하고 살피는 유형. 정보 수집, 비교, 분석, 연결에 강점이 있고 실행/방법/목적은 약할 수 있음."
+    },
+    {
+      "code": "RA",
+      "bit": "0010",
+      "axes": "A",
+      "name": "실행자형",
+      "summary": "먼저 문제 해결을 하고 원인과 책임은 나중에 생각하는 현장형 문제해결 중심 유형."
+    },
+    {
+      "code": "SA",
+      "bit": "0011",
+      "axes": "A+S",
+      "name": "연결자형",
+      "summary": "이해한 것을 바로 실행으로 연결하는 유형. 배우고 바로 적용하며 시작과 결과는 있지만 과정과 정리가 어려울 수 있음."
+    },
+    {
+      "code": "RP",
+      "bit": "0100",
+      "axes": "P",
+      "name": "기술설계형",
+      "summary": "자신이 잘하는 것과 좋아하는 것을 우선하며 문제해결을 위해 기술과 방법을 찾는 유형."
+    },
+    {
+      "code": "SP",
+      "bit": "0101",
+      "axes": "P+S",
+      "name": "정보구조형",
+      "summary": "이해한 것을 구조와 방법으로 바꾸는 유형. 정보 활용, 구조화, 설계, 업무 배정에 강점이 있음."
+    },
+    {
+      "code": "PA",
+      "bit": "0110",
+      "axes": "P+A",
+      "name": "현장관리형",
+      "summary": "문제를 해결하기 위한 업무설계와 방법을 현장생산자에게 연결하는 유형."
+    },
+    {
+      "code": "CM",
+      "bit": "0111",
+      "axes": "P+A+S",
+      "name": "실무경영형",
+      "summary": "정보를 습득·이해하고 해결을 위한 최적의 방법과 업무 설계를 통해 현장에서 생산하는 유형. 목적 O 공백."
+    },
+    {
+      "code": "RO",
+      "bit": "1000",
+      "axes": "O",
+      "name": "목적형",
+      "summary": "문제 해결 전 자신이 해야 하는 이유, 목적, 책임소재를 알고 결정하는 유형."
+    },
+    {
+      "code": "SO",
+      "bit": "1001",
+      "axes": "O+S",
+      "name": "초기전략수립형",
+      "summary": "문제를 해결하기 전 방향과 이유를 찾기 위해 배우고 경험하는 유형. 초기 판단과 방향 설정에 강점."
+    },
+    {
+      "code": "OA",
+      "bit": "1010",
+      "axes": "O+A",
+      "name": "책임실행형",
+      "summary": "목적이 분명하면 상황을 따져보지 않고 결과까지 책임지려는 유형."
+    },
+    {
+      "code": "FC",
+      "bit": "1011",
+      "axes": "O+A+S",
+      "name": "시장선점형",
+      "summary": "목적성, 정보 수집·이해, 결과 실행을 통해 빠르게 판을 읽고 선제적으로 움직이는 유형. 방법 P 공백."
+    },
+    {
+      "code": "OP",
+      "bit": "1100",
+      "axes": "O+P",
+      "name": "전환설계형",
+      "summary": "주어진 문제의 방향과 기준을 세우고 문제 해결을 위한 방법과 설계를 하는 유형."
+    },
+    {
+      "code": "FT",
+      "bit": "1101",
+      "axes": "O+P+S",
+      "name": "경영형",
+      "summary": "목적성, 정보 습득·이해, 사전 설계와 방법을 정리하여 일의 시작 전 큰 그림과 체계를 만드는 유형. 실행 A 공백."
+    },
+    {
+      "code": "TM",
+      "bit": "1110",
+      "axes": "O+P+A",
+      "name": "실행창출형",
+      "summary": "목적성, 사전 설계 및 방법, 현장 실행을 통해 결과를 창출하는 유형. 정보 S 공백."
+    },
+    {
+      "code": "SL",
+      "bit": "1111",
+      "axes": "O+P+A+S",
+      "name": "통합실행형",
+      "summary": "네 축 모두 있음. 개인성장형과 조직성장형을 동시에 함께 사용하고, 그래프 안에 구조가 숨겨진 균형형."
+    }
+  ],
+  "confusions": [
+    {
+      "pair": [
+        "자기효능감향상방식",
+        "행동방식 4축"
+      ],
+      "difference": "자기효능감향상방식은 조직검사 10유형에는 포함되지만 행동방식 4축과 256개 조합에는 포함되지 않는다."
+    },
+    {
+      "pair": [
+        "성장역량 인지",
+        "성장역량 행동"
+      ],
+      "difference": "성장역량 인지는 개인행동 동기검사 고유 10조합, 성장역량 행동은 조직검사 10유형."
+    }
+  ],
+  "open_questions": [
+    "원본 조직검사 MASTER에는 성장역량 인지가 자기 이해/10유형 아님으로 되어 있어, 새 확정 내용 반영 패치 필요."
+  ]
+}

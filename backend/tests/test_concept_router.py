@@ -86,3 +86,12 @@ def test_neither_self_efficacy_signal_returns_neither_state() -> None:
     assert result.type_candidates[0].type == "neither"
     assert result.type_candidates[0].confidence == "high"
     assert "group_behavior.self_efficacy.neither.definition" in result.evidence_keys
+
+
+def test_structural_concept_maps_do_not_emit_blank_type_candidates() -> None:
+    result = classify_concept(
+        query="개인행동 동기검사에서 외적자극형을 설명해줘.",
+        task_type="concept_explanation",
+    )
+
+    assert all(candidate.type for candidate in result.type_candidates)
